@@ -15,7 +15,7 @@ const SESSION_KEY = 'nckuh_endo_authed';
 */
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
-  { ...wipSlot },
+  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html' },
   { ...wipSlot },
   { ...wipSlot },
   { ...wipSlot },
