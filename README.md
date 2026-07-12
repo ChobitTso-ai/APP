@@ -1,5 +1,7 @@
 # NCKUH ENDO · App 中心
 
+**正式網站：https://chobittso-ai.github.io/APP/**（合併到 `main` 後由 GitHub Actions 自動部署）
+
 登入後進入的 App 入口首頁 —— 純 HTML / CSS / JavaScript，不需建置工具。
 點卡片開啟各個 App，或按「分享」把連結複製給其他人使用。
 
