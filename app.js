@@ -11,15 +11,16 @@ const SESSION_KEY = 'nckuh_endo_authed';
    desc  : 一句話說明
    icon  : emoji 圖示
    url   : 點「開啟」後前往的網址（先用 # 佔位）
+   wip   : true = 施工中佔位卡片（不顯示開啟/分享按鈕）
 */
+const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
   { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html' },
-  { name: '血糖控制計算', desc: '依體重與血糖值估算胰島素劑量，快速給藥參考。', icon: '🩸', url: '#' },
-  { name: '甲狀腺劑量換算', desc: 'Levothyroxine 劑量與追蹤時程換算工具。', icon: '💊', url: '#' },
-  { name: '衛教單張', desc: '糖尿病、甲狀腺等衛教資料，可直接分享給病人。', icon: '📄', url: '#' },
-  { name: '門診預約查詢', desc: '查詢內分泌科門診時段與線上預約連結。', icon: '📅', url: '#' },
-  { name: 'HbA1c 換算', desc: '糖化血色素與平均血糖互相換算。', icon: '📈', url: '#' },
-  { name: 'BMI / 代謝評估', desc: '身高體重計算 BMI 與代謝症候群風險。', icon: '⚖️', url: '#' },
+  { ...wipSlot },
+  { ...wipSlot },
+  { ...wipSlot },
+  { ...wipSlot },
+  { ...wipSlot },
 ];
 
 /* ---- 元素 ---- */
@@ -78,22 +79,30 @@ function renderApps(list) {
   appGrid.innerHTML = '';
   list.forEach((app) => {
     const card = document.createElement('article');
-    card.className = 'app-card';
+    card.className = app.wip ? 'app-card wip' : 'app-card';
+
+    const actions = app.wip
+      ? `<div class="wip-badge">🚧 建置中，敬請期待</div>`
+      : `<div class="app-actions">
+          <button class="app-btn open" type="button">開啟</button>
+          <button class="app-btn share" type="button">分享</button>
+        </div>`;
 
     card.innerHTML = `
       <div class="app-icon">${app.icon}</div>
       <div class="app-name">${escapeHtml(app.name)}</div>
       <div class="app-desc">${escapeHtml(app.desc)}</div>
-      <div class="app-actions">
-        <button class="app-btn open" type="button">開啟</button>
-        <button class="app-btn share" type="button">分享</button>
-      </div>
+      ${actions}
     `;
 
-    const open = () => openApp(app);
-    card.addEventListener('click', open);
-    card.querySelector('.open').addEventListener('click', (e) => { e.stopPropagation(); open(); });
-    card.querySelector('.share').addEventListener('click', (e) => { e.stopPropagation(); shareApp(app); });
+    if (app.wip) {
+      card.addEventListener('click', () => showToast('施工中，敬請期待'));
+    } else {
+      const open = () => openApp(app);
+      card.addEventListener('click', open);
+      card.querySelector('.open').addEventListener('click', (e) => { e.stopPropagation(); open(); });
+      card.querySelector('.share').addEventListener('click', (e) => { e.stopPropagation(); shareApp(app); });
+    }
 
     appGrid.appendChild(card);
   });
