@@ -4,6 +4,7 @@
 
 /* ---- 登入設定（前端擋一般人用，非安全機制）---- */
 const AUTH = { username: 'NCKUH', password: 'ENDO' };
+// localStorage（非 sessionStorage）：App 以新分頁開啟也要讀得到登入狀態
 const SESSION_KEY = 'nckuh_endo_authed';
 
 /* ---- App 清單：之後直接在這裡增減即可 ----
@@ -46,7 +47,7 @@ function showLogin() {
   loginScreen.hidden = false;
 }
 
-if (sessionStorage.getItem(SESSION_KEY) === '1') {
+if (localStorage.getItem(SESSION_KEY) === '1') {
   showPortal();
 }
 
@@ -56,7 +57,7 @@ loginForm.addEventListener('submit', (e) => {
   const u = document.getElementById('username').value.trim();
   const p = document.getElementById('password').value;
   if (u === AUTH.username && p === AUTH.password) {
-    sessionStorage.setItem(SESSION_KEY, '1');
+    localStorage.setItem(SESSION_KEY, '1');
     loginError.hidden = true;
     showPortal();
   } else {
@@ -69,7 +70,7 @@ loginForm.addEventListener('submit', (e) => {
 
 /* ---- 登出 ---- */
 logoutBtn.addEventListener('click', () => {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
   loginForm.reset();
   showLogin();
 });

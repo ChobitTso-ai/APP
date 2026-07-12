@@ -22,19 +22,15 @@ python3 -m http.server 8000
 > 注意：這是前端擋一般人用的簡單驗證，帳密寫在 `app.js` 中，看得到原始碼就看得到帳密。
 > 不是真正的安全機制；若要保護敏感資料，需改接後端驗證。
 
-## 新增 / 修改 App
+## 新增 App（上架規則）
 
-打開 `app.js`，編輯最上面的 `APPS` 陣列即可：
+**完整規則見 [`docs/ADDING_APPS.md`](docs/ADDING_APPS.md)**，重點：
 
-```js
-const APPS = [
-  { name: 'App 名稱', desc: '一句話說明', icon: '🩸', url: 'https://…' },
-  // 再往下加…
-];
-```
-
-- `url` 填 `#` 時，卡片會顯示「尚未設定連結」。
-- 「分享」按鈕會複製該 App 的連結到剪貼簿。
+1. App 放在 `apps/<代號>/index.html`，自給自足、不可用外部 CDN
+2. 在 `app.js` 的 `APPS` 陣列把一格施工中佔位換成你的 App（`url` 用相對路徑 `apps/<代號>/`）
+3. App 的 `index.html` 開頭加登入保護：
+   `<script>if(localStorage.getItem('nckuh_endo_authed')!=='1')location.replace('../../');</script>`
+4. 一個 PR 上一個 App，合併到 `main` 即上架
 
 ## 併入新工具的標準流程
 
@@ -60,10 +56,12 @@ const APPS = [
 ## 檔案結構
 
 ```
-index.html   登入畫面 + App 入口
-styles.css   深色玻璃擬態樣式
-app.js       登入驗證、App 清單與卡片、搜尋、分享
-apps/        各個 App 的頁面
-  case-marker/index.html   案例標記工具（照片標記、裁切、組圖匯出）
-  pdf-toolbox/index.html   PDF工具箱（合併與分割，本機處理）
+index.html            登入畫面 + App 入口
+styles.css            深色玻璃擬態樣式
+app.js                登入驗證、App 清單與卡片、搜尋、分享
+apps/<代號>/          各個 App（每個一資料夾）
+  case-marker/        案例標記工具（照片標記、裁切、組圖匯出）
+  pdf-toolbox/        PDF工具箱（合併與分割，本機處理）
+docs/ADDING_APPS.md   App 上架規則
+.github/workflows/    合併 main 後自動部署 GitHub Pages
 ```
