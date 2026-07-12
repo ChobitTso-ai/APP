@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NCKUH ENDO · App 中心</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- 背景光暈 -->
+  <div class="bg-orbs" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <!-- ===== 登入畫面 ===== -->
+  <div class="login-screen" id="loginScreen">
+    <form class="login-card glass" id="loginForm" autocomplete="off">
+      <div class="login-logo">
+        <span class="logo-mark">✦</span>
+      </div>
+      <h1 class="login-title">App 中心</h1>
+      <p class="login-sub">NCKUH · ENDO</p>
+
+      <label class="field">
+        <span class="field-label">帳號</span>
+        <input type="text" id="username" placeholder="請輸入帳號" autocomplete="off" required>
+      </label>
+
+      <label class="field">
+        <span class="field-label">密碼</span>
+        <input type="password" id="password" placeholder="請輸入密碼" autocomplete="new-password" required>
+      </label>
+
+      <p class="login-error" id="loginError" hidden>帳號或密碼不正確</p>
+
+      <button type="submit" class="btn-primary">登入</button>
+    </form>
+    <p class="login-foot">© 2026 NCKUH ENDO</p>
+  </div>
+
+  <!-- ===== 主入口（登入後） ===== -->
+  <div class="portal" id="portal" hidden>
+    <header class="portal-header glass">
+      <div class="portal-brand">
+        <span class="logo-mark small">✦</span>
+        <div>
+          <div class="brand-title">App 中心</div>
+          <div class="brand-sub">NCKUH · ENDO</div>
+        </div>
+      </div>
+      <div class="portal-tools">
+        <input type="search" class="app-search" id="appSearch" placeholder="搜尋 App…" aria-label="搜尋 App">
+        <button class="btn-logout" id="logoutBtn" type="button">登出</button>
+      </div>
+    </header>
+
+    <main class="portal-main">
+      <section class="hero">
+        <h2 class="hero-title">選一個 App 開始</h2>
+        <p class="hero-sub">點卡片開啟，或按分享把連結傳給其他人使用。</p>
+      </section>
+
+      <section class="app-grid" id="appGrid"><!-- App 卡片由 app.js 動態產生 --></section>
+
+      <p class="empty-hint" id="emptyHint" hidden>找不到符合的 App</p>
+    </main>
+
+    <footer class="portal-footer">共 <span id="appCount">0</span> 個 App · © 2026 NCKUH ENDO</footer>
+  </div>
+
+  <!-- 分享成功提示 -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
