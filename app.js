@@ -13,6 +13,7 @@ const SESSION_KEY = 'nckuh_endo_authed';
    url   : 點「開啟」後前往的網址（先用 # 佔位）
 */
 const APPS = [
+  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html' },
   { name: '血糖控制計算', desc: '依體重與血糖值估算胰島素劑量，快速給藥參考。', icon: '🩸', url: '#' },
   { name: '甲狀腺劑量換算', desc: 'Levothyroxine 劑量與追蹤時程換算工具。', icon: '💊', url: '#' },
   { name: '衛教單張', desc: '糖尿病、甲狀腺等衛教資料，可直接分享給病人。', icon: '📄', url: '#' },

@@ -44,4 +44,6 @@ const APPS = [
 index.html   登入畫面 + App 入口
 styles.css   深色玻璃擬態樣式
 app.js       登入驗證、App 清單與卡片、搜尋、分享
+apps/        各個 App 的頁面
+  case-marker/index.html   案例標記工具（照片標記、裁切、組圖匯出）
 ```
