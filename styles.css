@@ -88,16 +88,12 @@ body {
 }
 
 .login-logo { display: flex; justify-content: center; margin-bottom: 4px; }
-.logo-mark {
-  width: 58px; height: 58px;
-  display: grid; place-items: center;
-  font-size: 28px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 30px var(--accent-glow);
-  color: #fff;
+.logo-img {
+  width: 92px; height: 92px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 22px var(--accent-glow));
 }
-.logo-mark.small { width: 40px; height: 40px; font-size: 20px; border-radius: 11px; }
+.logo-img.small { width: 42px; height: 42px; filter: drop-shadow(0 0 10px var(--accent-glow)); }
 
 .login-title { text-align: center; font-size: 24px; font-weight: 800; letter-spacing: .5px; }
 .login-sub { text-align: center; color: var(--text-muted); font-size: 13px; letter-spacing: 3px; margin-bottom: 8px; }
