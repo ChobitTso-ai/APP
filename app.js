@@ -16,7 +16,7 @@ const SESSION_KEY = 'nckuh_endo_authed';
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
   { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html' },
-  { ...wipSlot },
+  { name: 'PDF工具箱', desc: 'PDF 合併與分割，全程本機處理保護隱私。', icon: '🛠️', url: 'apps/pdf-toolbox/index.html' },
   { ...wipSlot },
   { ...wipSlot },
   { ...wipSlot },
