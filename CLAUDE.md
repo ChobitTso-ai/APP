@@ -48,6 +48,9 @@ apps/<slug>/    各個 App，一個資料夾一個 App，入口一律 index.html
 
 - **容器代理擋 github.io**：無法從這個環境直接開正式站台（curl/WebFetch 都
   403），線上驗證以「部署 run success ＋ main 檔案內容正確」為準。
+- **容器代理也擋 CDN**（cdnjs.cloudflare.com 等回 403）：函式庫改從 npm
+  registry 抓（在允許清單內）——`npm pack <套件>@<版本>` 後從 tgz 解出
+  `package/dist/*.min.js`（UMD 版，與 CDN 檔內容相同）放進 vendor/。
 - **Playwright 點首頁卡片**要用 `card.click({ force:true })`（卡片有覆蓋層
   攔截 pointer events）；`window.open` 帶 `noopener`，等新分頁要監聽
   context 的 `page` 事件而不是 `popup`。
