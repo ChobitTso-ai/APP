@@ -298,9 +298,37 @@ body {
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ===== 鍵盤焦點外框 ===== */
+.btn-primary:focus-visible,
+.btn-logout:focus-visible,
+.app-btn:focus-visible,
+.app-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ===== 響應式 ===== */
 @media (max-width: 600px) {
-  .app-search { width: 130px; }
+  .portal-header { padding: 14px 16px; }
+  .portal-brand { flex-shrink: 0; }
+  .portal-tools { gap: 8px; flex: 1; min-width: 0; justify-content: flex-end; }
+  .app-search { flex: 1; min-width: 0; width: auto; }
+  .btn-logout { flex-shrink: 0; }
   .portal-main { padding: 28px 16px 16px; }
   .hero-title { font-size: 23px; }
+}
+
+/* 更窄螢幕：藏起品牌副標，讓頂欄不溢出 */
+@media (max-width: 420px) {
+  .brand-sub { display: none; }
+}
+
+/* ===== 尊重「減少動態」偏好 ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
