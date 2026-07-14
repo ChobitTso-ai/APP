@@ -108,7 +108,10 @@ function renderApps(list) {
     appGrid.appendChild(card);
   });
 
-  appCount.textContent = APPS.length;
+  // 頁尾計數：正式 App 與施工中分開；隨搜尋過濾即時反映
+  const real = list.filter((a) => !a.wip).length;
+  const building = list.length - real;
+  appCount.textContent = `共 ${real} 個 App` + (building ? ` · ${building} 項建置中` : '') + ' · ';
   emptyHint.hidden = list.length !== 0;
 }
 
