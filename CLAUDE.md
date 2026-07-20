@@ -25,8 +25,9 @@ docs/ADDING_APPS.md           App 上架規則（檢查清單版）
 - **登入狀態存 `localStorage`（key：`nckuh_endo_authed`，值 `'1'`）——
   不能改用 `sessionStorage`：首頁以 `noopener` 新分頁開 App，
   `sessionStorage` 帶不過去，會把登入過的人誤擋。**
-- 已上線 App：`apps/case-marker/`（案例標記工具 v1.2：IndexedDB 自動保存、
-  復原、HEIC 轉檔、雙指縮放、常用標籤庫、組圖、浮水印、批次匯出 zip）、
+- 已上線 App：`apps/case-marker/`（案例標記工具 v1.3：IndexedDB 自動保存、
+  復原、HEIC 轉檔、雙指縮放、常用標籤庫、文字方塊、調色盤、組圖、浮水印、
+  乾淨版匯出、批次匯出 zip、PPTX 投影片匯出）、
   `apps/pdf-toolbox/`（PDF工具箱：合併與分割，pdf-lib 本地 vendor）。
 
 ## 併入新網頁工具的標準流程

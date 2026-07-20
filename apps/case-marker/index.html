@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v1.2
+  案例標記工具 v1.3
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -10,7 +10,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>案例標記工具 v1.2</title>
+<title>案例標記工具 v1.3</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -162,6 +162,11 @@
     padding:8px 12px; cursor:pointer; min-height:38px; display:inline-flex; align-items:center; gap:6px;
   }
   .chip .x{color:var(--red); font-weight:700; padding:0 2px;}
+  .sw{
+    width:40px; height:40px; border-radius:50%; border:2px solid #fff; cursor:pointer;
+    box-shadow:0 0 0 1px var(--line); padding:0;
+  }
+  .sw.on{box-shadow:0 0 0 3px var(--accent);}
   select{
     border:1px solid var(--line); border-radius:10px; padding:9px 10px; font-size:14px;
     background:var(--card); min-height:42px;
@@ -175,7 +180,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.2</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.3</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -202,6 +207,7 @@
       <button class="btn tool" data-mode="red"><span class="dot" style="background:var(--red)"></span>需處理</button>
       <button class="btn tool" data-mode="blue"><span class="dot" style="background:var(--blue)"></span>觀察</button>
       <button class="btn tool" data-mode="yellow"><span class="dot" style="background:var(--yellow)"></span>自訂</button>
+      <button class="btn tool" data-mode="text">🅃 文字</button>
       <button class="btn tool" data-mode="select">✥ 移動</button>
       <button class="btn tool" data-mode="crop">⬚ 裁切</button>
       <button class="btn" id="btnUndo" disabled>↶ 復原</button>
@@ -248,13 +254,15 @@
       </div>
       <div class="col-act">
         <button class="btn primary" id="btnBuild" disabled>產生組圖</button>
+        <button class="btn" id="btnPptx" disabled>📽 匯出投影片</button>
         <button class="btn" id="btnClearSel">清除選取</button>
       </div>
+      <div class="tip" style="font-size:12px;color:var(--ink-2);padding:0 16px 8px">「匯出投影片」會把選取的照片（依順序、含標註與標題）做成 .pptx，Keynote／PowerPoint／Canva 都能開；選 1 張也可以。</div>
     </div>
   </section>
 </main>
 
-<footer>案例標記工具 v1.2　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v1.3　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -263,6 +271,10 @@
     <div class="m-foot">
       <button class="btn primary" id="btnShare">分享／儲存到相簿</button>
       <button class="btn" id="btnDownload">下載檔案</button>
+      <select id="expMk">
+        <option value="mk" selected>含標註</option>
+        <option value="clean">乾淨版（無標註）</option>
+      </select>
       <select id="expQ">
         <option value="hi" selected>高畫質</option>
         <option value="std">標準</option>
@@ -321,6 +333,25 @@
   </div>
 </div>
 
+<!-- 標記顏色 -->
+<div class="modal" id="colModal">
+  <div class="box narrow">
+    <div class="m-title">標記顏色</div>
+    <div class="m-body">
+      <div class="chip-wrap" id="colSwatches"></div>
+      <div class="form-row">
+        <label>自訂顏色</label>
+        <input type="color" id="colCustom" value="#e53935"
+               style="width:64px;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:2px">
+        <span class="tip" style="width:auto">點色塊立即套用</span>
+      </div>
+    </div>
+    <div class="m-foot" style="padding:0 16px 16px">
+      <button class="btn" id="btnColNo">取消</button>
+    </div>
+  </div>
+</div>
+
 <!-- 處理中 -->
 <div class="modal" id="busyModal">
   <div class="box narrow"><div class="m-body" style="align-items:center;text-align:center">
@@ -330,7 +361,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v1.2
+   案例標記工具 v1.3
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -606,8 +637,9 @@ function drawAnnotated(ctx, bmp, markers, x0, y0, w, h, selIdx, boxesOut){
   var ms = settings.mkScale || 1;
   var fs = settings.ftScale || 1;
   var font = "bold " + (27*u*fs) + "px -apple-system,'PingFang TC','Microsoft JhengHei',sans-serif";
-  // 引線
+  // 引線（文字方塊型不畫）
   markers.forEach(function(m){
+    if(m.type==="text") return;
     var dx=x0+m.x*w, dy=y0+m.y*h, lx=x0+m.lx*w, ly=y0+m.ly*h;
     ctx.save();
     ctx.strokeStyle="#ffffff"; ctx.lineWidth=2.4*u*ms;
@@ -615,8 +647,12 @@ function drawAnnotated(ctx, bmp, markers, x0, y0, w, h, selIdx, boxesOut){
     ctx.beginPath(); ctx.moveTo(dx,dy); ctx.lineTo(lx,ly); ctx.stroke();
     ctx.restore();
   });
-  // 圓點
+  // 圓點（文字方塊型不畫，但要佔一格命中測試位置保持索引對齊）
   markers.forEach(function(m,i){
+    if(m.type==="text"){
+      if(boxesOut) boxesOut.dots.push({x:-1e6, y:-1e6, r:0});
+      return;
+    }
     var dx=x0+m.x*w, dy=y0+m.y*h, r=11*u*ms;
     ctx.save();
     ctx.shadowColor="rgba(0,0,0,.4)"; ctx.shadowBlur=3*u;
@@ -647,10 +683,19 @@ function drawAnnotated(ctx, bmp, markers, x0, y0, w, h, selIdx, boxesOut){
     ctx.restore();
     ctx.save();
     roundRect(ctx,bx,by,bwd,bht,8*u);
-    ctx.lineWidth = (i===selIdx?3:1.4)*u;
-    ctx.strokeStyle = (i===selIdx? "#1273cc" : "rgba(90,100,110,.55)");
-    ctx.stroke();
-    ctx.fillStyle="#2b2f33"; ctx.font=font; ctx.textBaseline="middle"; ctx.textAlign="center";
+    if(m.type==="text"){
+      // 文字方塊：邊框與文字用標記顏色
+      ctx.lineWidth = (i===selIdx?3:2.2)*u;
+      ctx.strokeStyle = (i===selIdx? "#1273cc" : m.color);
+      ctx.stroke();
+      ctx.fillStyle = m.color;
+    }else{
+      ctx.lineWidth = (i===selIdx?3:1.4)*u;
+      ctx.strokeStyle = (i===selIdx? "#1273cc" : "rgba(90,100,110,.55)");
+      ctx.stroke();
+      ctx.fillStyle = "#2b2f33";
+    }
+    ctx.font=font; ctx.textBaseline="middle"; ctx.textAlign="center";
     ctx.fillText(m.text, lx, ly+1*u);
     ctx.restore();
     if(boxesOut) boxesOut.labels.push({x:bx,y:by,w:bwd,h:bht});
@@ -859,7 +904,7 @@ cv.addEventListener("pointerdown", function(e){
   }
   lastTap = {t:now, x:pt.x, y:pt.y, label:-1};
 
-  if(state.mode==="red" || state.mode==="blue" || state.mode==="yellow"){
+  if(state.mode==="red" || state.mode==="blue" || state.mode==="yellow" || state.mode==="text"){
     pendingAdd = {x:pt.x, y:pt.y};        // 等 pointerup 再新增，避免縮放手勢誤觸
   }else{
     if(view.zoom>1.01){
@@ -897,7 +942,11 @@ cv.addEventListener("pointermove", function(e){
   if(drag.type==="dot" || drag.type==="label"){
     var n = toNorm(pt, true);
     var m = p.markers[drag.idx];
-    if(drag.type==="dot"){ m.x=n.x; m.y=n.y; } else { m.lx=n.x; m.ly=n.y; }
+    if(drag.type==="dot"){ m.x=n.x; m.y=n.y; }
+    else {
+      m.lx=n.x; m.ly=n.y;
+      if(m.type==="text"){ m.x=n.x; m.y=n.y; }   // 文字方塊只有一個位置，兩組座標同步
+    }
     drag.moved = true;
     markDirty(p); draw();
   }
@@ -987,7 +1036,18 @@ function addMarker(nx, ny){
     markDirty(p);
     draw();
   };
-  if(state.mode==="yellow"){
+  var placeText = function(text){
+    pushUndo(p);
+    p.markers.push({ type:"text", x:nx, y:ny, lx:nx, ly:ny, text:text, color:"#263238" });
+    state.selMk = p.markers.length-1;
+    markDirty(p);
+    draw();
+  };
+  if(state.mode==="text"){
+    openLabelModal("", function(text){
+      if(text) placeText(text);
+    });
+  }else if(state.mode==="yellow"){
     openLabelModal("", function(text){
       if(text) place(text, COLORS.yellow);
     });
@@ -1006,14 +1066,35 @@ function editSelectedText(){
   });
 }
 $("btnEditTxt").onclick = editSelectedText;
+/* 調色盤：預設色塊＋自訂顏色，點了立即套用到選取的標記 */
+var SWATCHES = ["#e53935","#e4572e","#f2b90d","#43a047","#00897b","#1e88e5",
+                "#3949ab","#8e24aa","#d81b60","#6d4c41","#263238","#ffffff"];
+function applyColor(cor){
+  var p = cur(); if(!p || state.selMk<0) return;
+  pushUndo(p);
+  p.markers[state.selMk].color = cor;
+  markDirty(p); draw();
+  $("colModal").classList.remove("on");
+}
+function renderSwatches(curColor){
+  var w = $("colSwatches"); w.innerHTML = "";
+  SWATCHES.forEach(function(cor){
+    var b = document.createElement("button");
+    b.className = "sw" + (cor===curColor ? " on" : "");
+    b.style.background = cor;
+    b.onclick = function(){ applyColor(cor); };
+    w.appendChild(b);
+  });
+}
 $("btnColor").onclick = function(){
   var p = cur(); if(!p || state.selMk<0) return;
   var m = p.markers[state.selMk];
-  var i = PALETTE.indexOf(m.color);
-  pushUndo(p);
-  m.color = PALETTE[(i+1) % PALETTE.length];
-  markDirty(p); draw();
+  renderSwatches(m.color);
+  if(/^#[0-9a-f]{6}$/i.test(m.color)) $("colCustom").value = m.color;
+  $("colModal").classList.add("on");
 };
+$("colCustom").addEventListener("change", function(){ applyColor(this.value); });
+$("btnColNo").onclick = function(){ $("colModal").classList.remove("on"); };
 $("btnDelMk").onclick = function(){
   var p = cur(); if(!p || state.selMk<0) return;
   pushUndo(p);
@@ -1193,17 +1274,17 @@ function step(d){
 $("btnPrev").onclick = function(){ step(-1); };
 $("btnNext").onclick = function(){ step(1); };
 
-/* ───────── 匯出單張 ───────── */
-function renderFull(p){
+/* ───────── 匯出單張（clean=true 時輸出無標註乾淨版） ───────── */
+function renderFull(p, clean){
   var W = bw(p.bmp), H = bh(p.bmp);
   var c = document.createElement("canvas"); c.width = W; c.height = H;
-  drawAnnotated(c.getContext("2d"), p.bmp, p.markers, 0, 0, W, H, -1, null);
+  drawAnnotated(c.getContext("2d"), p.bmp, clean ? [] : p.markers, 0, 0, W, H, -1, null);
   stampWatermark(c);
   return c;
 }
 $("btnExport").onclick = function(){
   var p = cur(); if(!p) return;
-  openExport(renderFull(p), p.name + "_標記.jpg");
+  openExport(function(clean){ return renderFull(p, clean); }, p.name + "_標記.jpg");
 };
 
 /* ───────── 批次匯出（zip） ───────── */
@@ -1231,7 +1312,7 @@ $("btnBatch").onclick = function(){
       var name = base+"_標記.jpg", k=2;
       while(used[name]){ name = base+"_標記_"+(k++)+".jpg"; }
       used[name] = true;
-      renderFull(p).toBlob(function(blob){
+      renderFull(p, false).toBlob(function(blob){
         blob.arrayBuffer().then(function(buf){
           files[name] = new Uint8Array(buf);
           if(--left===0){
@@ -1284,6 +1365,7 @@ function renderCollage(){
   var list = $("selList"); list.innerHTML = "";
   $("selTitle").style.display = state.colSel.length ? "block" : "none";
   $("btnBuild").disabled = state.colSel.length < 2;
+  $("btnPptx").disabled = !state.colSel.length;
   state.colSel.forEach(function(id, i){
     var p = photoById(id); if(!p) return;
     var row = document.createElement("div"); row.className = "sel-row";
@@ -1314,9 +1396,17 @@ Array.prototype.forEach.call(document.querySelectorAll(".fmt"), function(b){
   };
 });
 $("btnBuild").onclick = function(){
-  var ids = state.colSel, n = ids.length;
-  if(n<2){ alert("請至少選擇 2 張照片"); return; }
+  if(state.colSel.length<2){ alert("請至少選擇 2 張照片"); return; }
+  var ids = state.colSel.slice();
   var fmt = state.colFormat;
+  var d = new Date();
+  var stamp = d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + "_" + p2(d.getHours()) + p2(d.getMinutes());
+  var prefix = (fmt==="story")? "限時動態_" : (fmt==="row"? "對比圖_" : "案例組圖_");
+  openExport(function(clean){ return buildCollage(ids, fmt, clean); }, prefix + stamp + ".jpg");
+};
+/* 組圖畫布產生（clean=true 時各格不含標註） */
+function buildCollage(ids, fmt, clean){
+  var n = ids.length;
   var story = (fmt==="story");
   var cols;
   if(story)             cols = (n<=3)? 1 : 2;
@@ -1345,23 +1435,20 @@ $("btnBuild").onclick = function(){
     var r = Math.floor(i/cols), col = i%cols;
     var x = padX + col*(CW+GAP), y = padT + r*(CH+GAP);
     if(i<n){
-      drawCell(g, photoById(ids[i]), x, y, CW, CH, (state.colTitle[ids[i]]||"").trim());
+      drawCell(g, photoById(ids[i]), x, y, CW, CH, (state.colTitle[ids[i]]||"").trim(), clean);
     }else{
       g.fillStyle = "#eef1f4"; g.fillRect(x, y, CW, CH);
     }
   }
   stampWatermark(c);
-  var d = new Date();
-  var stamp = d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + "_" + p2(d.getHours()) + p2(d.getMinutes());
-  var prefix = story? "限時動態_" : (fmt==="row"? "對比圖_" : "案例組圖_");
-  openExport(c, prefix + stamp + ".jpg");
-};
+  return c;
+}
 /* 單格繪製：含標記全解析渲染 → cover 置入 → 角落標題（字級隨格寬縮放） */
-function drawCell(g, p, x, y, cw, ch, title){
+function drawCell(g, p, x, y, cw, ch, title, clean){
   if(!p) return;
   var W = bw(p.bmp), H = bh(p.bmp);
   var t = document.createElement("canvas"); t.width = W; t.height = H;
-  drawAnnotated(t.getContext("2d"), p.bmp, p.markers, 0, 0, W, H, -1, null);
+  drawAnnotated(t.getContext("2d"), p.bmp, clean ? [] : p.markers, 0, 0, W, H, -1, null);
   var s = Math.max(cw/W, ch/H);
   var sw = cw/s, sh = ch/s, sx = (W-sw)/2, sy = (H-sh)/2;
   g.drawImage(t, sx, sy, sw, sh, x, y, cw, ch);
@@ -1378,10 +1465,12 @@ function drawCell(g, p, x, y, cw, ch, title){
 }
 function p2(n){ return (n<10?"0":"")+n; }
 
-/* ───────── 匯出視窗（分享／下載／畫質選項） ───────── */
-var expBlob = null, expName = "", expUrl = null, expCanvas = null;
+/* ───────── 匯出視窗（分享／下載／標註切換／畫質選項） ─────────
+   expGen(clean) 回傳匯出畫布：切換「含標註／乾淨版」時重新產生 */
+var expBlob = null, expName = "", expUrl = null, expGen = null;
 function encodeExport(){
-  if(!expCanvas) return;
+  if(!expGen) return;
+  var expCanvas = expGen($("expMk").value === "clean");
   var q = $("expQ").value;
   var src = expCanvas, quality = 0.95;
   if(q==="std"){ quality = 0.85; }
@@ -1403,13 +1492,15 @@ function encodeExport(){
     $("expImg").src = expUrl;
   }, "image/jpeg", quality);
 }
-function openExport(canvas, filename){
-  expCanvas = canvas; expName = filename;
+function openExport(genFn, filename){
+  expGen = genFn; expName = filename;
   $("expQ").value = "hi";
+  $("expMk").value = "mk";
   encodeExport();
   $("expModal").classList.add("on");
 }
 $("expQ").onchange = encodeExport;
+$("expMk").onchange = encodeExport;
 cv.addEventListener("contextmenu", function(e){ e.preventDefault(); });
 $("btnCloseExp").onclick = function(){ $("expModal").classList.remove("on"); };
 $("btnDownload").onclick = function(){
@@ -1427,6 +1518,59 @@ $("btnShare").onclick = function(){
     alert("此瀏覽器不支援分享，請改用「下載檔案」或長按預覽圖儲存。");
     $("btnDownload").click();
   }
+};
+
+/* ───────── 匯出投影片（PPTX：Keynote／PowerPoint／Canva 可開） ───────── */
+var pptxReady = null;
+function loadPptx(){
+  if(window.PptxGenJS) return Promise.resolve();
+  if(pptxReady) return pptxReady;
+  pptxReady = new Promise(function(res, rej){
+    var sc = document.createElement("script");
+    sc.src = "vendor/pptxgen.bundle.js";
+    sc.onload = function(){ res(); };
+    sc.onerror = function(){ pptxReady=null; rej(new Error("pptx lib")); };
+    document.head.appendChild(sc);
+  });
+  return pptxReady;
+}
+$("btnPptx").onclick = function(){
+  var ids = state.colSel.slice();
+  if(!ids.length) return;
+  busy("產生投影片…");
+  loadPptx().then(function(){
+    var pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";                    // 13.33 × 7.5 吋（16:9）
+    var clinic = (settings.clinic||"").trim();
+    var d = new Date();
+    var ds = d.getFullYear()+"/"+p2(d.getMonth()+1)+"/"+p2(d.getDate());
+    // 封面
+    var s0 = pptx.addSlide();
+    s0.background = { color:"1D2733" };
+    s0.addText(clinic || "案例報告", { x:0.5, y:2.7, w:12.33, h:1.2, fontSize:44, bold:true, color:"FFFFFF", align:"center" });
+    s0.addText("案例報告 · "+ds, { x:0.5, y:4.0, w:12.33, h:0.6, fontSize:20, color:"9FB3C8", align:"center" });
+    // 每張照片一頁（依選取順序，含標註）
+    ids.forEach(function(id, i){
+      var p = photoById(id); if(!p) return;
+      var c = renderFull(p, false);
+      var data = c.toDataURL("image/jpeg", 0.9);
+      var sl = pptx.addSlide();
+      var t = (state.colTitle[id]||"").trim() || p.name;
+      sl.addText((i+1)+". "+t, { x:0.5, y:0.22, w:12.33, h:0.6, fontSize:24, bold:true, color:"1D2733" });
+      var maxW = 12.33, maxH = 6.05, W = c.width, H = c.height;
+      var s = Math.min(maxW/W, maxH/H);
+      var w = W*s, h = H*s;
+      sl.addImage({ data:data, x:(13.33-w)/2, y:0.95+(maxH-h)/2, w:w, h:h });
+      if(clinic) sl.addText(clinic, { x:9.83, y:7.06, w:3.0, h:0.35, fontSize:11, color:"8A97A5", align:"right" });
+    });
+    var stamp = d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+"_"+p2(d.getHours())+p2(d.getMinutes());
+    return pptx.writeFile({ fileName:"案例投影片_"+stamp+".pptx" });
+  }).then(function(){
+    busy(null);
+  }).catch(function(err){
+    busy(null);
+    alert("投影片產生失敗："+(err && err.message ? err.message : err));
+  });
 };
 
 /* ───────── 視窗尺寸 ───────── */
