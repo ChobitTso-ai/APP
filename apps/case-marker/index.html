@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v1.3
+  案例標記工具 v1.4
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -10,7 +10,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>案例標記工具 v1.3</title>
+<title>案例標記工具 v1.4</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -117,6 +117,15 @@
     padding:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;
   }
   .sel-row img{width:74px; height:56px; object-fit:cover; border-radius:8px; background:#20242a;}
+  .sel-row .focus{
+    width:74px; height:56px; border-radius:8px; background:#20242a no-repeat; background-size:cover;
+    position:relative; cursor:grab; touch-action:none; flex-shrink:0; overflow:hidden;
+  }
+  .sel-row .focus:active{cursor:grabbing;}
+  .sel-row .focus .fdot{
+    position:absolute; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%;
+    border:2px solid #fff; background:rgba(18,115,204,.85); box-shadow:0 0 0 1px rgba(0,0,0,.35); pointer-events:none;
+  }
   .sel-row .no{font-weight:800; color:var(--accent); font-size:16px; width:22px; text-align:center;}
   .sel-row input{
     flex:1; min-width:120px; border:1px solid var(--line); border-radius:10px;
@@ -128,7 +137,33 @@
     padding:7px 12px; cursor:pointer; min-height:36px;
   }
   .tag.on{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;}
-  .col-act{padding:14px; display:flex; gap:10px;}
+  .col-act{padding:14px; display:flex; gap:10px; flex-wrap:wrap;}
+  /* ── 進階版面面板 ── */
+  .opt-grid{display:flex; flex-direction:column; gap:12px; padding:0 16px;}
+  .opt-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .opt-row label{font-size:14px; font-weight:600; min-width:72px; color:var(--ink-2);}
+  .opt-row select{flex:1; min-width:140px;}
+  .opt-row input[type=range]{flex:1; min-width:120px;}
+  .opt-row .val{font-size:13px; color:var(--ink-2); width:44px; text-align:right;}
+  .sw-wrap{display:flex; gap:6px;}
+  .sw{width:30px; height:30px; border-radius:8px; border:2px solid var(--line); cursor:pointer;}
+  .sw.on{border-color:var(--accent); box-shadow:0 0 0 2px rgba(18,115,204,.3);}
+  .sw-color{width:44px; height:34px; padding:0; border:1px solid var(--line); border-radius:8px; background:var(--card);}
+  /* ── 專案清單 ── */
+  .proj-list{display:flex; flex-direction:column; gap:8px; padding:0 14px 8px;}
+  .proj-row{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px 12px; display:flex; gap:10px; align-items:center;
+  }
+  .proj-row .pinfo{flex:1; min-width:0;}
+  .proj-row .pname{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .proj-row .pmeta{font-size:12px; color:var(--ink-2);}
+  .proj-row button{
+    border:1px solid var(--line); background:var(--bg); border-radius:16px; font-size:13px;
+    padding:8px 12px; cursor:pointer; min-height:38px;
+  }
+  .proj-row .pdel{color:var(--red);}
+  .proj-empty{font-size:13px; color:var(--ink-2); padding:2px 4px;}
   /* ── 視窗（匯出／設定／標籤） ── */
   .modal{
     position:fixed; inset:0; background:rgba(10,14,18,.72); display:none;
@@ -180,7 +215,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.3</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.4</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -252,17 +287,63 @@
         <button class="tag fmt" data-fmt="col3">3 欄</button>
         <button class="tag fmt" data-fmt="story">FB／IG 限時動態（9:16）</button>
       </div>
+
+      <div class="sec-t">④ 進階版面（選填）</div>
+      <div class="opt-grid">
+        <div class="opt-row">
+          <label>欄數</label>
+          <select id="optCols">
+            <option value="0">依版型自動</option>
+            <option value="1">1 欄</option>
+            <option value="2">2 欄</option>
+            <option value="3">3 欄</option>
+            <option value="4">4 欄</option>
+          </select>
+        </div>
+        <div class="opt-row">
+          <label>格間距</label>
+          <input type="range" id="optGap" min="0" max="60" step="2">
+          <span class="val" id="optGapV"></span>
+        </div>
+        <div class="opt-row">
+          <label>背景色</label>
+          <span class="sw-wrap" id="optBgSw"></span>
+          <input type="color" id="optBg" class="sw-color">
+        </div>
+        <div class="opt-row">
+          <label>標題位置</label>
+          <select id="optTitlePos">
+            <option value="tl">左上</option>
+            <option value="tc">上方置中</option>
+            <option value="bl">左下</option>
+            <option value="none">隱藏</option>
+          </select>
+        </div>
+        <div class="opt-row">
+          <label>標題字級</label>
+          <input type="range" id="optTitleScale" min="0.6" max="1.8" step="0.1">
+          <span class="val" id="optTitleScaleV"></span>
+        </div>
+        <button class="btn" id="optReset" style="justify-self:start">↺ 回到預設</button>
+      </div>
+
       <div class="col-act">
         <button class="btn primary" id="btnBuild" disabled>產生組圖</button>
         <button class="btn" id="btnPptx" disabled>📽 匯出投影片</button>
         <button class="btn" id="btnClearSel">清除選取</button>
       </div>
-      <div class="tip" style="font-size:12px;color:var(--ink-2);padding:0 16px 8px">「匯出投影片」會把選取的照片（依順序、含標註與標題）做成 .pptx，Keynote／PowerPoint／Canva 都能開；選 1 張也可以。</div>
+      <div class="tip" style="font-size:12px;color:var(--ink-2);padding:0 16px 8px">「匯出投影片」會把選取的照片（依順序、含標註與標題）做成 .pptx，Keynote／PowerPoint／Canva 都能開；選 1 張也可以。<br>拖曳②清單的縮圖可調整每格取景（要保留照片的哪個部分）。</div>
+
+      <div class="sec-t">⑤ 組圖專案（存起來下次再改）</div>
+      <div class="col-act" style="padding-top:0">
+        <button class="btn" id="btnProjSave" disabled>💾 儲存目前組圖</button>
+      </div>
+      <div class="proj-list" id="projList"></div>
     </div>
   </section>
 </main>
 
-<footer>案例標記工具 v1.3　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v1.4　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -361,7 +442,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v1.3
+   案例標記工具 v1.4
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -381,9 +462,18 @@ var state = {
   crop: null,          // {x,y,w,h} normalized
   colSel: [],          // photo id 依點選順序
   colTitle: {},        // id -> title
-  colFormat: "std"     // std｜row｜col3｜story
+  colFocus: {},        // id -> {fx,fy} 每格取景焦點（0~1，預設置中 0.5）
+  colFormat: "std",    // std｜row｜col3｜story（快速版型）
+  colOpt: {            // 進階版面設定
+    cols: 0,           // 0=依版型自動，1~4=強制欄數
+    gap: 20,           // 格間距（px）
+    bg: "#ffffff",     // 背景色
+    titlePos: "tl",    // 標題位置：tl 左上｜bl 左下｜tc 上中｜none 隱藏
+    titleScale: 1      // 標題字級倍率
+  }
 };
 var seq = 1;
+function colFocusOf(id){ return state.colFocus[id] || {fx:0.5, fy:0.5}; }
 
 /* ── 使用者設定（localStorage） ── */
 var settings = { mkScale:1, ftScale:1, clinic:"", wmClinic:false, wmDate:false, labels:[] };
@@ -409,10 +499,39 @@ function idbOpen(){
   return new Promise(function(res){
     if(idb) return res(idb);
     if(!window.indexedDB) return res(null);
-    var rq = indexedDB.open("caseMarker", 1);
-    rq.onupgradeneeded = function(){ rq.result.createObjectStore("photos", {keyPath:"id"}); };
+    var rq = indexedDB.open("caseMarker", 2);
+    rq.onupgradeneeded = function(){
+      var db = rq.result;
+      if(!db.objectStoreNames.contains("photos")) db.createObjectStore("photos", {keyPath:"id"});
+      if(!db.objectStoreNames.contains("projects")) db.createObjectStore("projects", {keyPath:"id"});
+    };
     rq.onsuccess = function(){ idb = rq.result; res(idb); };
     rq.onerror = function(){ res(null); };
+  });
+}
+/* 組圖專案（存 / 取 / 刪 / 列） */
+function projPut(rec){
+  idbOpen().then(function(db){
+    if(!db) return;
+    try{ db.transaction("projects","readwrite").objectStore("projects").put(rec); }catch(e){}
+  });
+}
+function projDel(id){
+  idbOpen().then(function(db){
+    if(!db) return;
+    try{ db.transaction("projects","readwrite").objectStore("projects").delete(id); }catch(e){}
+  });
+}
+function projAll(){
+  return idbOpen().then(function(db){
+    if(!db) return [];
+    return new Promise(function(res){
+      try{
+        var rq = db.transaction("projects","readonly").objectStore("projects").getAll();
+        rq.onsuccess = function(){ res(rq.result||[]); };
+        rq.onerror = function(){ res([]); };
+      }catch(e){ res([]); }
+    });
   });
 }
 function idbPut(rec){
@@ -455,7 +574,7 @@ function markAllOrder(){
 function flushSave(){
   state.photos.forEach(function(p, i){
     if(!needSave[p.id]) return;
-    idbPut({ id:p.id, ord:i, name:p.name, img:p.srcData, markers:p.markers, title:state.colTitle[p.id]||"" });
+    idbPut({ id:p.id, ord:i, name:p.name, img:p.srcData, markers:p.markers, title:state.colTitle[p.id]||"", focus:state.colFocus[p.id]||null });
     delete needSave[p.id];
   });
 }
@@ -479,6 +598,7 @@ function restorePhotos(){
       img.onload = function(){
         loaded.push({ id:r.id, name:r.name, bmp:img, srcData:r.img, markers:r.markers||[], thumb:null, dirty:true, undo:[] });
         if(r.title) state.colTitle[r.id] = r.title;
+        if(r.focus) state.colFocus[r.id] = r.focus;
         var n = parseInt(String(r.id).replace(/^p/,""),10);
         if(n && n>=seq) seq = n+1;
         fin();
@@ -1366,11 +1486,12 @@ function renderCollage(){
   $("selTitle").style.display = state.colSel.length ? "block" : "none";
   $("btnBuild").disabled = state.colSel.length < 2;
   $("btnPptx").disabled = !state.colSel.length;
+  $("btnProjSave").disabled = !state.colSel.length;
   state.colSel.forEach(function(id, i){
     var p = photoById(id); if(!p) return;
     var row = document.createElement("div"); row.className = "sel-row";
     var no = document.createElement("div"); no.className = "no"; no.textContent = i+1; row.appendChild(no);
-    var im = document.createElement("img"); im.src = makeThumb(p); row.appendChild(im);
+    row.appendChild(makeFocusControl(p, id));
     var inp = document.createElement("input");
     inp.placeholder = "此格標題（例：Before）";
     inp.value = state.colTitle[id] || "";
@@ -1385,6 +1506,130 @@ function renderCollage(){
     row.appendChild(tg);
     list.appendChild(row);
   });
+  renderProjects();
+}
+/* 每格取景控制：拖曳縮圖設定 cover 焦點（fx,fy） */
+function makeFocusControl(p, id){
+  var f = colFocusOf(id);
+  var d = document.createElement("div"); d.className = "focus";
+  d.style.backgroundImage = "url(" + makeThumb(p) + ")";
+  var dot = document.createElement("div"); dot.className = "fdot"; d.appendChild(dot);
+  var apply = function(){
+    var ff = colFocusOf(id);
+    d.style.backgroundPosition = (ff.fx*100)+"% "+(ff.fy*100)+"%";
+    dot.style.left = (ff.fx*100)+"%"; dot.style.top = (ff.fy*100)+"%";
+  };
+  apply();
+  var dragging = false;
+  var set = function(ev){
+    var r = d.getBoundingClientRect();
+    var fx = clamp((ev.clientX - r.left)/r.width, 0, 1);
+    var fy = clamp((ev.clientY - r.top)/r.height, 0, 1);
+    state.colFocus[id] = {fx:fx, fy:fy};
+    apply(); markDirty(p);
+  };
+  d.addEventListener("pointerdown", function(ev){ dragging=true; d.setPointerCapture(ev.pointerId); set(ev); });
+  d.addEventListener("pointermove", function(ev){ if(dragging) set(ev); });
+  d.addEventListener("pointerup", function(){ dragging=false; });
+  d.addEventListener("pointercancel", function(){ dragging=false; });
+  return d;
+}
+/* ── 進階版面控制 ── */
+var BG_SWATCHES = ["#ffffff","#f2f4f7","#1d2733","#000000"];
+function renderBgSwatches(){
+  var w = $("optBgSw"); w.innerHTML = "";
+  BG_SWATCHES.forEach(function(c){
+    var s = document.createElement("span"); s.className = "sw" + (state.colOpt.bg.toLowerCase()===c? " on":"");
+    s.style.background = c;
+    s.onclick = function(){ state.colOpt.bg = c; $("optBg").value = c; renderBgSwatches(); };
+    w.appendChild(s);
+  });
+}
+function syncColOpt(){
+  $("optCols").value = String(state.colOpt.cols);
+  $("optGap").value = state.colOpt.gap;   $("optGapV").textContent = state.colOpt.gap+"px";
+  $("optBg").value = state.colOpt.bg;
+  $("optTitlePos").value = state.colOpt.titlePos;
+  $("optTitleScale").value = state.colOpt.titleScale; $("optTitleScaleV").textContent = "×"+state.colOpt.titleScale.toFixed(1);
+  renderBgSwatches();
+}
+$("optCols").onchange = function(){ state.colOpt.cols = parseInt(this.value,10)||0; };
+$("optGap").oninput = function(){ state.colOpt.gap = parseInt(this.value,10)||0; $("optGapV").textContent = state.colOpt.gap+"px"; };
+$("optBg").oninput = function(){ state.colOpt.bg = this.value; renderBgSwatches(); };
+$("optTitlePos").onchange = function(){ state.colOpt.titlePos = this.value; };
+$("optTitleScale").oninput = function(){ state.colOpt.titleScale = parseFloat(this.value); $("optTitleScaleV").textContent = "×"+state.colOpt.titleScale.toFixed(1); };
+$("optReset").onclick = function(){
+  state.colOpt = { cols:0, gap:20, bg:"#ffffff", titlePos:"tl", titleScale:1 };
+  syncColOpt();
+};
+/* ── 組圖專案 ── */
+function renderProjects(){
+  projAll().then(function(rows){
+    var w = $("projList"); w.innerHTML = "";
+    if(!rows.length){
+      var e = document.createElement("div"); e.className = "proj-empty";
+      e.textContent = "尚無儲存的組圖專案。設定好版面後按「💾 儲存目前組圖」。";
+      w.appendChild(e); return;
+    }
+    rows.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    rows.forEach(function(r){
+      var row = document.createElement("div"); row.className = "proj-row";
+      var info = document.createElement("div"); info.className = "pinfo";
+      var nm = document.createElement("div"); nm.className = "pname"; nm.textContent = r.name; info.appendChild(nm);
+      var mt = document.createElement("div"); mt.className = "pmeta";
+      var dd = new Date(r.ts||0);
+      mt.textContent = (r.sel? r.sel.length:0)+" 張 · "+dd.getFullYear()+"/"+p2(dd.getMonth()+1)+"/"+p2(dd.getDate());
+      info.appendChild(mt); row.appendChild(info);
+      var load = document.createElement("button"); load.textContent = "載入";
+      load.onclick = function(){ loadProject(r); }; row.appendChild(load);
+      var del = document.createElement("button"); del.className = "pdel"; del.textContent = "刪除";
+      del.onclick = function(){
+        if(!confirm("刪除組圖專案「"+r.name+"」？")) return;
+        projDel(r.id); renderProjects();
+      };
+      row.appendChild(del);
+      w.appendChild(row);
+    });
+  });
+}
+$("btnProjSave").onclick = function(){
+  if(!state.colSel.length) return;
+  var name = (prompt("組圖專案名稱","案例組圖 "+ (new Date().getMonth()+1) +"/"+ new Date().getDate()) || "").trim();
+  if(!name) return;
+  var rec = {
+    id: "proj"+Date.now(),
+    name: name,
+    ts: Date.now(),
+    sel: state.colSel.slice(),
+    title: {},
+    focus: {},
+    format: state.colFormat,
+    opt: JSON.parse(JSON.stringify(state.colOpt))
+  };
+  state.colSel.forEach(function(id){
+    if(state.colTitle[id]) rec.title[id] = state.colTitle[id];
+    if(state.colFocus[id]) rec.focus[id] = state.colFocus[id];
+  });
+  projPut(rec);
+  renderProjects();
+  alert("已儲存組圖專案「"+name+"」。");
+};
+function loadProject(r){
+  // 只載入仍存在於照片庫的照片
+  state.colSel = (r.sel||[]).filter(function(id){ return !!photoById(id); });
+  state.colTitle = {};
+  state.colFocus = {};
+  for(var k in (r.title||{})) if(photoById(k)) state.colTitle[k] = r.title[k];
+  for(var k2 in (r.focus||{})) if(photoById(k2)) state.colFocus[k2] = r.focus[k2];
+  state.colFormat = r.format || "std";
+  state.colOpt = Object.assign({ cols:0, gap:20, bg:"#ffffff", titlePos:"tl", titleScale:1 }, r.opt||{});
+  Array.prototype.forEach.call(document.querySelectorAll(".fmt"), function(q){
+    q.classList.toggle("on", q.getAttribute("data-fmt")===state.colFormat);
+  });
+  syncColOpt();
+  renderCollage();
+  var miss = (r.sel||[]).length - state.colSel.length;
+  if(miss>0) alert("已載入「"+r.name+"」。有 "+miss+" 張照片已不在照片庫，略過。");
 }
 $("btnClearSel").onclick = function(){ state.colSel = []; renderCollage(); };
 Array.prototype.forEach.call(document.querySelectorAll(".fmt"), function(b){
@@ -1408,59 +1653,68 @@ $("btnBuild").onclick = function(){
 function buildCollage(ids, fmt, clean){
   var n = ids.length;
   var story = (fmt==="story");
+  var opt = state.colOpt;
   var cols;
-  if(story)             cols = (n<=3)? 1 : 2;
+  if(opt.cols>0)        cols = Math.min(opt.cols, n);   // 進階：強制欄數
+  else if(story)        cols = (n<=3)? 1 : 2;
   else if(fmt==="row")  cols = n;
   else if(fmt==="col3") cols = Math.min(3, n);
   else                  cols = 2;
   var rows = Math.ceil(n/cols);
   var c = document.createElement("canvas");
-  var GAP, padX, padT, padB, CW, CH;
+  var GAP = (opt.gap>=0? opt.gap : 20), padX, padT, padB, CW, CH;
   if(story){
     // FB／IG 限時動態：1080×1920，上下預留安全區避開介面遮蔽
     c.width = 1080; c.height = 1920;
-    GAP = 24; padX = 30; padT = 160; padB = 160;
+    padX = 30; padT = 160; padB = 160;
     CW = (c.width  - padX*2 - (cols-1)*GAP) / cols;
     CH = (c.height - padT - padB - (rows-1)*GAP) / rows;
   }else{
-    CW = (fmt==="col3")? 1000 : 1200;
+    CW = (cols>=3)? 1000 : 1200;
     CH = Math.round(CW*0.75);
-    GAP = 20; padX = GAP; padT = GAP; padB = GAP;
+    padX = (GAP<8? 8 : GAP); padT = padX; padB = padX;   // 邊距至少 8，避免貼邊
     c.width  = cols*CW + (cols-1)*GAP + padX*2;
     c.height = rows*CH + (rows-1)*GAP + padT + padB;
   }
   var g = c.getContext("2d");
-  g.fillStyle = "#ffffff"; g.fillRect(0,0,c.width,c.height);
+  g.fillStyle = opt.bg || "#ffffff"; g.fillRect(0,0,c.width,c.height);
   for(var i=0; i<rows*cols; i++){
     var r = Math.floor(i/cols), col = i%cols;
     var x = padX + col*(CW+GAP), y = padT + r*(CH+GAP);
     if(i<n){
       drawCell(g, photoById(ids[i]), x, y, CW, CH, (state.colTitle[ids[i]]||"").trim(), clean);
     }else{
-      g.fillStyle = "#eef1f4"; g.fillRect(x, y, CW, CH);
+      g.fillStyle = "rgba(127,140,155,.18)"; g.fillRect(x, y, CW, CH);
     }
   }
   stampWatermark(c);
   return c;
 }
-/* 單格繪製：含標記全解析渲染 → cover 置入 → 角落標題（字級隨格寬縮放） */
+/* 單格繪製：含標記全解析渲染 → cover 依焦點置入 → 標題（位置／字級可設） */
 function drawCell(g, p, x, y, cw, ch, title, clean){
   if(!p) return;
   var W = bw(p.bmp), H = bh(p.bmp);
   var t = document.createElement("canvas"); t.width = W; t.height = H;
   drawAnnotated(t.getContext("2d"), p.bmp, clean ? [] : p.markers, 0, 0, W, H, -1, null);
   var s = Math.max(cw/W, ch/H);
-  var sw = cw/s, sh = ch/s, sx = (W-sw)/2, sy = (H-sh)/2;
+  var sw = cw/s, sh = ch/s;
+  var f = colFocusOf(p.id);                 // 每格取景焦點
+  var sx = (W-sw)*f.fx, sy = (H-sh)*f.fy;
   g.drawImage(t, sx, sy, sw, sh, x, y, cw, ch);
-  if(title){
-    var fs = clamp(Math.round(cw*0.042), 26, 50);
+  var pos = state.colOpt.titlePos || "tl";
+  if(title && pos!=="none"){
+    var fs = clamp(Math.round(cw*0.042*(state.colOpt.titleScale||1)), 20, 66);
     g.font = "bold " + fs + "px -apple-system,'PingFang TC','Microsoft JhengHei',sans-serif";
     var tw = g.measureText(title).width;
     var padx = Math.round(fs*0.6), bh2 = Math.round(fs*1.7), m = Math.round(cw*0.022);
-    roundRect(g, x+m, y+m, tw+padx*2, bh2, Math.round(fs*0.3));
+    var bx, by;
+    if(pos==="tc"){ bx = x + (cw-(tw+padx*2))/2; by = y+m; }
+    else if(pos==="bl"){ bx = x+m; by = y+ch-m-bh2; }
+    else { bx = x+m; by = y+m; }            // tl（預設）
+    roundRect(g, bx, by, tw+padx*2, bh2, Math.round(fs*0.3));
     g.fillStyle = "rgba(45,48,54,.78)"; g.fill();
     g.fillStyle = "#ffffff"; g.textBaseline = "middle"; g.textAlign = "left";
-    g.fillText(title, x+m+padx, y+m+bh2/2+1);
+    g.fillText(title, bx+padx, by+bh2/2+1);
   }
 }
 function p2(n){ return (n<10?"0":"")+n; }
@@ -1578,6 +1832,7 @@ window.addEventListener("resize", function(){
   if(views.edit.classList.contains("on")) draw();
 });
 
+syncColOpt();
 renderLib();
 restorePhotos();
 </script>
