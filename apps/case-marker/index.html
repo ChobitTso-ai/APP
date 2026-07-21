@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v1.4
+  案例標記工具 v1.5
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -10,7 +10,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>案例標記工具 v1.4</title>
+<title>案例標記工具 v1.5</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -181,6 +181,7 @@
   .modal .box.narrow{max-width:460px;}
   .m-body{padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:14px;}
   .m-title{font-size:16px; font-weight:800; padding:14px 16px 0;}
+  .set-hr{height:1px; background:var(--line); margin:2px 0;}
   .form-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .form-row label{font-size:14px; font-weight:600; min-width:86px;}
   .form-row input[type=range]{flex:1; min-width:120px;}
@@ -215,7 +216,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.4</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.5</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -245,6 +246,7 @@
       <button class="btn tool" data-mode="text">🅃 文字</button>
       <button class="btn tool" data-mode="select">✥ 移動</button>
       <button class="btn tool" data-mode="crop">⬚ 裁切</button>
+      <button class="btn tool" data-mode="tilt">⤢ 拉平</button>
       <button class="btn" id="btnUndo" disabled>↶ 復原</button>
       <button class="btn" id="btnRotL">↺</button>
       <button class="btn" id="btnRotR">↻</button>
@@ -257,12 +259,21 @@
       <div class="float-bar" id="markerBar">
         <button class="btn" id="btnEditTxt">✎ 文字</button>
         <button class="btn" id="btnColor">🎨 顏色</button>
+        <button class="btn" id="btnFront" title="帶到最前">⤒</button>
+        <button class="btn" id="btnBack" title="送到最後">⤓</button>
         <button class="btn" id="btnDelMk" style="color:var(--red)">🗑 刪除</button>
         <button class="btn" id="btnDeselect">完成</button>
       </div>
       <div class="float-bar" id="cropBar">
         <button class="btn primary" id="btnCropOk">✓ 套用裁切</button>
         <button class="btn" id="btnCropNo">取消</button>
+      </div>
+      <div class="float-bar" id="tiltBar">
+        <span style="font-size:13px;color:var(--ink-2);align-self:center;padding:0 4px">拉平</span>
+        <input type="range" id="tiltRange" min="-15" max="15" step="0.5" value="0" style="width:140px">
+        <span class="val" id="tiltVal" style="align-self:center;width:48px">0°</span>
+        <button class="btn primary" id="btnTiltOk">✓ 套用</button>
+        <button class="btn" id="btnTiltNo">取消</button>
       </div>
     </div>
     <div class="ed-foot">
@@ -343,7 +354,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v1.4　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v1.5　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -388,7 +399,37 @@
       </div>
       <label class="chk"><input type="checkbox" id="setWmClinic">匯出時加上診所／署名浮水印</label>
       <label class="chk"><input type="checkbox" id="setWmDate">匯出時加上日期浮水印</label>
-      <div class="tip" style="font-size:12px;color:var(--ink-2)">設定會自動儲存，並套用到單張匯出與組圖。</div>
+
+      <div class="set-hr"></div>
+      <div class="form-row">
+        <label>Logo／簽名圖</label>
+        <input type="file" id="setLogoFile" accept="image/*" hidden>
+        <button class="btn" id="setLogoPick">選擇圖片</button>
+        <button class="btn" id="setLogoClear">清除</button>
+        <img id="setLogoPrev" alt="" style="display:none;max-height:40px;max-width:120px;border-radius:6px;background:#eef1f4;padding:2px">
+      </div>
+      <label class="chk"><input type="checkbox" id="setWmLogo">匯出時加上 Logo／簽名浮水印</label>
+      <div class="form-row">
+        <label>Logo 位置</label>
+        <select id="setLogoPos">
+          <option value="br">右下</option>
+          <option value="bl">左下</option>
+          <option value="tr">右上</option>
+          <option value="tl">左上</option>
+          <option value="center">中央</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Logo 大小</label>
+        <input type="range" id="setLogoScale" min="0.05" max="0.4" step="0.01">
+        <span class="val" id="setLogoScaleV"></span>
+      </div>
+      <div class="form-row">
+        <label>Logo 透明度</label>
+        <input type="range" id="setLogoOpacity" min="0.2" max="1" step="0.05">
+        <span class="val" id="setLogoOpacityV"></span>
+      </div>
+      <div class="tip" style="font-size:12px;color:var(--ink-2)">設定會自動儲存，並套用到單張匯出與組圖。Logo／簽名圖只存在這台裝置。</div>
     </div>
     <div class="m-foot" style="padding:0 16px 16px">
       <button class="btn primary" id="btnSetOk">完成</button>
@@ -442,7 +483,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v1.4
+   案例標記工具 v1.5
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -460,6 +501,7 @@ var state = {
   mode: "red",         // red|blue|yellow|select|crop
   selMk: -1,
   crop: null,          // {x,y,w,h} normalized
+  tilt: 0,             // 拉平微調角度（度）
   colSel: [],          // photo id 依點選順序
   colTitle: {},        // id -> title
   colFocus: {},        // id -> {fx,fy} 每格取景焦點（0~1，預設置中 0.5）
@@ -476,12 +518,20 @@ var seq = 1;
 function colFocusOf(id){ return state.colFocus[id] || {fx:0.5, fy:0.5}; }
 
 /* ── 使用者設定（localStorage） ── */
-var settings = { mkScale:1, ftScale:1, clinic:"", wmClinic:false, wmDate:false, labels:[] };
+var settings = { mkScale:1, ftScale:1, clinic:"", wmClinic:false, wmDate:false, labels:[],
+                 logo:"", wmLogo:false, logoPos:"br", logoScale:0.18, logoOpacity:0.9 };
 try{
   var s0 = JSON.parse(localStorage.getItem("cm_settings")||"{}");
   for(var sk in settings){ if(s0[sk]!==undefined) settings[sk]=s0[sk]; }
 }catch(e){}
 function saveSettings(){ try{ localStorage.setItem("cm_settings", JSON.stringify(settings)); }catch(e){} }
+/* Logo／簽名浮水印圖（快取為 Image，設定改變時重建） */
+var logoImg = null;
+function setLogoImg(){
+  if(settings.logo){ logoImg = new Image(); logoImg.src = settings.logo; }
+  else logoImg = null;
+}
+setLogoImg();
 
 /* ── 檢視縮放（雙指縮放／平移） ── */
 var view = { zoom:1, panX:0, panY:0 };
@@ -853,6 +903,24 @@ function stampWatermark(c){
   g.fillText(text, bx+pad, by+Math.round(fs*0.9));
   g.restore();
 }
+/* 圖片浮水印：Logo／簽名（依設定的位置、大小、透明度貼上匯出圖） */
+function stampLogo(c){
+  if(!settings.wmLogo || !settings.logo || !logoImg || !logoImg.complete || !logoImg.naturalWidth) return;
+  var g = c.getContext("2d");
+  var lw = c.width * (settings.logoScale || 0.18);
+  var lh = lw * (logoImg.naturalHeight / logoImg.naturalWidth);
+  var m = Math.round(c.width*0.02);
+  var pos = settings.logoPos || "br", x, y;
+  if(pos==="bl"){ x=m; y=c.height-m-lh; }
+  else if(pos==="tr"){ x=c.width-m-lw; y=m; }
+  else if(pos==="tl"){ x=m; y=m; }
+  else if(pos==="center"){ x=(c.width-lw)/2; y=(c.height-lh)/2; }
+  else { x=c.width-m-lw; y=c.height-m-lh; }   // br（預設）
+  g.save();
+  g.globalAlpha = clamp(settings.logoOpacity!=null? settings.logoOpacity : 0.9, 0, 1);
+  g.drawImage(logoImg, x, y, lw, lh);
+  g.restore();
+}
 
 /* ───────── 編輯畫布 ───────── */
 var cv = $("edCanvas"), cx = cv.getContext("2d");
@@ -889,8 +957,24 @@ function draw(){
     return;
   }
   hits = {dots:[], labels:[]};
-  drawAnnotated(cx, p.bmp, p.markers, geo.offX, geo.offY, geo.w, geo.h, state.selMk, hits);
-  if(state.mode==="crop" && state.crop) drawCrop(sz);
+  if(state.mode==="tilt"){
+    var ccx = geo.offX+geo.w/2, ccy = geo.offY+geo.h/2;
+    cx.save();
+    cx.translate(ccx, ccy); cx.rotate(state.tilt*Math.PI/180); cx.translate(-ccx, -ccy);
+    drawAnnotated(cx, p.bmp, p.markers, geo.offX, geo.offY, geo.w, geo.h, -1, hits);
+    cx.restore();
+    // 水平／垂直參考線（協助拉平）
+    cx.save();
+    cx.strokeStyle = "rgba(18,115,204,.75)"; cx.lineWidth = 1;
+    cx.beginPath();
+    cx.moveTo(0, sz.H/2); cx.lineTo(sz.W, sz.H/2);
+    cx.moveTo(sz.W/2, 0); cx.lineTo(sz.W/2, sz.H);
+    cx.stroke();
+    cx.restore();
+  }else{
+    drawAnnotated(cx, p.bmp, p.markers, geo.offX, geo.offY, geo.w, geo.h, state.selMk, hits);
+    if(state.mode==="crop" && state.crop) drawCrop(sz);
+  }
   var zt = $("zoomTag");
   zt.classList.toggle("on", view.zoom>1.01);
   zt.textContent = Math.round(view.zoom*100)+"%（點兩下復原）";
@@ -956,6 +1040,7 @@ function pCount(){ var n=0; for(var k in pointers) n++; return n; }
 
 cv.addEventListener("pointerdown", function(e){
   var p = cur(); if(!p) return;
+  if(state.mode==="tilt") return;          // 拉平模式不處理標記互動
   cv.setPointerCapture(e.pointerId);
   var pt = evPt(e);
   pointers[e.pointerId] = pt;
@@ -1222,6 +1307,21 @@ $("btnDelMk").onclick = function(){
   state.selMk = -1; markDirty(p);
   draw();
 };
+/* 圖層順序：帶到最前／送到最後 */
+$("btnFront").onclick = function(){
+  var p = cur(); if(!p || state.selMk<0 || state.selMk>=p.markers.length-1) return;
+  pushUndo(p);
+  var m = p.markers.splice(state.selMk,1)[0];
+  p.markers.push(m);
+  state.selMk = p.markers.length-1; markDirty(p); draw();
+};
+$("btnBack").onclick = function(){
+  var p = cur(); if(!p || state.selMk<=0) return;
+  pushUndo(p);
+  var m = p.markers.splice(state.selMk,1)[0];
+  p.markers.unshift(m);
+  state.selMk = 0; markDirty(p); draw();
+};
 $("btnDeselect").onclick = function(){ state.selMk = -1; draw(); };
 
 /* ───────── 自訂標籤視窗（常用標籤庫） ───────── */
@@ -1282,6 +1382,13 @@ function syncSetUI(){
   $("setClinic").value = settings.clinic;
   $("setWmClinic").checked = settings.wmClinic;
   $("setWmDate").checked = settings.wmDate;
+  $("setWmLogo").checked = settings.wmLogo;
+  $("setLogoPos").value = settings.logoPos;
+  $("setLogoScale").value = settings.logoScale; $("setLogoScaleV").textContent = Math.round(settings.logoScale*100)+"%";
+  $("setLogoOpacity").value = settings.logoOpacity; $("setLogoOpacityV").textContent = Math.round(settings.logoOpacity*100)+"%";
+  var prev = $("setLogoPrev");
+  if(settings.logo){ prev.src = settings.logo; prev.style.display = "inline-block"; }
+  else { prev.removeAttribute("src"); prev.style.display = "none"; }
 }
 $("btnSet").onclick = function(){ syncSetUI(); $("setModal").classList.add("on"); };
 $("btnSetOk").onclick = function(){ $("setModal").classList.remove("on"); };
@@ -1301,6 +1408,45 @@ $("setFt").oninput = function(){
 $("setClinic").oninput = function(){ settings.clinic = this.value; saveSettings(); };
 $("setWmClinic").onchange = function(){ settings.wmClinic = this.checked; saveSettings(); };
 $("setWmDate").onchange = function(){ settings.wmDate = this.checked; saveSettings(); };
+/* Logo／簽名圖：選檔（縮到長邊 ≤400 存 localStorage）、清除、選項 */
+$("setLogoPick").onclick = function(){ $("setLogoFile").click(); };
+$("setLogoFile").onchange = function(e){
+  var f = e.target.files && e.target.files[0]; e.target.value = "";
+  if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var img = new Image();
+    img.onload = function(){
+      var MAX = 400, s = Math.min(1, MAX/Math.max(img.width, img.height));
+      var w = Math.max(1, Math.round(img.width*s)), h = Math.max(1, Math.round(img.height*s));
+      var cc = document.createElement("canvas"); cc.width = w; cc.height = h;
+      cc.getContext("2d").drawImage(img, 0, 0, w, h);
+      settings.logo = cc.toDataURL("image/png");
+      settings.wmLogo = true;
+      saveSettings(); setLogoImg(); syncSetUI(); settingChanged();
+    };
+    img.onerror = function(){ alert("無法讀取此圖片，請換一張（建議 PNG／JPG）。"); };
+    img.src = rd.result;
+  };
+  rd.readAsDataURL(f);
+};
+$("setLogoClear").onclick = function(){
+  settings.logo = ""; settings.wmLogo = false;
+  saveSettings(); setLogoImg(); syncSetUI(); settingChanged();
+};
+$("setWmLogo").onchange = function(){
+  if(this.checked && !settings.logo){ this.checked = false; alert("請先選擇 Logo／簽名圖。"); return; }
+  settings.wmLogo = this.checked; saveSettings(); settingChanged();
+};
+$("setLogoPos").onchange = function(){ settings.logoPos = this.value; saveSettings(); settingChanged(); };
+$("setLogoScale").oninput = function(){
+  settings.logoScale = parseFloat(this.value); $("setLogoScaleV").textContent = Math.round(settings.logoScale*100)+"%";
+  saveSettings(); settingChanged();
+};
+$("setLogoOpacity").oninput = function(){
+  settings.logoOpacity = parseFloat(this.value); $("setLogoOpacityV").textContent = Math.round(settings.logoOpacity*100)+"%";
+  saveSettings(); settingChanged();
+};
 
 /* ───────── 工具列 ───────── */
 Array.prototype.forEach.call(document.querySelectorAll(".tool"), function(b){
@@ -1309,12 +1455,18 @@ Array.prototype.forEach.call(document.querySelectorAll(".tool"), function(b){
     if(md==="crop"){
       if(state.mode==="crop"){ exitCrop(); draw(); return; }
       if(!cur()) return;
-      resetView();
+      exitTilt(); resetView();
       state.mode = "crop";
       state.crop = { x:0.05, y:0.05, w:0.9, h:0.9 };
       state.selMk = -1;
+    }else if(md==="tilt"){
+      if(state.mode==="tilt"){ exitTilt(); draw(); return; }
+      if(!cur()) return;
+      exitCrop(); resetView();
+      state.mode = "tilt"; state.tilt = 0; state.selMk = -1;
+      $("tiltRange").value = 0; $("tiltVal").textContent = "0°";
     }else{
-      exitCrop();
+      exitCrop(); exitTilt();
       state.mode = md;
     }
     draw();
@@ -1324,12 +1476,17 @@ function exitCrop(){
   if(state.mode==="crop"){ state.mode = "select"; }
   state.crop = null;
 }
+function exitTilt(){
+  if(state.mode==="tilt"){ state.mode = "select"; }
+  state.tilt = 0;
+}
 function updateToolUI(){
   Array.prototype.forEach.call(document.querySelectorAll(".tool"), function(b){
     b.classList.toggle("on", b.getAttribute("data-mode")===state.mode);
   });
   $("cropBar").classList.toggle("on", state.mode==="crop" && !!state.crop);
-  $("markerBar").classList.toggle("on", state.mode!=="crop" && state.selMk>=0);
+  $("tiltBar").classList.toggle("on", state.mode==="tilt");
+  $("markerBar").classList.toggle("on", state.mode!=="crop" && state.mode!=="tilt" && state.selMk>=0);
   var p = cur();
   $("btnUndo").disabled = !(p && p.undo.length);
 }
@@ -1383,6 +1540,43 @@ function rotate(cw){
 $("btnRotR").onclick = function(){ rotate(true); };
 $("btnRotL").onclick = function(){ rotate(false); };
 
+/* ───────── 拉平（任意角度微調旋轉） ───────── */
+$("tiltRange").oninput = function(){
+  state.tilt = parseFloat(this.value) || 0;
+  $("tiltVal").textContent = (state.tilt>0?"+":"") + state.tilt + "°";
+  draw();
+};
+$("btnTiltNo").onclick = function(){ exitTilt(); draw(); };
+$("btnTiltOk").onclick = function(){
+  var p = cur(); if(!p){ exitTilt(); draw(); return; }
+  var deg = state.tilt;
+  if(Math.abs(deg) < 0.01){ exitTilt(); draw(); return; }
+  var rad = deg*Math.PI/180;
+  var W = bw(p.bmp), H = bh(p.bmp);
+  var cosA = Math.abs(Math.cos(rad)), sinA = Math.abs(Math.sin(rad));
+  var nw = Math.round(W*cosA + H*sinA), nh = Math.round(W*sinA + H*cosA);
+  var nc = document.createElement("canvas"); nc.width = nw; nc.height = nh;
+  var g = nc.getContext("2d");
+  g.fillStyle = "#ffffff"; g.fillRect(0,0,nw,nh);          // 旋轉露出的角落補白
+  g.translate(nw/2, nh/2); g.rotate(rad); g.drawImage(p.bmp, -W/2, -H/2);
+  g.setTransform(1,0,0,1,0,0);
+  pushUndo(p);
+  var cosR = Math.cos(rad), sinR = Math.sin(rad);
+  var tf = function(nx, ny){
+    var rx = nx*W - W/2, ry = ny*H - H/2;
+    var qx = rx*cosR - ry*sinR, qy = rx*sinR + ry*cosR;
+    return { x:clamp((nw/2+qx)/nw, 0, 1), y:clamp((nh/2+qy)/nh, 0, 1) };
+  };
+  p.markers.forEach(function(m){
+    var a = tf(m.x, m.y);   m.x = a.x;  m.y = a.y;
+    var b = tf(m.lx, m.ly); m.lx = b.x; m.ly = b.y;
+  });
+  p.bmp = nc;
+  p.srcData = nc.toDataURL("image/jpeg", 0.95);
+  markDirty(p);
+  exitTilt(); resetView(); draw();
+};
+
 /* ───────── 上一張／下一張 ───────── */
 function step(d){
   if(!state.photos.length) return;
@@ -1400,6 +1594,7 @@ function renderFull(p, clean){
   var c = document.createElement("canvas"); c.width = W; c.height = H;
   drawAnnotated(c.getContext("2d"), p.bmp, clean ? [] : p.markers, 0, 0, W, H, -1, null);
   stampWatermark(c);
+  stampLogo(c);
   return c;
 }
 $("btnExport").onclick = function(){
@@ -1688,6 +1883,7 @@ function buildCollage(ids, fmt, clean){
     }
   }
   stampWatermark(c);
+  stampLogo(c);
   return c;
 }
 /* 單格繪製：含標記全解析渲染 → cover 依焦點置入 → 標題（位置／字級可設） */
