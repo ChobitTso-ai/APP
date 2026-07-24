@@ -143,7 +143,8 @@
       <div class="hint">
         一個資料夾＝一個病例，資料夾內用編號命名影像（可 .jpg／.png／.tiff）：<br>
         <b>1x</b>＝Initial · <b>2x</b>＝Working Length · <b>3x</b>＝Clinical/Microscopic · <b>4x</b>＝Main Cone · <b>5x</b>＝RCF · <b>6x</b>＝Follow；
-        同階段多張就用 10、11、12…依序。<b>90</b>＝術前(左)、<b>91</b>＝術後(右)。7x／8x 目前保留不使用。
+        同階段多張就用 10、11、12…依序。<b>90</b>＝術前(左)、<b>91</b>＝術後(右)。7x／8x 目前保留不使用。<br>
+        影像攝取時間會<b>自動帶入</b>（讀照片 EXIF／X 光 TIFF 日期，沒有就退用 ZIP 內檔案日期）；讀不到的會標「無日期」，可在 PowerPoint 內手動補。
       </div>
       <div class="drop" id="drop">
         <div class="big">📦</div>
@@ -211,7 +212,10 @@ var REPORTS={
 /* 影像頁與比較頁在兩份範本的形狀命名一致，可共用清除清單 */
 var IMG_REMOVE={'Rectangle 8':1,'Line 9':1,'Text Box 10':1,'Line 11':1,'Text Box 12':1,'Text Box 13':1,'AutoShape 15':1,'AutoShape 16':1};
 var IMG_TITLE_NAME='Rectangle 5';
+var IMG_DATE_NAME='Text Box 14';                 // 影像頁：影像攝取時間
 var CMP_REMOVE={'Rectangle 3':1,'Line 4':1,'Text Box 5':1,'Line 6':1,'Text Box 7':1,'AutoShape 10':1,'AutoShape 11':1};
+var CMP_DATE_LEFT='Text Box 17';                 // 比較頁：術前(左)日期
+var CMP_DATE_RIGHT='Text Box 12';                // 比較頁：術後(右)日期
 
 /* ---------- 階段定義與中英標題 ---------- */
 var STAGES=['initial','wl','clinical','maincone','rcf','follow'];
@@ -319,6 +323,68 @@ async function getDims(u8,ext){
   return parseHeaderDims(u8);
 }
 
+/* ================= 影像拍攝日期解析 ================= */
+function pad2(n){return (n<10?'0':'')+n;}
+/* 解析 TIFF/EXIF 的 IFD（base=TIFF 表頭起點），回傳 'YYYY/MM/DD' 或 null */
+function tiffDate(u8,base){
+  var dv=new DataView(u8.buffer,u8.byteOffset),le=u8[base]===0x49;
+  function u16(o){return dv.getUint16(base+o,le);}
+  function u32(o){return dv.getUint32(base+o,le);}
+  function readIFD(off){
+    if(off<=0||base+off+2>u8.length)return {};
+    var cnt=u16(off),ent={},k;
+    for(k=0;k<cnt;k++){var e=off+2+k*12;ent[u16(e)]={cnt:u32(e+4),voff:e+8};}
+    return ent;
+  }
+  function ascii(en){
+    var p=en.cnt>4?u32(en.voff):en.voff,s='',j;
+    for(j=0;j<Math.min(en.cnt,20);j++){var c=u8[base+p+j];if(!c)break;s+=String.fromCharCode(c);}
+    return s;
+  }
+  var d0=readIFD(u32(4)),raw=null;
+  if(d0[0x8769]){var de=readIFD(u32(d0[0x8769].voff));if(de[0x9003])raw=ascii(de[0x9003]);else if(de[0x9004])raw=ascii(de[0x9004]);}
+  if(!raw&&d0[0x0132])raw=ascii(d0[0x0132]);
+  if(!raw)return null;
+  var m=/(\d{4})[:\/\-.](\d{2})[:\/\-.](\d{2})/.exec(raw);
+  return m?m[1]+'/'+m[2]+'/'+m[3]:null;
+}
+/* JPEG：找 APP1 的 Exif，讀 DateTimeOriginal / DateTime */
+function exifDate(u8){
+  if(!(u8[0]===0xFF&&u8[1]===0xD8))return null;
+  var dv=new DataView(u8.buffer,u8.byteOffset),i=2,n=u8.length;
+  while(i+4<=n){
+    if(u8[i]!==0xFF){i++;continue;}
+    var mk=u8[i+1];
+    if(mk===0xD8||mk===0xD9||(mk>=0xD0&&mk<=0xD7)){i+=2;continue;}
+    if(mk===0xDA)break;
+    var len=dv.getUint16(i+2);
+    if(mk===0xE1&&u8[i+4]===0x45&&u8[i+5]===0x78&&u8[i+6]===0x69&&u8[i+7]===0x66)return tiffDate(u8,i+10);
+    i+=2+len;
+  }
+  return null;
+}
+function captureDate(u8,ext){
+  try{
+    if(ext==='jpg'||ext==='jpeg')return exifDate(u8);
+    if(ext==='tif'||ext==='tiff')return tiffDate(u8,0);
+  }catch(e){}
+  return null;
+}
+/* 退路：從 ZIP central directory 取每個檔案的修改日期 */
+function parseZipDates(u8){
+  var dv=new DataView(u8.buffer,u8.byteOffset),n=u8.length,map={},i;
+  for(i=0;i+46<=n;i++){
+    if(u8[i]===0x50&&u8[i+1]===0x4b&&u8[i+2]===0x01&&u8[i+3]===0x02){
+      var d=dv.getUint16(i+14,true),fn=dv.getUint16(i+28,true),ef=dv.getUint16(i+30,true),cm=dv.getUint16(i+32,true);
+      var name='';try{name=fflate.strFromU8(u8.slice(i+46,i+46+fn));}catch(e){}
+      var day=d&0x1f,mon=(d>>5)&0x0f,yr=((d>>9)&0x7f)+1980;
+      if(mon>=1&&day>=1&&name)map[name]=yr+'/'+pad2(mon)+'/'+pad2(day);
+      i+=46+fn+ef+cm-1;
+    }
+  }
+  return map;
+}
+
 /* ================= 內容類型 / 副檔名 ================= */
 var MIME={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',tif:'image/tiff',tiff:'image/tiff',bmp:'image/bmp',gif:'image/gif',webp:'image/webp'};
 function extOf(name){var m=/\.([a-z0-9]+)$/i.exec(name);return m?m[1].toLowerCase():'';}
@@ -353,6 +419,7 @@ async function buildCase(templateParts,cfg,caseObj,lang){
     var dims=await getDims(img.data,ext);
     var box=dims?aspectFit(dims.w,dims.h,IMG_BOX):IMG_BOX;
     spTree(doc).appendChild(picNode(doc,nextId(doc),rid,box[0],box[1],box[2],box[3]));
+    if(img.date)setTitle(doc,IMG_DATE_NAME,img.date);
     outSlides.push({xml:serializeXml(doc),rels:serializeXml(rels)});
   }
   async function addCmpSlide(left,right){
@@ -360,13 +427,14 @@ async function buildCase(templateParts,cfg,caseObj,lang){
     removeByNames(doc,CMP_REMOVE);
     var rels=parseXml(protoRels('cmp'));
     var st=spTree(doc);
-    var pairs=[[left,CMP_L],[right,CMP_R]],i;
+    var pairs=[[left,CMP_L,CMP_DATE_LEFT],[right,CMP_R,CMP_DATE_RIGHT]],i;
     for(i=0;i<pairs.length;i++){
       var img=pairs[i][0],b=pairs[i][1];if(!img)continue;
       var ext=extOf(img.name)||'png',fn=addMedia(img.data,ext);
       var rid=addRel(rels.documentElement,NS.REL_IMG,'../media/'+fn);
       var dims=await getDims(img.data,ext);var box=dims?aspectFit(dims.w,dims.h,b):b;
       st.appendChild(picNode(doc,nextId(doc),rid,box[0],box[1],box[2],box[3]));
+      if(img.date)setTitle(doc,pairs[i][2],img.date);
     }
     outSlides.push({xml:serializeXml(doc),rels:serializeXml(rels)});
   }
@@ -436,7 +504,8 @@ function classify(num){
 
 function parseZip(u8){
   var files=fflate.unzipSync(u8);
-  var groups={}; // dir -> {name, images:[{name,path,data,num}], reserved:[], unknown:[]}
+  var zipDates=parseZipDates(u8);   // 檔名 -> 修改日期（退路）
+  var groups={}; // dir -> {name, images:[...], reserved:[], unknown:[]}
   Object.keys(files).forEach(function(path){
     if(/(^|\/)__MACOSX\//.test(path)||/(^|\/)\._/.test(path))return;
     if(path.slice(-1)==='/')return;
@@ -448,7 +517,11 @@ function parseZip(u8){
     var c=classify(num);
     if(c.kind==='reserved'){g.reserved.push(nm);}
     else if(c.kind==='unknown'){g.unknown.push(nm);}
-    else{g.images.push({name:nm,num:num,data:data,cls:c});}
+    else{
+      var ext=extOf(nm);
+      var date=captureDate(data,ext)||zipDates[path]||null;   // EXIF/TIFF 優先，退用 ZIP 日期
+      g.images.push({name:nm,num:num,data:data,cls:c,date:date});
+    }
   });
   // 整理成病例物件
   var cases=Object.keys(groups).sort().map(function(dir){
@@ -530,12 +603,12 @@ function renderReview(cases){
     STAGES.forEach(function(st){
       if(!c[st].length)return;
       rows+='<div class="stg"><div class="lab">'+STAGE_LABEL[st]+'</div><div class="files">'+
-        c[st].map(function(im){return '<span class="chip">'+esc(im.name)+'</span>';}).join('')+'</div></div>';
+        c[st].map(function(im){return '<span class="chip">'+esc(im.name)+dateTag(im)+'</span>';}).join('')+'</div></div>';
     });
     if(c.cmpLeft||c.cmpRight){
       rows+='<div class="stg"><div class="lab">術前/術後比較 (90/91)</div><div class="files">'+
-        (c.cmpLeft?'<span class="chip L">術前 '+esc(c.cmpLeft.name)+'</span>':'')+
-        (c.cmpRight?'<span class="chip R">術後 '+esc(c.cmpRight.name)+'</span>':'')+'</div></div>';
+        (c.cmpLeft?'<span class="chip L">術前 '+esc(c.cmpLeft.name)+dateTag(c.cmpLeft)+'</span>':'')+
+        (c.cmpRight?'<span class="chip R">術後 '+esc(c.cmpRight.name)+dateTag(c.cmpRight)+'</span>':'')+'</div></div>';
     }
     if(!rows)rows='<div class="empty">此資料夾沒有可辨識的編號影像。</div>';
     var warn='';
@@ -549,6 +622,7 @@ function renderReview(cases){
   $('genNote').textContent='';
 }
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dateTag(im){return im.date?' <span style="color:#8fe6b0">· '+esc(im.date)+'</span>':' <span style="color:#ffcf6b">· 無日期</span>';}
 
 /* 產生 */
 $('genBtn').addEventListener('click',async function(){
