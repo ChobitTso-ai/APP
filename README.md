@@ -62,6 +62,7 @@ app.js                登入驗證、App 清單與卡片、搜尋、分享
 apps/<代號>/          各個 App（每個一資料夾）
   case-marker/        案例標記工具（照片標記、裁切、組圖匯出）
   pdf-toolbox/        PDF工具箱（合併與分割，本機處理）
+  endo-ppt-generator/ 牙髓病科專科 PPT 製作器（照片 ZIP 依學會範本套版產 PPT）
 docs/ADDING_APPS.md   App 上架規則
 .github/workflows/    合併 main 後自動部署 GitHub Pages
 ```
