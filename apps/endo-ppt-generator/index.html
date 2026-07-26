@@ -139,19 +139,30 @@
     </div>
 
     <div class="panel">
-      <h3>② 上傳照片 ZIP</h3>
+      <h3>② 上傳照片</h3>
       <div class="hint">
         一個資料夾＝一個病例，資料夾內用編號命名影像（可 .jpg／.png／.tiff）：<br>
         <b>1x</b>＝Initial · <b>2x</b>＝Working Length · <b>3x</b>＝Clinical/Microscopic · <b>4x</b>＝Main Cone · <b>5x</b>＝RCF · <b>6x</b>＝Follow；
         同階段多張就用 10、11、12…依序。<b>90</b>＝術前(左)、<b>91</b>＝術後(右)。7x／8x 目前保留不使用。<br>
-        影像攝取時間會<b>自動帶入</b>（讀照片 EXIF／X 光 TIFF 日期，沒有就退用 ZIP 內檔案日期）；讀不到的會標「無日期」，可在 PowerPoint 內手動補。
+        影像攝取時間會<b>自動帶入</b>（讀照片 EXIF／X 光 TIFF 日期，沒有就退用檔案修改日期）；讀不到的會標「無日期」，可在 PowerPoint 內手動補。
+      </div>
+      <div class="seg" id="modeSeg" style="margin-bottom:14px">
+        <button data-mode="zip" class="on">ZIP 壓縮檔</button>
+        <button data-mode="files">拖曳資料夾／檔案</button>
       </div>
       <div class="drop" id="drop">
-        <div class="big">📦</div>
-        <div class="t">點此選擇，或把 ZIP 拖進來</div>
-        <div class="s">全程在你的瀏覽器內處理，照片不會上傳到任何伺服器</div>
+        <div class="big" id="dropIcon">📦</div>
+        <div class="t" id="dropText">點此選擇，或把 ZIP 拖進來</div>
+        <div class="s" id="dropSub">全程在你的瀏覽器內處理，照片不會上傳到任何伺服器</div>
       </div>
-      <input type="file" id="fileInput" accept=".zip,application/zip" class="hidden">
+      <div class="row" id="pickBtns" style="margin-top:12px">
+        <button class="btn ghost" id="pickZipBtn">選擇 ZIP 檔</button>
+        <button class="btn ghost hidden" id="pickDirBtn">選擇資料夾</button>
+        <button class="btn ghost hidden" id="pickFilesBtn">選擇檔案</button>
+      </div>
+      <input type="file" id="zipInput" accept=".zip,application/zip" class="hidden">
+      <input type="file" id="dirInput" webkitdirectory directory multiple class="hidden">
+      <input type="file" id="filesInput" accept="image/*,.tif,.tiff" multiple class="hidden">
     </div>
 
     <div class="panel hidden" id="reviewPanel">
@@ -502,29 +513,27 @@ function classify(num){
   return {kind:'unknown'};
 }
 
-function parseZip(u8){
-  var files=fflate.unzipSync(u8);
-  var zipDates=parseZipDates(u8);   // 檔名 -> 修改日期（退路）
-  var groups={}; // dir -> {name, images:[...], reserved:[], unknown:[]}
-  Object.keys(files).forEach(function(path){
+/* 共用分組：entries = [{path, data:Uint8Array, mtime:'YYYY/MM/DD'|null}] */
+function buildCases(entries,defaultName){
+  var groups={};
+  entries.forEach(function(en){
+    var path=en.path;
     if(/(^|\/)__MACOSX\//.test(path)||/(^|\/)\._/.test(path))return;
-    if(path.slice(-1)==='/')return;
     if(!IMG_RE.test(path))return;
     var dir=dirOf(path),g=groups[dir];
-    if(!g){g=groups[dir]={dir:dir,name:baseName(dir)||'未命名病例',images:[],reserved:[],unknown:[]};}
-    var nm=baseName(path),num=leadingNum(nm),data=files[path];
+    if(!g){g=groups[dir]={dir:dir,name:baseName(dir)||defaultName,images:[],reserved:[],unknown:[]};}
+    var nm=baseName(path),num=leadingNum(nm);
     if(num===null){g.unknown.push(nm);return;}
     var c=classify(num);
     if(c.kind==='reserved'){g.reserved.push(nm);}
     else if(c.kind==='unknown'){g.unknown.push(nm);}
     else{
       var ext=extOf(nm);
-      var date=captureDate(data,ext)||zipDates[path]||null;   // EXIF/TIFF 優先，退用 ZIP 日期
-      g.images.push({name:nm,num:num,data:data,cls:c,date:date});
+      var date=captureDate(en.data,ext)||en.mtime||null;   // EXIF/TIFF 優先，退用檔案日期
+      g.images.push({name:nm,num:num,data:en.data,cls:c,date:date});
     }
   });
-  // 整理成病例物件
-  var cases=Object.keys(groups).sort().map(function(dir){
+  return Object.keys(groups).sort().map(function(dir){
     var g=groups[dir];
     var obj={name:g.name,reserved:g.reserved,unknown:g.unknown};
     STAGES.forEach(function(s){obj[s]=[];});
@@ -536,7 +545,54 @@ function parseZip(u8){
     STAGES.forEach(function(s){obj[s].sort(function(a,b){return a.num-b.num;});});
     return obj;
   });
-  return cases;
+}
+
+function parseZip(u8){
+  var files=fflate.unzipSync(u8);
+  var zipDates=parseZipDates(u8);
+  var entries=Object.keys(files).filter(function(p){return p.slice(-1)!=='/';})
+    .map(function(p){return {path:p,data:files[p],mtime:zipDates[p]||null};});
+  return buildCases(entries,'未命名病例');
+}
+
+/* File -> Uint8Array */
+function readFileU8(file){return file.arrayBuffer().then(function(b){return new Uint8Array(b);});}
+function fmtMs(ms){if(!ms)return null;var d=new Date(ms);return d.getFullYear()+'/'+pad2(d.getMonth()+1)+'/'+pad2(d.getDate());}
+
+/* 把一批 File（含 webkitRelativePath 或自訂 path）轉成 cases */
+async function casesFromFiles(fileList){
+  var arr=Array.prototype.slice.call(fileList);
+  var entries=[];
+  for(var i=0;i<arr.length;i++){
+    var f=arr[i];
+    var path=f._path||f.webkitRelativePath||f.name;
+    if(!IMG_RE.test(path))continue;
+    entries.push({path:path,data:await readFileU8(f),mtime:fmtMs(f.lastModified)});
+  }
+  return buildCases(entries,'拖曳檔案');
+}
+
+/* 拖曳 DataTransfer：支援資料夾（webkitGetAsEntry）與鬆散檔案 */
+function readEntryTree(entry,prefix,out){
+  return new Promise(function(res){
+    if(entry.isFile){
+      entry.file(function(file){file._path=prefix+entry.name;out.push(file);res();},function(){res();});
+    }else if(entry.isDirectory){
+      var reader=entry.createReader(),acc=[];
+      (function batch(){reader.readEntries(function(list){
+        if(!list.length){Promise.all(acc.map(function(e){return readEntryTree(e,prefix+entry.name+'/',out);})).then(res);}
+        else{acc=acc.concat(list);batch();}
+      },function(){res();});})();
+    }else res();
+  });
+}
+async function filesFromDataTransfer(dt){
+  var items=dt.items,out=[],roots=[],i;
+  if(items&&items.length&&items[0].webkitGetAsEntry){
+    for(i=0;i<items.length;i++){var e=items[i].webkitGetAsEntry&&items[i].webkitGetAsEntry();if(e)roots.push(e);}
+    if(roots.length){for(i=0;i<roots.length;i++)await readEntryTree(roots[i],'',out);return out;}
+  }
+  return Array.prototype.slice.call(dt.files||[]);
 }
 
 /* ================= UI 狀態 ================= */
@@ -556,7 +612,7 @@ function enterWork(report){
   $('backBtn').classList.remove('hidden');
   $('reviewPanel').classList.add('hidden');
   $('outPanel').classList.add('hidden');
-  $('fileInput').value='';
+  $('zipInput').value='';$('dirInput').value='';$('filesInput').value='';
   $('subTitle').textContent = report==='jieshun'?'牙髓病科專科醫師結訓案例提報':'專科醫師口試病歷報告';
 }
 $('backBtn').addEventListener('click',function(){
@@ -574,23 +630,60 @@ Array.prototype.forEach.call($('langSeg').children,function(b){
   });
 });
 
-/* 上傳 */
-$('drop').addEventListener('click',function(){$('fileInput').click();});
+/* 上傳方式切換 */
+var uploadMode='zip';
+Array.prototype.forEach.call($('modeSeg').children,function(b){
+  b.addEventListener('click',function(){
+    Array.prototype.forEach.call($('modeSeg').children,function(x){x.classList.remove('on');});
+    b.classList.add('on');uploadMode=b.getAttribute('data-mode');
+    var zip=uploadMode==='zip';
+    $('dropIcon').textContent=zip?'📦':'📂';
+    $('dropText').textContent=zip?'點此選擇，或把 ZIP 拖進來':'把資料夾或檔案拖進來（資料夾＝一個病例）';
+    $('pickZipBtn').classList.toggle('hidden',!zip);
+    $('pickDirBtn').classList.toggle('hidden',zip);
+    $('pickFilesBtn').classList.toggle('hidden',zip);
+  });
+});
+
+/* 選擇按鈕 */
+$('pickZipBtn').addEventListener('click',function(){$('zipInput').click();});
+$('pickDirBtn').addEventListener('click',function(){$('dirInput').click();});
+$('pickFilesBtn').addEventListener('click',function(){$('filesInput').click();});
+$('drop').addEventListener('click',function(){
+  if(uploadMode==='zip')$('zipInput').click();else $('dirInput').click();
+});
+$('zipInput').addEventListener('change',function(){if(this.files[0])handleZipFile(this.files[0]);});
+$('dirInput').addEventListener('change',function(){if(this.files.length)handleDroppedFiles(this.files);});
+$('filesInput').addEventListener('change',function(){if(this.files.length)handleDroppedFiles(this.files);});
+
+/* 拖曳（同時支援 ZIP 與 資料夾／檔案）*/
 $('drop').addEventListener('dragover',function(e){e.preventDefault();this.classList.add('over');});
 $('drop').addEventListener('dragleave',function(){this.classList.remove('over');});
-$('drop').addEventListener('drop',function(e){e.preventDefault();this.classList.remove('over');if(e.dataTransfer.files[0])handleZip(e.dataTransfer.files[0]);});
-$('fileInput').addEventListener('change',function(){if(this.files[0])handleZip(this.files[0]);});
+$('drop').addEventListener('drop',async function(e){
+  e.preventDefault();this.classList.remove('over');
+  var dtf=e.dataTransfer.files;
+  if(dtf&&dtf.length===1&&/\.zip$/i.test(dtf[0].name)){handleZipFile(dtf[0]);return;}
+  var files=await filesFromDataTransfer(e.dataTransfer);
+  if(!files.length){toast('沒有讀到檔案');return;}
+  handleDroppedFiles(files);
+});
 
-async function handleZip(file){
+async function handleZipFile(file){
   try{
     var buf=new Uint8Array(await file.arrayBuffer());
     var cases=parseZip(buf);
     if(!cases.length){toast('ZIP 內找不到影像檔');return;}
-    state.cases=cases;
-    renderReview(cases);
-    $('outPanel').classList.add('hidden');
+    showCases(cases);
   }catch(err){console.error(err);toast('ZIP 解析失敗：'+err.message);}
 }
+async function handleDroppedFiles(fileList){
+  try{
+    var cases=await casesFromFiles(fileList);
+    if(!cases.length){toast('找不到可辨識的影像檔');return;}
+    showCases(cases);
+  }catch(err){console.error(err);toast('讀取失敗：'+err.message);}
+}
+function showCases(cases){state.cases=cases;renderReview(cases);$('outPanel').classList.add('hidden');}
 
 function renderReview(cases){
   var totalImgs=cases.reduce(function(s,c){var n=0;STAGES.forEach(function(st){n+=c[st].length;});if(c.cmpLeft)n++;if(c.cmpRight)n++;return s+n;},0);
