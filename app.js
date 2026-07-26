@@ -9,7 +9,7 @@ const SESSION_KEY = 'nckuh_endo_authed';
 
 /* ---- 統計後端（Google Apps Script Web App 的 /exec 網址）----
    設定步驟見 docs/STATS_SETUP.md。留空 = 停用統計，網站其他功能不受影響。 */
-const STATS_ENDPOINT = '';
+const STATS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz0Tsxy73JrOXF9WSDmn7Q4GxEyceCnpFPOnDO0DF8rVGrJOATZDWflvQkJhu_jIsQ/exec';
 const VISITOR_KEY = 'nckuh_endo_vid';
 
 /* ---- App 清單：之後直接在這裡增減即可 ----
