@@ -44,8 +44,6 @@ const toast       = document.getElementById('toast');
 let latestStats   = null; // 最近一次拿到的統計數字（重繪卡片時補回）
 const statsBar    = document.getElementById('statsBar');
 const statVisits  = document.getElementById('statVisits');
-const statUniques = document.getElementById('statUniques');
-const statLogins  = document.getElementById('statLogins');
 
 /* ---- 進入畫面判斷 ---- */
 function showPortal() {
@@ -240,10 +238,9 @@ function applyStats(data) {
   if (!data || data.error) return;
   latestStats = data;
 
+  // 首頁只公開「造訪人次」；不重複訪客與登入次數只在試算表後台看
   const fmt = (n) => Number(n || 0).toLocaleString('zh-Hant');
   statVisits.textContent = fmt(data.visits);
-  statUniques.textContent = fmt(data.uniques);
-  statLogins.textContent = fmt(data.logins);
   statsBar.hidden = false;
 
   // 各 App 卡片的開啟次數
