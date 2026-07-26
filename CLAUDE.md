@@ -12,10 +12,12 @@ App 入口網站，正式站台部署在 **https://chobittso-ai.github.io/APP/**
 index.html      登入畫面 + App 入口（帳號 NCKUH / 密碼 ENDO，前端簡易驗證）
 styles.css      深色玻璃擬態樣式
 app.js          APPS 清單（卡片）、登入、搜尋、分享
-assets/         LOGO（TS 標誌）與 favicon
+assets/         LOGO（TS 標誌）、favicon、PWA 圖示
+manifest.webmanifest / sw.js   首頁 PWA（可加入主畫面、離線開得起來）
 apps/<slug>/    各個 App，一個資料夾一個 App，入口一律 index.html
   vendor/       該 App 用到的第三方函式庫（本地檔案，不用 CDN）
 docs/ADDING_APPS.md           App 上架規則（檢查清單版）
+docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/stats-backend.gs
 .github/workflows/pages.yml   合併到 main 自動部署 GitHub Pages
 ```
 
@@ -96,5 +98,8 @@ docs/ADDING_APPS.md           App 上架規則（檢查清單版）
   （標題、徽章、頁尾、程式註解四處同步）。
 - 使用者偏好直接合併上線（會說「合併吧」）；夜間自主工作時先用
   Playwright 完整測過再合併，並在總結時交代測了什麼。
+- **使用統計**：首頁以 JSONP 呼叫 Google Apps Script（`app.js` 最上方的
+  `STATS_ENDPOINT`），計數存在使用者自己的 Google 試算表；留空即停用，
+  失敗一律靜默降級不影響網站。後端程式碼與步驟見 `docs/`。
 - 首頁（登入、卡片版型、LOGO、樣式）的調整由「首頁對話」負責，
   App 對話只動自己 `apps/<slug>/` 的檔案＋`APPS` 卡片登記，避免互踩。

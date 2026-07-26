@@ -7,7 +7,11 @@
   <meta name="description" content="NCKUH ENDO App 中心——內部工具入口">
   <meta name="theme-color" content="#0a0e1a">
   <link rel="icon" type="image/png" href="assets/favicon.png">
-  <link rel="apple-touch-icon" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="App 中心">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -64,6 +68,12 @@
       <section class="hero">
         <h2 class="hero-title">App 陸續上線中</h2>
         <p class="hero-sub">各項工具建置中，完成後會在這裡開放使用與分享。</p>
+
+        <p class="stats-bar" id="statsBar" hidden>
+          <span>👁 造訪 <b id="statVisits">–</b> 人次</span>
+          <span>🧑 不重複 <b id="statUniques">–</b></span>
+          <span>🔑 登入 <b id="statLogins">–</b></span>
+        </p>
       </section>
 
       <section class="app-grid" id="appGrid"><!-- App 卡片由 app.js 動態產生 --></section>
@@ -78,5 +88,13 @@
   <div class="toast" id="toast" hidden></div>
 
   <script src="app.js"></script>
+  <script>
+    // PWA：註冊 Service Worker（可加入主畫面、離線仍能開首頁）
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

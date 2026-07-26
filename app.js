@@ -7,6 +7,11 @@ const AUTH = { username: 'NCKUH', password: 'ENDO' };
 // localStorage（非 sessionStorage）：App 以新分頁開啟也要讀得到登入狀態
 const SESSION_KEY = 'nckuh_endo_authed';
 
+/* ---- 統計後端（Google Apps Script Web App 的 /exec 網址）----
+   設定步驟見 docs/STATS_SETUP.md。留空 = 停用統計，網站其他功能不受影響。 */
+const STATS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz0Tsxy73JrOXF9WSDmn7Q4GxEyceCnpFPOnDO0DF8rVGrJOATZDWflvQkJhu_jIsQ/exec';
+const VISITOR_KEY = 'nckuh_endo_vid';
+
 /* ---- App 清單：之後直接在這裡增減即可 ----
    name  : App 名稱
    desc  : 一句話說明
@@ -36,6 +41,11 @@ const emptyHint   = document.getElementById('emptyHint');
 const appCount    = document.getElementById('appCount');
 const logoutBtn   = document.getElementById('logoutBtn');
 const toast       = document.getElementById('toast');
+let latestStats   = null; // 最近一次拿到的統計數字（重繪卡片時補回）
+const statsBar    = document.getElementById('statsBar');
+const statVisits  = document.getElementById('statVisits');
+const statUniques = document.getElementById('statUniques');
+const statLogins  = document.getElementById('statLogins');
 
 /* ---- 進入畫面判斷 ---- */
 function showPortal() {
@@ -61,6 +71,7 @@ loginForm.addEventListener('submit', (e) => {
     localStorage.setItem(SESSION_KEY, '1');
     loginError.hidden = true;
     showPortal();
+    trackLogin();
   } else {
     loginError.hidden = false;
     loginForm.classList.remove('shake');
@@ -88,7 +99,8 @@ function renderApps(list) {
       : `<div class="app-actions">
           <button class="app-btn open" type="button">開啟</button>
           <button class="app-btn share" type="button">分享</button>
-        </div>`;
+        </div>
+        <div class="app-hits" data-slug="${escapeHtml(slugOf(app))}" hidden></div>`;
 
     card.innerHTML = `
       <div class="app-icon">${app.icon}</div>
@@ -114,6 +126,8 @@ function renderApps(list) {
   const building = list.length - real;
   appCount.textContent = `共 ${real} 個 App` + (building ? ` · ${building} 項建置中` : '') + ' · ';
   emptyHint.hidden = list.length !== 0;
+
+  if (latestStats) applyStats(latestStats); // 重繪後補回各 App 次數
 }
 
 /* ---- 開啟 App ---- */
@@ -122,6 +136,7 @@ function openApp(app) {
     showToast(`「${app.name}」尚未設定連結`);
     return;
   }
+  trackOpen(app);
   window.open(app.url, '_blank', 'noopener');
 }
 
@@ -172,6 +187,89 @@ function showToast(msg) {
     setTimeout(() => { toast.hidden = true; }, 250);
   }, 2200);
 }
+
+/* =========================================================
+   使用統計（匿名計數，資料存在自己的 Google 試算表）
+   ========================================================= */
+
+/* 這台裝置的匿名記號：用來算「不重複訪客」，不含任何個資 */
+function getVisitor() {
+  let id = localStorage.getItem(VISITOR_KEY);
+  const isNew = !id;
+  if (isNew) {
+    id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+    localStorage.setItem(VISITOR_KEY, id);
+  }
+  return { id, isNew };
+}
+
+/* JSONP 呼叫後端（Apps Script 不支援跨網域 fetch，用 <script> 標籤取得） */
+function statsCall(params) {
+  return new Promise((resolve) => {
+    if (!STATS_ENDPOINT) { resolve(null); return; }
+
+    const cbName = 'nckuhStats' + Math.random().toString(36).slice(2, 10);
+    const script = document.createElement('script');
+    let done = false;
+
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      delete window[cbName];
+      script.remove();
+    };
+    const timer = setTimeout(() => { cleanup(); resolve(null); }, 8000);
+
+    window[cbName] = (data) => { cleanup(); resolve(data); };
+    script.onerror = () => { cleanup(); resolve(null); };
+
+    const query = new URLSearchParams({ ...params, callback: cbName }).toString();
+    script.src = STATS_ENDPOINT + (STATS_ENDPOINT.includes('?') ? '&' : '?') + query;
+    document.head.appendChild(script);
+  });
+}
+
+/* 由 App 的 url（apps/<slug>/index.html）取出代號 */
+function slugOf(app) {
+  const m = /^apps\/([^/]+)\//.exec(app.url || '');
+  return m ? m[1] : '';
+}
+
+function applyStats(data) {
+  if (!data || data.error) return;
+  latestStats = data;
+
+  const fmt = (n) => Number(n || 0).toLocaleString('zh-Hant');
+  statVisits.textContent = fmt(data.visits);
+  statUniques.textContent = fmt(data.uniques);
+  statLogins.textContent = fmt(data.logins);
+  statsBar.hidden = false;
+
+  // 各 App 卡片的開啟次數
+  const apps = data.apps || {};
+  document.querySelectorAll('.app-hits').forEach((el) => {
+    const n = apps[el.dataset.slug];
+    if (n) {
+      el.textContent = `已開啟 ${fmt(n)} 次`;
+      el.hidden = false;
+    }
+  });
+}
+
+function trackVisit() {
+  const v = getVisitor();
+  statsCall({ event: 'visit', new: v.isNew ? '1' : '0', uid: v.id }).then(applyStats);
+}
+function trackLogin() {
+  statsCall({ event: 'login', uid: getVisitor().id }).then(applyStats);
+}
+function trackOpen(app) {
+  const slug = slugOf(app);
+  if (slug) statsCall({ event: 'open', app: slug, uid: getVisitor().id }).then(applyStats);
+}
+
+trackVisit();
 
 /* ---- 安全輸出 ---- */
 function escapeHtml(s) {
