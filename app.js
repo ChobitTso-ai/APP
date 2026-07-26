@@ -18,17 +18,36 @@ const VISITOR_KEY = 'nckuh_endo_vid';
    icon  : emoji 圖示
    url   : 點「開啟」後前往的網址（先用 # 佔位）
    added : 上架日期 YYYY-MM-DD（最新上架的會掛 🆕 徽章，沒填就不會有）
+   group : 'mobile' = 手機可加入主畫面（該 App 本身是 PWA）；'desktop' = 電腦操作
    wip   : true = 施工中佔位卡片（不顯示開啟/分享按鈕）
 */
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
-  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12' },
-  { name: 'PDF工具箱', desc: 'PDF 合併與分割，全程本機處理保護隱私。', icon: '🛠️', url: 'apps/pdf-toolbox/index.html', added: '2026-07-13' },
-  { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24' },
-  { ...wipSlot },
-  { ...wipSlot },
-  { ...wipSlot },
-  { ...wipSlot },
+  // 手機也能用（App 本身是 PWA，可加入主畫面）
+  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12', group: 'mobile' },
+  { ...wipSlot, group: 'mobile' },
+  { ...wipSlot, group: 'mobile' },
+  { ...wipSlot, group: 'mobile' },
+
+  // 電腦操作
+  { name: 'PDF工具箱', desc: 'PDF 合併與分割，全程本機處理保護隱私。', icon: '🛠️', url: 'apps/pdf-toolbox/index.html', added: '2026-07-13', group: 'desktop' },
+  { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24', group: 'desktop' },
+  { ...wipSlot, group: 'desktop' },
+  { ...wipSlot, group: 'desktop' },
+];
+
+/* ---- 分區（依 group 分成兩排，每排標題與說明）---- */
+const GROUPS = [
+  {
+    id: 'mobile',
+    title: '📱 手機也能用',
+    desc: '用手機開啟後可以「加入主畫面」，像一般 App 一樣點開就用，離線也打得開。（App 中心本身也可以加入主畫面）',
+  },
+  {
+    id: 'desktop',
+    title: '💻 電腦操作',
+    desc: '處理檔案、需要較大畫面的工具，建議在電腦上使用；所有檔案都在自己的電腦裡處理，不會上傳。',
+  },
 ];
 
 /* 🆕 徽章：只掛在「上架日期最新」且在這個天數內的 App */
@@ -40,7 +59,7 @@ const loginScreen = document.getElementById('loginScreen');
 const loginForm   = document.getElementById('loginForm');
 const loginError  = document.getElementById('loginError');
 const portal      = document.getElementById('portal');
-const appGrid     = document.getElementById('appGrid');
+const appGroups   = document.getElementById("appGroups");
 const appSearch   = document.getElementById('appSearch');
 const emptyHint   = document.getElementById('emptyHint');
 const appCount    = document.getElementById('appCount');
@@ -90,42 +109,24 @@ logoutBtn.addEventListener('click', () => {
   showLogin();
 });
 
-/* ---- 產生 App 卡片 ---- */
+/* ---- 產生 App 卡片（依 group 分區）---- */
 function renderApps(list) {
-  appGrid.innerHTML = '';
-  list.forEach((app) => {
-    const card = document.createElement('article');
-    card.className = app.wip ? 'app-card wip' : 'app-card';
+  appGroups.innerHTML = '';
 
-    const actions = app.wip
-      ? `<div class="wip-badge">🚧 建置中，敬請期待</div>`
-      : `<div class="app-actions">
-          <button class="app-btn open" type="button">開啟</button>
-          <button class="app-btn share" type="button">分享</button>
-        </div>
-        <div class="app-hits" data-slug="${escapeHtml(slugOf(app))}" hidden></div>`;
+  GROUPS.forEach((g) => {
+    const items = list.filter((a) => (a.group || 'desktop') === g.id);
+    if (!items.length) return; // 搜尋後這區沒東西就整區不顯示
 
-    const newBadge = (!app.wip && slugOf(app) === NEWEST_SLUG)
-      ? ` <span class="badge-new" title="最新上架">🆕 新上架</span>`
-      : '';
-
-    card.innerHTML = `
-      <div class="app-icon">${app.icon}</div>
-      <div class="app-name">${escapeHtml(app.name)}${newBadge}</div>
-      <div class="app-desc">${escapeHtml(app.desc)}</div>
-      ${actions}
+    const section = document.createElement('section');
+    section.className = 'app-group';
+    section.innerHTML = `
+      <h3 class="group-title">${g.title}</h3>
+      <p class="group-desc">${g.desc}</p>
+      <div class="app-grid"></div>
     `;
-
-    if (app.wip) {
-      card.addEventListener('click', () => showToast('施工中，敬請期待'));
-    } else {
-      const open = () => openApp(app);
-      card.addEventListener('click', open);
-      card.querySelector('.open').addEventListener('click', (e) => { e.stopPropagation(); open(); });
-      card.querySelector('.share').addEventListener('click', (e) => { e.stopPropagation(); shareApp(app); });
-    }
-
-    appGrid.appendChild(card);
+    const grid = section.querySelector('.app-grid');
+    items.forEach((app) => grid.appendChild(makeCard(app)));
+    appGroups.appendChild(section);
   });
 
   // 頁尾計數：正式 App 與施工中分開；隨搜尋過濾即時反映
@@ -135,6 +136,41 @@ function renderApps(list) {
   emptyHint.hidden = list.length !== 0;
 
   if (latestStats) applyStats(latestStats); // 重繪後補回各 App 次數
+}
+
+function makeCard(app) {
+  const card = document.createElement('article');
+  card.className = app.wip ? 'app-card wip' : 'app-card';
+
+  const actions = app.wip
+    ? `<div class="wip-badge">🚧 建置中，敬請期待</div>`
+    : `<div class="app-actions">
+        <button class="app-btn open" type="button">開啟</button>
+        <button class="app-btn share" type="button">分享</button>
+      </div>
+      <div class="app-hits" data-slug="${escapeHtml(slugOf(app))}" hidden></div>`;
+
+  const newBadge = (!app.wip && slugOf(app) === NEWEST_SLUG)
+    ? ` <span class="badge-new" title="最新上架">🆕 新上架</span>`
+    : '';
+
+  card.innerHTML = `
+    <div class="app-icon">${app.icon}</div>
+    <div class="app-name">${escapeHtml(app.name)}${newBadge}</div>
+    <div class="app-desc">${escapeHtml(app.desc)}</div>
+    ${actions}
+  `;
+
+  if (app.wip) {
+    card.addEventListener('click', () => showToast('施工中，敬請期待'));
+  } else {
+    const open = () => openApp(app);
+    card.addEventListener('click', open);
+    card.querySelector('.open').addEventListener('click', (e) => { e.stopPropagation(); open(); });
+    card.querySelector('.share').addEventListener('click', (e) => { e.stopPropagation(); shareApp(app); });
+  }
+
+  return card;
 }
 
 /* ---- 開啟 App ---- */

@@ -25,6 +25,9 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   （🚧 施工中）；真正的 App 卡片格式：
   `{ name:'工具名', desc:'一句話說明', icon:'📷', url:'apps/<slug>/index.html', added:'YYYY-MM-DD' }`
   （`added` 是上架日期，最新的自動掛 🆕〔60 天內〕；瀏覽次數最高的自動掛 🔥）
+- **卡片分兩區**（`GROUPS`）：`group:'mobile'` 是「📱 手機也能用」——只放
+  自己做成 PWA 的 App；`group:'desktop'` 是「💻 電腦操作」（預設）。
+  每區用施工中佔位補滿 4 張，桌機剛好一排。
 - **登入狀態存 `localStorage`（key：`nckuh_endo_authed`，值 `'1'`）——
   不能改用 `sessionStorage`：首頁以 `noopener` 新分頁開 App，
   `sessionStorage` 帶不過去，會把登入過的人誤擋。**
