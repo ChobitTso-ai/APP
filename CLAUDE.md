@@ -23,7 +23,8 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
 
 - 首頁卡片由 `app.js` 最上方的 `APPS` 陣列產生。佔位卡片是 `{ ...wipSlot }`
   （🚧 施工中）；真正的 App 卡片格式：
-  `{ name:'工具名', desc:'一句話說明', icon:'📷', url:'apps/<slug>/index.html' }`
+  `{ name:'工具名', desc:'一句話說明', icon:'📷', url:'apps/<slug>/index.html', added:'YYYY-MM-DD' }`
+  （`added` 是上架日期，最新的自動掛 🆕〔60 天內〕；瀏覽次數最高的自動掛 🔥）
 - **登入狀態存 `localStorage`（key：`nckuh_endo_authed`，值 `'1'`）——
   不能改用 `sessionStorage`：首頁以 `noopener` 新分頁開 App，
   `sessionStorage` 帶不過去，會把登入過的人誤擋。**
@@ -101,5 +102,7 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
 - **使用統計**：首頁以 JSONP 呼叫 Google Apps Script（`app.js` 最上方的
   `STATS_ENDPOINT`），計數存在使用者自己的 Google 試算表；留空即停用，
   失敗一律靜默降級不影響網站。後端程式碼與步驟見 `docs/`。
+  **公開／私有分界**：首頁只顯示「造訪人次」與各 App 的「瀏覽次數」；
+  不重複訪客與登入次數只在試算表後台看得到。
 - 首頁（登入、卡片版型、LOGO、樣式）的調整由「首頁對話」負責，
   App 對話只動自己 `apps/<slug>/` 的檔案＋`APPS` 卡片登記，避免互踩。
