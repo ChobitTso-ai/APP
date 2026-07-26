@@ -209,8 +209,9 @@ body {
   color: var(--text-muted);
   line-height: 1.6;
   margin-bottom: 16px;
-  max-width: 62ch;
 }
+/* 每個標點分段不斷行——窄螢幕要折行時只會折在標點處，不會斷在詞中間 */
+.group-desc .nb { white-space: nowrap; }
 
 /* ===== App 卡片格狀排列 ===== */
 .app-grid {
