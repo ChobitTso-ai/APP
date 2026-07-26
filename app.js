@@ -121,7 +121,7 @@ function renderApps(list) {
     section.className = 'app-group';
     section.innerHTML = `
       <h3 class="group-title">${g.title}</h3>
-      <p class="group-desc">${g.desc}</p>
+      <p class="group-desc">${phrased(g.desc)}</p>
       <div class="app-grid"></div>
     `;
     const grid = section.querySelector('.app-grid');
@@ -334,6 +334,19 @@ function trackOpen(app) {
 }
 
 trackVisit();
+
+/* 依標點把說明切成片語，每段不斷行——避免中文斷在詞中間（例：「打得／開」） */
+function phrased(text) {
+  const marks = '，。；、）」！？';
+  const parts = [];
+  let buf = '';
+  for (const ch of String(text)) {
+    buf += ch;
+    if (marks.includes(ch)) { parts.push(buf); buf = ''; }
+  }
+  if (buf) parts.push(buf);
+  return parts.map((s) => `<span class="nb">${escapeHtml(s)}</span>`).join('');
+}
 
 /* ---- 安全輸出 ---- */
 function escapeHtml(s) {
