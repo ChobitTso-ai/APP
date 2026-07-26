@@ -196,6 +196,22 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ===== 分區（手機可用／電腦操作）===== */
+.app-groups { display: flex; flex-direction: column; gap: 34px; }
+
+.group-title {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.group-desc {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+  max-width: 62ch;
+}
+
 /* ===== App 卡片格狀排列 ===== */
 .app-grid {
   display: grid;
