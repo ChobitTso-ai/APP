@@ -17,18 +17,23 @@ const VISITOR_KEY = 'nckuh_endo_vid';
    desc  : 一句話說明
    icon  : emoji 圖示
    url   : 點「開啟」後前往的網址（先用 # 佔位）
+   added : 上架日期 YYYY-MM-DD（最新上架的會掛 🆕 徽章，沒填就不會有）
    wip   : true = 施工中佔位卡片（不顯示開啟/分享按鈕）
 */
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
-  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html' },
-  { name: 'PDF工具箱', desc: 'PDF 合併與分割，全程本機處理保護隱私。', icon: '🛠️', url: 'apps/pdf-toolbox/index.html' },
-  { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html' },
+  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12' },
+  { name: 'PDF工具箱', desc: 'PDF 合併與分割，全程本機處理保護隱私。', icon: '🛠️', url: 'apps/pdf-toolbox/index.html', added: '2026-07-13' },
+  { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24' },
   { ...wipSlot },
   { ...wipSlot },
   { ...wipSlot },
   { ...wipSlot },
 ];
+
+/* 🆕 徽章：只掛在「上架日期最新」且在這個天數內的 App */
+const NEW_BADGE_DAYS = 60;
+const NEWEST_SLUG = newestSlug(); // 需在 renderApps 之前算好（函式宣告已提升）
 
 /* ---- 元素 ---- */
 const loginScreen = document.getElementById('loginScreen');
@@ -100,9 +105,13 @@ function renderApps(list) {
         </div>
         <div class="app-hits" data-slug="${escapeHtml(slugOf(app))}" hidden></div>`;
 
+    const newBadge = (!app.wip && slugOf(app) === NEWEST_SLUG)
+      ? ` <span class="badge-new" title="最新上架">🆕 新上架</span>`
+      : '';
+
     card.innerHTML = `
       <div class="app-icon">${app.icon}</div>
-      <div class="app-name">${escapeHtml(app.name)}</div>
+      <div class="app-name">${escapeHtml(app.name)}${newBadge}</div>
       <div class="app-desc">${escapeHtml(app.desc)}</div>
       ${actions}
     `;
@@ -234,6 +243,20 @@ function slugOf(app) {
   return m ? m[1] : '';
 }
 
+/* 最新上架的 App 代號（超過 NEW_BADGE_DAYS 天就不再標 🆕） */
+function newestSlug() {
+  let slug = null;
+  let newest = -Infinity;
+  APPS.forEach((a) => {
+    if (a.wip || !a.added) return;
+    const t = Date.parse(a.added);
+    if (!isNaN(t) && t > newest) { newest = t; slug = slugOf(a); }
+  });
+  if (!slug) return null;
+  const days = (Date.now() - newest) / 86400000;
+  return days <= NEW_BADGE_DAYS ? slug : null;
+}
+
 function applyStats(data) {
   if (!data || data.error) return;
   latestStats = data;
@@ -243,14 +266,22 @@ function applyStats(data) {
   statVisits.textContent = fmt(data.visits);
   statsBar.hidden = false;
 
-  // 各 App 卡片的開啟次數
+  // 各 App 的瀏覽次數；次數最高者掛 🔥
   const apps = data.apps || {};
+  let hotSlug = null;
+  let hotN = 0;
+  Object.keys(apps).forEach((s) => {
+    if (apps[s] > hotN) { hotN = apps[s]; hotSlug = s; }
+  });
+
   document.querySelectorAll('.app-hits').forEach((el) => {
-    const n = apps[el.dataset.slug];
-    if (n) {
-      el.textContent = `已開啟 ${fmt(n)} 次`;
-      el.hidden = false;
-    }
+    const slug = el.dataset.slug;
+    if (!slug) return;
+    const n = apps[slug] || 0;
+    const fire = (slug === hotSlug && hotN > 0) ? '🔥 ' : '';
+    el.textContent = `${fire}瀏覽 ${fmt(n)} 次`;
+    el.classList.toggle('hot', fire !== '');
+    el.hidden = false;
   });
 }
 
