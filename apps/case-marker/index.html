@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v1.7
+  案例標記工具 v1.8
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v1.7</title>
+<title>案例標記工具 v1.8</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -247,7 +247,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.7</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.8</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -262,10 +262,13 @@
       <button class="btn primary" id="btnAdd">＋ 加入照片</button>
       <input type="file" id="fileIn" accept="image/*,.heic,.heif" multiple hidden>
       <button class="btn" id="btnBatch" disabled>⇩ 匯出全部標記</button>
+      <button class="btn" id="btnBackup" disabled>💾 備份</button>
+      <button class="btn" id="btnRestore">📥 還原</button>
+      <input type="file" id="restoreIn" accept=".zip,application/zip" hidden>
       <span style="font-size:13px;color:var(--ink-2)" id="libCount"></span>
     </div>
     <div class="grid-thumbs" id="libGrid"></div>
-    <div class="hint" id="libHint">尚未加入照片<br>點「＋ 加入照片」從相簿或檔案選取，<br>加入後點縮圖即可開始標記。<br><span style="font-size:13px">照片與標記會自動儲存在這台裝置的瀏覽器中。</span></div>
+    <div class="hint" id="libHint">尚未加入照片<br>點「＋ 加入照片」從相簿或檔案選取，<br>加入後點縮圖即可開始標記。<br><span style="font-size:13px">照片與標記會自動儲存在這台裝置的瀏覽器中；<br>換裝置或清除瀏覽器資料前，請先用「💾 備份」存成檔案。<br>加入的照片會自動移除 GPS 等 EXIF 中繼資料。</span></div>
   </section>
 
   <!-- 標記編輯 -->
@@ -278,6 +281,7 @@
       <button class="btn tool" data-mode="select">✥ 移動</button>
       <button class="btn tool" data-mode="crop">⬚ 裁切</button>
       <button class="btn tool" data-mode="tilt">⤢ 拉平</button>
+      <button class="btn tool" data-mode="mask">🔒 遮蔽</button>
       <button class="btn" id="btnUndo" disabled>↶ 復原</button>
       <button class="btn" id="btnRotL">↺</button>
       <button class="btn" id="btnRotR">↻</button>
@@ -299,6 +303,19 @@
       <div class="float-bar" id="cropBar">
         <button class="btn primary" id="btnCropOk">✓ 套用裁切</button>
         <button class="btn" id="btnCropNo">取消</button>
+      </div>
+      <div class="float-bar" id="maskBar">
+        <select id="maskType" style="align-self:center">
+          <option value="mosaic">馬賽克</option>
+          <option value="blur">模糊</option>
+        </select>
+        <select id="maskLevel" style="align-self:center">
+          <option value="1">弱</option>
+          <option value="2" selected>中</option>
+          <option value="3">強</option>
+        </select>
+        <button class="btn primary" id="btnMaskOk" disabled>✓ 套用</button>
+        <button class="btn" id="btnMaskNo">完成</button>
       </div>
       <div class="float-bar" id="tiltBar">
         <span style="font-size:13px;color:var(--ink-2);align-self:center;padding:0 4px">拉平</span>
@@ -386,7 +403,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v1.7　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v1.8　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -558,7 +575,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v1.7
+   案例標記工具 v1.8
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -577,6 +594,7 @@ var state = {
   selMk: -1,
   crop: null,          // {x,y,w,h} normalized
   tilt: 0,             // 拉平微調角度（度）
+  mask: null,          // 遮蔽框 {x,y,w,h} normalized（拖曳畫出）
   colSel: [],          // photo id 依點選順序
   colTitle: {},        // id -> title
   colFocus: {},        // id -> {fx,fy} 每格取景焦點（0~1，預設置中 0.5）
@@ -808,10 +826,16 @@ function addFromDataUrl(dataUrl, fname, done){
     if(done) done();
   };
   img.onload = function(){
+    // 重新編碼一次：canvas 只保留像素，GPS／機型等 EXIF 中繼資料一律不落地
+    var W = bw(img), H = bh(img);
+    var c = document.createElement("canvas"); c.width = W; c.height = H;
+    var g = c.getContext("2d");
+    g.fillStyle = "#ffffff"; g.fillRect(0,0,W,H);      // 透明 PNG 轉 JPEG 防黑底
+    g.drawImage(img, 0, 0);
     var p = {
       id:"p"+(seq++),
       name:(fname||"照片").replace(/\.[^.]+$/,""),
-      bmp:img, srcData:dataUrl, markers:[], thumb:null, dirty:true, undo:[]
+      bmp:c, srcData:c.toDataURL("image/jpeg", 0.95), markers:[], thumb:null, dirty:true, undo:[]
     };
     state.photos.push(p);
     markDirty(p);
@@ -845,6 +869,7 @@ function renderLib(){
   $("libCount").textContent = state.photos.length ? "共 "+state.photos.length+" 張" : "";
   var marked = state.photos.filter(function(p){ return p.markers.length; }).length;
   $("btnBatch").disabled = !marked;
+  $("btnBackup").disabled = !state.photos.length;
   $("btnBatch").textContent = marked ? "⇩ 匯出全部標記（"+marked+"）" : "⇩ 匯出全部標記";
   state.photos.forEach(function(p){
     var d = document.createElement("div"); d.className = "thumb";
@@ -1049,6 +1074,7 @@ function draw(){
   }else{
     drawAnnotated(cx, p.bmp, p.markers, geo.offX, geo.offY, geo.w, geo.h, state.selMk, hits);
     if(state.mode==="crop" && state.crop) drawCrop(sz);
+    if(state.mode==="mask") drawMaskPreview();
   }
   var zt = $("zoomTag");
   zt.classList.toggle("on", view.zoom>1.01);
@@ -1084,6 +1110,114 @@ function cropCorners(r){
     {k:"br", x:r.x+r.w, y:r.y+r.h}
   ];
 }
+
+/* ───────── 遮蔽（馬賽克／模糊，去識別化） ─────────
+   在畫布上拖曳出方框 → 套用後把效果烘焙進影像（可復原）。
+   幾何不變，標記座標不受影響；可連續遮多個區域。 */
+function maskLevel(){ return parseInt($("maskLevel").value, 10) || 2; }
+function maskCss(){
+  var m = state.mask; if(!m) return null;
+  return { x:geo.offX+m.x*geo.w, y:geo.offY+m.y*geo.h, w:m.w*geo.w, h:m.h*geo.h };
+}
+/* 對 canvas 的指定矩形區域套用效果（螢幕預覽與實際烘焙共用） */
+function pixelate(ctx, x, y, w, h, block){
+  if(w<1 || h<1) return;
+  x=Math.round(x); y=Math.round(y); w=Math.round(w); h=Math.round(h);
+  block = Math.max(2, Math.round(block));
+  var im = ctx.getImageData(x, y, w, h), d = im.data;
+  for(var by=0; by<h; by+=block){
+    for(var bx=0; bx<w; bx+=block){
+      var bw2 = Math.min(block, w-bx), bh2 = Math.min(block, h-by);
+      var r=0,g2=0,b=0,n=0;
+      for(var yy=0; yy<bh2; yy++){
+        var row = ((by+yy)*w + bx)*4;
+        for(var xx=0; xx<bw2; xx++){
+          var i = row + xx*4;
+          r+=d[i]; g2+=d[i+1]; b+=d[i+2]; n++;
+        }
+      }
+      r=r/n; g2=g2/n; b=b/n;
+      for(var yy2=0; yy2<bh2; yy2++){
+        var row2 = ((by+yy2)*w + bx)*4;
+        for(var xx2=0; xx2<bw2; xx2++){
+          var j = row2 + xx2*4;
+          d[j]=r; d[j+1]=g2; d[j+2]=b;
+        }
+      }
+    }
+  }
+  ctx.putImageData(im, x, y);
+}
+function blurRegion(ctx, srcCanvas, x, y, w, h, radius){
+  if(w<1 || h<1) return;
+  var t = document.createElement("canvas");
+  t.width = Math.max(1,Math.round(w)); t.height = Math.max(1,Math.round(h));
+  var tg = t.getContext("2d");
+  // 先把區域畫進暫存畫布，套 blur 後再貼回（clip 避免邊緣透出）
+  tg.drawImage(srcCanvas, x, y, w, h, 0, 0, t.width, t.height);
+  var t2 = document.createElement("canvas"); t2.width = t.width; t2.height = t.height;
+  var t2g = t2.getContext("2d");
+  t2g.filter = "blur(" + Math.max(1, Math.round(radius)) + "px)";
+  // 放大繪製再取中間，避免 blur 讓邊緣變透明
+  t2g.drawImage(t, -t.width, -t.height, t.width*3, t.height*3);
+  t2g.filter = "none";
+  ctx.drawImage(t2, 0, 0, t2.width, t2.height, x, y, w, h);
+}
+function drawMaskPreview(){
+  var r = maskCss();
+  if(!r || r.w<2 || r.h<2){
+    // 提示：尚未畫框
+    cx.save();
+    cx.fillStyle = "rgba(20,23,28,.55)"; cx.strokeStyle="rgba(255,255,255,.85)";
+    var msg = "在要遮蔽的位置拖曳出方框";
+    cx.font = "600 13px -apple-system,'PingFang TC',sans-serif";
+    var tw = cx.measureText(msg).width;
+    var bx = geo.offX + geo.w/2 - (tw+24)/2, by = geo.offY + 12;
+    roundRect(cx, bx, by, tw+24, 30, 15); cx.fill();
+    cx.fillStyle="#fff"; cx.textAlign="center"; cx.textBaseline="middle";
+    cx.fillText(msg, geo.offX+geo.w/2, by+15);
+    cx.restore();
+    return;
+  }
+  var lv = maskLevel();
+  if($("maskType").value === "blur"){
+    blurRegion(cx, cv, r.x, r.y, r.w, r.h, Math.min(r.w,r.h)/(14-lv*3));
+  }else{
+    pixelate(cx, r.x, r.y, r.w, r.h, Math.min(r.w,r.h)/(16-lv*4));
+  }
+  cx.save();
+  cx.strokeStyle="#1273cc"; cx.lineWidth=2; cx.setLineDash([6,4]);
+  cx.strokeRect(r.x, r.y, r.w, r.h);
+  cx.restore();
+}
+function exitMask(){
+  if(state.mode==="mask"){ state.mode = "select"; }
+  state.mask = null;
+}
+$("maskType").onchange = function(){ draw(); };
+$("maskLevel").onchange = function(){ draw(); };
+$("btnMaskNo").onclick = function(){ exitMask(); draw(); };
+$("btnMaskOk").onclick = function(){
+  var p = cur(), m = state.mask;
+  if(!p || !m || m.w<=0.001 || m.h<=0.001) return;
+  var W = bw(p.bmp), H = bh(p.bmp);
+  var c = document.createElement("canvas"); c.width = W; c.height = H;
+  var g = c.getContext("2d");
+  g.drawImage(p.bmp, 0, 0);
+  var rx = m.x*W, ry = m.y*H, rw = m.w*W, rh = m.h*H;
+  var lv = maskLevel();
+  if($("maskType").value === "blur"){
+    blurRegion(g, c, rx, ry, rw, rh, Math.min(rw,rh)/(14-lv*3));
+  }else{
+    pixelate(g, rx, ry, rw, rh, Math.min(rw,rh)/(16-lv*4));
+  }
+  pushUndo(p);
+  p.bmp = c;
+  p.srcData = c.toDataURL("image/jpeg", 0.95);
+  markDirty(p);
+  state.mask = null;                 // 清框，方便接著遮下一處
+  draw();
+};
 
 /* ───────── 復原（Undo） ───────── */
 function pushUndo(p){
@@ -1135,6 +1269,13 @@ cv.addEventListener("pointerdown", function(e){
     return;
   }
   if(pCount()>1) return;
+
+  if(state.mode==="mask"){
+    var n0 = toNorm(pt, true);
+    drag = { type:"mask-draw", sx:n0.x, sy:n0.y };
+    state.mask = { x:n0.x, y:n0.y, w:0, h:0 };
+    draw(); return;
+  }
 
   if(state.mode==="crop" && state.crop){
     var r = cropCss(), hitC = null;
@@ -1234,6 +1375,14 @@ cv.addEventListener("pointermove", function(e){
     view.panX = drag.px0 + (pt.x-drag.sx);
     view.panY = drag.py0 + (pt.y-drag.sy);
     drag.moved = true;
+    draw();
+  }
+  else if(drag.type==="mask-draw"){
+    var nm = toNorm(pt, true);
+    state.mask = {
+      x: Math.min(drag.sx, nm.x), y: Math.min(drag.sy, nm.y),
+      w: Math.abs(nm.x-drag.sx),  h: Math.abs(nm.y-drag.sy)
+    };
     draw();
   }
   else if(drag.type==="crop-move"){
@@ -1537,11 +1686,16 @@ Array.prototype.forEach.call(document.querySelectorAll(".tool"), function(b){
     }else if(md==="tilt"){
       if(state.mode==="tilt"){ exitTilt(); draw(); return; }
       if(!cur()) return;
-      exitCrop(); resetView();
+      exitCrop(); exitMask(); resetView();
       state.mode = "tilt"; state.tilt = 0; state.selMk = -1;
       $("tiltRange").value = 0; $("tiltVal").textContent = "0°";
+    }else if(md==="mask"){
+      if(state.mode==="mask"){ exitMask(); draw(); return; }
+      if(!cur()) return;
+      exitCrop(); exitTilt(); resetView();
+      state.mode = "mask"; state.mask = null; state.selMk = -1;
     }else{
-      exitCrop(); exitTilt();
+      exitCrop(); exitTilt(); exitMask();
       state.mode = md;
     }
     draw();
@@ -1561,7 +1715,9 @@ function updateToolUI(){
   });
   $("cropBar").classList.toggle("on", state.mode==="crop" && !!state.crop);
   $("tiltBar").classList.toggle("on", state.mode==="tilt");
-  $("markerBar").classList.toggle("on", state.mode!=="crop" && state.mode!=="tilt" && state.selMk>=0);
+  $("maskBar").classList.toggle("on", state.mode==="mask");
+  $("btnMaskOk").disabled = !(state.mask && state.mask.w>0.001 && state.mask.h>0.001);
+  $("markerBar").classList.toggle("on", state.mode!=="crop" && state.mode!=="tilt" && state.mode!=="mask" && state.selMk>=0);
   var p = cur();
   $("btnUndo").disabled = !(p && p.undo.length);
 }
@@ -2106,6 +2262,135 @@ window.addEventListener("resize", function(){
 syncColOpt();
 renderLib();
 restorePhotos();
+
+/* ───────── 備份／還原 ─────────
+   備份：把所有照片（已去除 EXIF 的 JPEG）＋標記／標題／取景、組圖專案、
+   設定打包成一個 .zip；還原：解開後「附加」到目前照片庫（不會覆蓋既有照片）。 */
+var BACKUP_VER = 1;
+function dataUrlToBytes(du){
+  var b64 = String(du).split(",")[1] || "";
+  var bin = atob(b64);
+  var arr = new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+function bytesToDataUrl(bytes, mime){
+  var s = "", CH = 8192;
+  for(var i=0;i<bytes.length;i+=CH){
+    s += String.fromCharCode.apply(null, bytes.subarray(i, i+CH));
+  }
+  return "data:"+(mime||"image/jpeg")+";base64," + btoa(s);
+}
+$("btnBackup").onclick = function(){
+  if(!state.photos.length) return;
+  busy("打包備份…");
+  loadFflate().then(function(){
+    return projAll();
+  }).then(function(projects){
+    var files = {};
+    var meta = {
+      app: "case-marker", version: BACKUP_VER, exportedAt: new Date().toISOString(),
+      settings: settings, photos: [], projects: projects || []
+    };
+    state.photos.forEach(function(p, i){
+      var fn = "photos/" + p.id + ".jpg";
+      files[fn] = dataUrlToBytes(p.srcData);
+      meta.photos.push({
+        id:p.id, ord:i, name:p.name, file:fn,
+        markers:p.markers,
+        title: state.colTitle[p.id] || "",
+        focus: state.colFocus[p.id] || null
+      });
+    });
+    files["backup.json"] = new TextEncoder().encode(JSON.stringify(meta));
+    var zipped = window.fflate.zipSync(files, { level:0 });
+    var blob = new Blob([zipped], { type:"application/zip" });
+    var d = new Date();
+    var stamp = d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+"_"+p2(d.getHours())+p2(d.getMinutes());
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "案例標記備份_"+stamp+".zip";
+    document.body.appendChild(a); a.click(); a.remove();
+    busy(null);
+  }).catch(function(err){
+    busy(null);
+    alert("備份失敗："+(err && err.message ? err.message : err));
+  });
+};
+$("btnRestore").onclick = function(){ $("restoreIn").click(); };
+$("restoreIn").onchange = function(e){
+  var f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!f) return;
+  busy("讀取備份…");
+  loadFflate().then(function(){
+    return f.arrayBuffer();
+  }).then(function(buf){
+    var un = window.fflate.unzipSync(new Uint8Array(buf));
+    if(!un["backup.json"]) throw new Error("這不是案例標記工具的備份檔");
+    var meta = JSON.parse(new TextDecoder().decode(un["backup.json"]));
+    if(meta.app !== "case-marker") throw new Error("這不是案例標記工具的備份檔");
+
+    var rows = (meta.photos||[]).slice().sort(function(a,b){ return (a.ord||0)-(b.ord||0); });
+    if(!rows.length) throw new Error("備份檔內沒有照片");
+
+    var idMap = {};                       // 舊 id → 新 id（避免與現有照片衝突）
+    var pending = rows.length;
+    var restored = 0;
+    var finish = function(){
+      // 專案：重新對應照片 id 後附加
+      (meta.projects||[]).forEach(function(pr){
+        var sel = (pr.sel||[]).map(function(id){ return idMap[id]; }).filter(Boolean);
+        if(!sel.length) return;
+        var title = {}, focus = {};
+        for(var k in (pr.title||{})) if(idMap[k]) title[idMap[k]] = pr.title[k];
+        for(var k2 in (pr.focus||{})) if(idMap[k2]) focus[idMap[k2]] = pr.focus[k2];
+        projPut({
+          id: "proj"+Date.now()+"_"+Math.random().toString(36).slice(2,7),
+          name: (pr.name||"組圖專案")+"（還原）", ts: Date.now(),
+          sel: sel, title: title, focus: focus,
+          format: pr.format || "std", opt: pr.opt || null
+        });
+      });
+      markAllOrder();
+      renderLib();
+      busy(null);
+      var msg = "已還原 "+restored+" 張照片";
+      if(meta.settings && confirm(msg+"。\n\n是否一併還原設定（診所署名、Logo、常用標籤、標記大小）？\n按「確定」會覆蓋目前設定。")){
+        for(var sk2 in settings){ if(meta.settings[sk2]!==undefined) settings[sk2] = meta.settings[sk2]; }
+        saveSettings(); setLogoImg(); syncSetUI();
+        state.photos.forEach(function(q){ q.dirty = true; });
+        renderLib();
+      }else if(!meta.settings){
+        alert(msg+"。");
+      }
+    };
+    rows.forEach(function(r){
+      var bytes = un[r.file];
+      if(!bytes){ if(--pending===0) finish(); return; }
+      var du = bytesToDataUrl(bytes, "image/jpeg");
+      var img = new Image();
+      img.onload = function(){
+        var nid = "p"+(seq++);
+        idMap[r.id] = nid;
+        var p = {
+          id:nid, name:r.name||"照片", bmp:img, srcData:du,
+          markers:r.markers||[], thumb:null, dirty:true, undo:[]
+        };
+        state.photos.push(p);
+        if(r.title) state.colTitle[nid] = r.title;
+        if(r.focus) state.colFocus[nid] = r.focus;
+        restored++;
+        if(--pending===0) finish();
+      };
+      img.onerror = function(){ if(--pending===0) finish(); };
+      img.src = du;
+    });
+  }).catch(function(err){
+    busy(null);
+    alert("還原失敗："+(err && err.message ? err.message : err));
+  });
+};
 
 /* ───────── 色彩對齊 ─────────
    原理：在「基準照」與「目標照」上點選現實中應為同色的位置，取該點周圍
