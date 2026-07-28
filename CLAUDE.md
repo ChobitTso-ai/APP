@@ -40,8 +40,10 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   Logo／簽名圖片浮水印〔設定內上傳，位置／大小／透明度可調，
   縮到長邊 400 存 localStorage〕；v1.6 PWA〔manifest.webmanifest、
   sw.js〔network-first，離線可用〕、icon-192/512、apple-touch-icon，
-  可加入主畫面像 App〕。透視校正經評估暫緩〔工程大、臨床用途邊際、
-  手機拖四角體驗差〕，如日後要做再單獨一批）、
+  可加入主畫面像 App〕；v1.7 色彩對齊〔選基準照＋在兩張照片點對應同色處，
+  1 點＝von Kries 對角白平衡、2 點＝每通道線性 out=a·in+b 併修曝光，
+  以 LUT 逐像素套用；幾何不變故標記座標不受影響〕。透視校正經評估暫緩
+  〔工程大、臨床用途邊際、手機拖四角體驗差〕，如日後要做再單獨一批）、
   `apps/pdf-toolbox/`（PDF工具箱：合併與分割，pdf-lib 本地 vendor）。
 
 ## 併入新網頁工具的標準流程

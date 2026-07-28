@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v1.6
+  案例標記工具 v1.7
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v1.6</title>
+<title>案例標記工具 v1.7</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -189,6 +189,30 @@
   .m-body{padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:14px;}
   .m-title{font-size:16px; font-weight:800; padding:14px 16px 0;}
   .set-hr{height:1px; background:var(--line); margin:2px 0;}
+  /* ── 色彩對齊 ── */
+  .alg-tip{
+    font-size:13px; line-height:1.6; color:var(--ink); background:#eaf3fc;
+    border:1px solid #cfe3f7; border-radius:10px; padding:9px 11px;
+  }
+  .alg-pair{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .alg-col{min-width:0;}
+  .alg-cap{font-size:12px; font-weight:700; color:var(--ink-2); margin-bottom:4px;}
+  .alg-wrap, .alg-prev{
+    background:#14171c; border-radius:10px; overflow:hidden; line-height:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .alg-wrap canvas{
+    max-width:100%; max-height:26vh; width:auto; height:auto; display:block;
+    cursor:crosshair; touch-action:manipulation;
+  }
+  .alg-prev canvas{max-width:100%; max-height:22vh; width:auto; height:auto; display:block;}
+  .alg-samples{display:flex; flex-wrap:wrap; gap:8px;}
+  .alg-chip{
+    display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2);
+    border:1px solid var(--line); border-radius:14px; padding:5px 10px;
+  }
+  .alg-chip i{width:14px; height:14px; border-radius:4px; border:1px solid rgba(0,0,0,.2); display:inline-block;}
+  @media (max-width:560px){ .alg-pair{grid-template-columns:1fr;} }
   .form-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .form-row label{font-size:14px; font-weight:600; min-width:86px;}
   .form-row input[type=range]{flex:1; min-width:120px;}
@@ -223,7 +247,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.6</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.7</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -257,6 +281,7 @@
       <button class="btn" id="btnUndo" disabled>↶ 復原</button>
       <button class="btn" id="btnRotL">↺</button>
       <button class="btn" id="btnRotR">↻</button>
+      <button class="btn" id="btnAlign">🎚 色彩對齊</button>
       <button class="btn" id="btnSet">⚙</button>
       <button class="btn primary" id="btnExport">匯出</button>
     </div>
@@ -361,7 +386,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v1.6　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v1.7　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -482,6 +507,49 @@
 </div>
 
 <!-- 處理中 -->
+<!-- 色彩對齊 -->
+<div class="modal" id="algModal">
+  <div class="box">
+    <div class="m-title">色彩對齊</div>
+    <div class="m-body" style="gap:10px">
+      <div class="form-row">
+        <label>基準照片</label>
+        <select id="algRef"></select>
+      </div>
+      <div class="form-row">
+        <label>對齊方式</label>
+        <select id="algMode">
+          <option value="wb">白平衡（取 1 個對應點）</option>
+          <option value="linear">白平衡＋曝光（取 2 個對應點）</option>
+        </select>
+      </div>
+      <div class="alg-tip" id="algStep">請在下方兩張圖上，各點一次「現實中應為同色」的位置（例如灰卡、同一顆牙齒）。</div>
+      <div class="alg-pair">
+        <div class="alg-col">
+          <div class="alg-cap">基準照片</div>
+          <div class="alg-wrap"><canvas id="algCvA"></canvas></div>
+        </div>
+        <div class="alg-col">
+          <div class="alg-cap">要調整的照片（目前這張）</div>
+          <div class="alg-wrap"><canvas id="algCvB"></canvas></div>
+        </div>
+      </div>
+      <div class="alg-samples" id="algSamples"></div>
+      <div class="alg-cap" style="margin-top:2px">調整後預覽</div>
+      <div class="alg-prev"><canvas id="algPrev"></canvas></div>
+      <div class="tip" style="font-size:12px;color:var(--ink-2)">
+        用途：讓同一病例不同時間／燈光拍的照片色調一致。若兩張光源差異過大，或取樣到不同材質，效果會受限。
+        本功能僅為快速改善一致性，<b>不能取代標準化攝影、比色或診斷</b>。
+      </div>
+    </div>
+    <div class="m-foot" style="padding:0 16px 16px">
+      <button class="btn primary" id="btnAlgOk" disabled>✓ 套用</button>
+      <button class="btn" id="btnAlgReset">↺ 重新取樣</button>
+      <button class="btn" id="btnAlgNo">取消</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="busyModal">
   <div class="box narrow"><div class="m-body" style="align-items:center;text-align:center">
     <div id="busyTxt" style="font-size:15px;font-weight:600">處理中…</div>
@@ -490,7 +558,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v1.6
+   案例標記工具 v1.7
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -2038,6 +2106,169 @@ window.addEventListener("resize", function(){
 syncColOpt();
 renderLib();
 restorePhotos();
+
+/* ───────── 色彩對齊 ─────────
+   原理：在「基準照」與「目標照」上點選現實中應為同色的位置，取該點周圍
+   一小塊的平均 RGB，算出各通道校正並套用到整張目標照（幾何不變，
+   標記座標不受影響）。
+   · wb（1 點）    ：von Kries 對角白平衡，gain = 基準/目標，逐通道相乘
+   · linear（2 點）：每通道解 out = a·in + b（白平衡＋曝光一起修）
+   限制：光源差異過大或取樣到不同材質時效果有限；非比色／診斷用途。 */
+var SAMPLE_R = 7;                       // 取樣方塊半徑（實際邊長 2r+1）
+var alg = { refId:null, mode:"wb", a:[], b:[], gain:null };
+
+function samplePatch(bmp, nx, ny){
+  var W = bw(bmp), H = bh(bmp);
+  var px = clamp(Math.round(nx*W), 0, W-1), py = clamp(Math.round(ny*H), 0, H-1);
+  var x0 = clamp(px-SAMPLE_R, 0, W-1), y0 = clamp(py-SAMPLE_R, 0, H-1);
+  var x1 = clamp(px+SAMPLE_R, 0, W-1), y1 = clamp(py+SAMPLE_R, 0, H-1);
+  var w = x1-x0+1, h = y1-y0+1;
+  var c = document.createElement("canvas"); c.width = w; c.height = h;
+  c.getContext("2d").drawImage(bmp, x0, y0, w, h, 0, 0, w, h);
+  var d = c.getContext("2d").getImageData(0,0,w,h).data;
+  var s = [0,0,0], n = w*h;
+  for(var i=0;i<d.length;i+=4){ s[0]+=d[i]; s[1]+=d[i+1]; s[2]+=d[i+2]; }
+  return [s[0]/n, s[1]/n, s[2]/n];
+}
+function rgbCss(c){ return "rgb("+Math.round(c[0])+","+Math.round(c[1])+","+Math.round(c[2])+")"; }
+/* 由取樣點算出每通道的 (a,b)：out = a*in + b */
+function algCoef(){
+  var n = Math.min(alg.a.length, alg.b.length);
+  if(n < 1) return null;
+  var co = [];
+  for(var ch=0; ch<3; ch++){
+    if(alg.mode==="wb" || n<2){
+      var t = alg.b[0].rgb[ch], r = alg.a[0].rgb[ch];
+      var g = (t > 1) ? (r/t) : 1;                       // 目標太暗就不放大，避免爆噪點
+      co.push({ a: clamp(g, 0.2, 5), b: 0 });
+    }else{
+      var t0 = alg.b[0].rgb[ch], t1 = alg.b[1].rgb[ch];
+      var r0 = alg.a[0].rgb[ch], r1 = alg.a[1].rgb[ch];
+      if(Math.abs(t1-t0) < 3){                            // 兩點太接近 → 退回單點增益
+        var g2 = (t0 > 1) ? (r0/t0) : 1;
+        co.push({ a: clamp(g2, 0.2, 5), b: 0 });
+      }else{
+        var aa = (r1-r0)/(t1-t0);
+        co.push({ a: clamp(aa, 0.2, 5), b: r0 - clamp(aa,0.2,5)*t0 });
+      }
+    }
+  }
+  return co;
+}
+/* 套用色彩校正，回傳新 canvas */
+function applyAlign(bmp, co){
+  var W = bw(bmp), H = bh(bmp);
+  var c = document.createElement("canvas"); c.width = W; c.height = H;
+  var g = c.getContext("2d");
+  g.drawImage(bmp, 0, 0);
+  if(!co) return c;
+  var im = g.getImageData(0,0,W,H), d = im.data;
+  var lut = [new Uint8ClampedArray(256), new Uint8ClampedArray(256), new Uint8ClampedArray(256)];
+  for(var ch=0; ch<3; ch++){
+    for(var v=0; v<256; v++) lut[ch][v] = clamp(Math.round(co[ch].a*v + co[ch].b), 0, 255);
+  }
+  for(var i=0;i<d.length;i+=4){ d[i]=lut[0][d[i]]; d[i+1]=lut[1][d[i+1]]; d[i+2]=lut[2][d[i+2]]; }
+  g.putImageData(im, 0, 0);
+  return c;
+}
+/* ── 對齊視窗 ── */
+function algNeeded(){ return alg.mode==="wb" ? 1 : 2; }
+function drawAlgCanvas(id, bmp, pts, colorList){
+  var c = $(id); if(!bmp){ c.width=1; c.height=1; return; }
+  var MAXW = 520, s = Math.min(1, MAXW/bw(bmp));
+  c.width = Math.round(bw(bmp)*s); c.height = Math.round(bh(bmp)*s);
+  var g = c.getContext("2d");
+  g.drawImage(bmp, 0, 0, c.width, c.height);
+  pts.forEach(function(p, i){
+    var x = p.nx*c.width, y = p.ny*c.height;
+    g.save();
+    g.strokeStyle = "#ffffff"; g.lineWidth = 3;
+    g.strokeRect(x-9, y-9, 18, 18);
+    g.strokeStyle = (i===0? "#1273cc" : "#f2b90d"); g.lineWidth = 2;
+    g.strokeRect(x-9, y-9, 18, 18);
+    g.fillStyle = (i===0? "#1273cc" : "#f2b90d");
+    g.font = "bold 12px sans-serif"; g.textAlign="center";
+    g.fillText(String(i+1), x, y-13);
+    g.restore();
+  });
+}
+function refPhoto(){ return photoById(alg.refId); }
+function renderAlg(){
+  var p = cur(), r = refPhoto();
+  drawAlgCanvas("algCvA", r? r.bmp : null, alg.a);
+  drawAlgCanvas("algCvB", p? p.bmp : null, alg.b);
+  // 取樣色塊
+  var w = $("algSamples"); w.innerHTML = "";
+  var mk = function(label, rgb){
+    var s = document.createElement("span"); s.className = "alg-chip";
+    var i = document.createElement("i"); i.style.background = rgbCss(rgb); s.appendChild(i);
+    s.appendChild(document.createTextNode(label));
+    w.appendChild(s);
+  };
+  alg.a.forEach(function(pt,i){ mk("基準 "+(i+1), pt.rgb); });
+  alg.b.forEach(function(pt,i){ mk("目標 "+(i+1), pt.rgb); });
+  // 步驟提示
+  var need = algNeeded();
+  var msg;
+  if(!r) msg = "請先選擇基準照片（需要照片庫裡的另一張）。";
+  else if(alg.a.length < need) msg = "請在【基準照片】上點第 "+(alg.a.length+1)+" 個取樣點"+(need>1? "（第 1 點選亮處、第 2 點選暗處效果較好）":"") + "。";
+  else if(alg.b.length < need) msg = "請在【要調整的照片】上點第 "+(alg.b.length+1)+" 個「對應同色」的位置。";
+  else msg = "取樣完成，看下方預覽；可按「套用」或重新取樣。";
+  $("algStep").textContent = msg;
+  // 預覽
+  var co = (alg.a.length>=need && alg.b.length>=need) ? algCoef() : null;
+  $("btnAlgOk").disabled = !co;
+  var pc = $("algPrev");
+  if(p){
+    var MAXW = 520, s = Math.min(1, MAXW/bw(p.bmp));
+    var out = co ? applyAlign(p.bmp, co) : p.bmp;
+    pc.width = Math.round(bw(p.bmp)*s); pc.height = Math.round(bh(p.bmp)*s);
+    pc.getContext("2d").drawImage(out, 0, 0, pc.width, pc.height);
+  }
+}
+function algPick(canvasId, arr, ev){
+  var p = cur(), r = refPhoto();
+  var src = (canvasId==="algCvA") ? (r && r.bmp) : (p && p.bmp);
+  if(!src) return;
+  if(arr.length >= algNeeded()) return;                  // 取滿了就不再加
+  var c = $(canvasId), rect = c.getBoundingClientRect();
+  var nx = clamp((ev.clientX-rect.left)/rect.width, 0, 1);
+  var ny = clamp((ev.clientY-rect.top)/rect.height, 0, 1);
+  arr.push({ nx:nx, ny:ny, rgb: samplePatch(src, nx, ny) });
+  renderAlg();
+}
+$("algCvA").addEventListener("click", function(e){ algPick("algCvA", alg.a, e); });
+$("algCvB").addEventListener("click", function(e){ algPick("algCvB", alg.b, e); });
+$("algMode").onchange = function(){ alg.mode = this.value; alg.a = []; alg.b = []; renderAlg(); };
+$("algRef").onchange = function(){ alg.refId = this.value; alg.a = []; alg.b = []; renderAlg(); };
+$("btnAlgReset").onclick = function(){ alg.a = []; alg.b = []; renderAlg(); };
+$("btnAlgNo").onclick = function(){ $("algModal").classList.remove("on"); };
+$("btnAlign").onclick = function(){
+  var p = cur();
+  if(!p){ alert("請先選擇要調整的照片。"); return; }
+  var others = state.photos.filter(function(q){ return q.id!==p.id; });
+  if(!others.length){ alert("色彩對齊需要照片庫裡至少 2 張照片（一張當基準）。"); return; }
+  var sel = $("algRef"); sel.innerHTML = "";
+  others.forEach(function(q){
+    var o = document.createElement("option"); o.value = q.id; o.textContent = q.name; sel.appendChild(o);
+  });
+  alg.refId = others[0].id;
+  alg.mode = $("algMode").value || "wb";
+  alg.a = []; alg.b = [];
+  renderAlg();
+  $("algModal").classList.add("on");
+};
+$("btnAlgOk").onclick = function(){
+  var p = cur(); if(!p) return;
+  var co = algCoef(); if(!co) return;
+  var out = applyAlign(p.bmp, co);
+  pushUndo(p);
+  p.bmp = out;
+  p.srcData = out.toDataURL("image/jpeg", 0.95);
+  markDirty(p);
+  $("algModal").classList.remove("on");
+  draw();
+};
 
 /* ───────── PWA：註冊 Service Worker（加入主畫面／離線可用） ───────── */
 if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){
