@@ -318,8 +318,9 @@ body {
 }
 .app-hits.hot { color: #ffb37a; font-weight: 600; }
 
-/* 最新上架徽章 */
-.badge-new {
+/* 卡片徽章：🆕 最新上架 / 🔄 近期改版 */
+.badge-new,
+.badge-updated {
   display: inline-block;
   vertical-align: middle;
   margin-left: 6px;
@@ -328,9 +329,16 @@ body {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .3px;
+}
+.badge-new {
   color: #9be8c6;
   background: rgba(31, 169, 113, .16);
   border: 1px solid rgba(31, 169, 113, .38);
+}
+.badge-updated {
+  color: #a9c6ff;
+  background: rgba(91, 140, 255, .16);
+  border: 1px solid rgba(91, 140, 255, .40);
 }
 
 .empty-hint { text-align: center; color: var(--text-muted); padding: 40px 0; }

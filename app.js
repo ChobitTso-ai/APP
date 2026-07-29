@@ -17,21 +17,22 @@ const VISITOR_KEY = 'nckuh_endo_vid';
    desc  : 一句話說明
    icon  : emoji 圖示
    url   : 點「開啟」後前往的網址（先用 # 佔位）
-   added : 上架日期 YYYY-MM-DD（最新上架的會掛 🆕 徽章，沒填就不會有）
+   added : 首次上架日期 YYYY-MM-DD——**改版時不要動它**（最新上架的掛 🆕）
+   updated : 最後改版日期 YYYY-MM-DD——App 出新版時改成當天（近期改版的掛 🔄）
    group : 'mobile' = 手機可加入主畫面（該 App 本身是 PWA）；'desktop' = 電腦操作
    wip   : true = 施工中佔位卡片（不顯示開啟/分享按鈕）
 */
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
   // 手機也能用（App 本身是 PWA，可加入主畫面）
-  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12', group: 'mobile' },
+  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-07-29', group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
 
   // 電腦操作
   { name: 'PDF工具箱', desc: 'PDF 合併與分割，全程本機處理保護隱私。', icon: '🛠️', url: 'apps/pdf-toolbox/index.html', added: '2026-07-13', group: 'desktop' },
-  { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24', group: 'desktop' },
+  { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24', updated: '2026-07-26', group: 'desktop' },
   { ...wipSlot, group: 'desktop' },
   { ...wipSlot, group: 'desktop' },
 ];
@@ -52,6 +53,8 @@ const GROUPS = [
 
 /* 🆕 徽章：只掛在「上架日期最新」且在這個天數內的 App */
 const NEW_BADGE_DAYS = 60;
+/* 🔄 徽章：改版日期在這個天數內的 App（🆕 優先，同時符合時只顯示 🆕） */
+const UPDATED_BADGE_DAYS = 14;
 const NEWEST_SLUG = newestSlug(); // 需在 renderApps 之前算好（函式宣告已提升）
 
 /* ---- 元素 ---- */
@@ -150,9 +153,7 @@ function makeCard(app) {
       </div>
       <div class="app-hits" data-slug="${escapeHtml(slugOf(app))}" hidden></div>`;
 
-  const newBadge = (!app.wip && slugOf(app) === NEWEST_SLUG)
-    ? ` <span class="badge-new" title="最新上架">🆕 新上架</span>`
-    : '';
+  const newBadge = app.wip ? '' : badgeFor(app);
 
   card.innerHTML = `
     <div class="app-icon">${app.icon}</div>
@@ -277,6 +278,18 @@ function statsCall(params) {
 function slugOf(app) {
   const m = /^apps\/([^/]+)\//.exec(app.url || '');
   return m ? m[1] : '';
+}
+
+/* 卡片徽章：🆕 最新上架 優先於 🔄 近期改版 */
+function badgeFor(app) {
+  if (slugOf(app) === NEWEST_SLUG) {
+    return ` <span class="badge-new" title="最新上架">🆕 新上架</span>`;
+  }
+  const t = Date.parse(app.updated || '');
+  if (!isNaN(t) && (Date.now() - t) / 86400000 <= UPDATED_BADGE_DAYS) {
+    return ` <span class="badge-updated" title="近期有新版本">🔄 已更新</span>`;
+  }
+  return '';
 }
 
 /* 最新上架的 App 代號（超過 NEW_BADGE_DAYS 天就不再標 🆕） */
