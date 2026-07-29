@@ -372,6 +372,7 @@
   <section id="vGrid" class="view">
     <div class="col-scroll">
       <div class="sec-t">① 依順序點選照片（最多 8 張，含已完成的標記）</div>
+      <div class="case-bar" style="padding-bottom:6px"><div class="case-chips" id="pickChips"></div></div>
       <div class="grid-thumbs pick" id="pickGrid"></div>
       <div class="hint" id="pickHint" style="margin:20px 16px">請先在「照片庫」加入照片</div>
       <div class="sec-t" id="selTitle" style="display:none">② 每格標題（選填）</div>
@@ -633,6 +634,7 @@ var state = {
   mask: null,          // 遮蔽框 {x,y,w,h} normalized（拖曳畫出）
   cases: [],           // 病例（代號制）{id,code,note,ym,ts}
   curCase: "all",      // 照片庫篩選：all｜none（未分類）｜<caseId>
+  pickCase: "all",     // 組圖選照片區的病例篩選
   selMode: false,      // 多選模式（指定病例用）
   selSet: {},          // 多選中的 photo id
   colSel: [],          // photo id 依點選順序
@@ -945,11 +947,14 @@ function loadCases(){
     renderLib();
   });
 }
+/* 有效的病例歸屬：caseId 指向已不存在的病例時視為「未分類」，
+   避免照片只在「全部」看得到、其餘分頁都找不到（半隱形）。 */
+function effCase(p){ return (p.caseId && caseById(p.caseId)) ? p.caseId : null; }
 function photosOfCase(cid){
   return state.photos.filter(function(p){
     if(cid==="all") return true;
-    if(cid==="none") return !p.caseId;
-    return p.caseId === cid;
+    if(cid==="none") return !effCase(p);
+    return effCase(p) === cid;
   });
 }
 function renderCaseChips(){
@@ -1060,9 +1065,9 @@ function renderLib(){
       var mk = document.createElement("div"); mk.className = "mk";
       mk.textContent = p.markers.length + " 標記"; d.appendChild(mk);
     }
-    if(p.caseId && caseById(p.caseId)){
+    if(effCase(p)){
       var cs = document.createElement("div"); cs.className = "cs";
-      cs.textContent = caseLabel(p.caseId); d.appendChild(cs);
+      cs.textContent = caseLabel(effCase(p)); d.appendChild(cs);
     }
     if(state.selMode){
       var pk = document.createElement("div"); pk.className = "pick";
@@ -2080,16 +2085,39 @@ $("btnBatch").onclick = function(){
 
 /* ───────── 組圖 ───────── */
 var TAGS = ["Before","After","術中","術後"];
+function renderPickChips(){
+  var w = $("pickChips"); if(!w) return;
+  w.innerHTML = "";
+  var mk = function(id, label, count){
+    var b = document.createElement("button");
+    b.className = "case-chip" + (state.pickCase===id ? " on" : "");
+    b.setAttribute("data-pick", id);
+    var t = document.createElement("span"); t.textContent = label; b.appendChild(t);
+    var n = document.createElement("span"); n.className="n"; n.textContent = "("+count+")"; b.appendChild(n);
+    b.onclick = function(){ state.pickCase = id; renderCollage(); };
+    w.appendChild(b);
+  };
+  mk("all", "全部", state.photos.length);
+  mk("none", "未分類", photosOfCase("none").length);
+  state.cases.forEach(function(c){ mk(c.id, c.code, photosOfCase(c.id).length); });
+  // 病例只有 0 個時不需要這排
+  w.parentElement.style.display = state.cases.length ? "" : "none";
+}
 function renderCollage(){
   var g = $("pickGrid"); g.innerHTML = "";
   $("pickHint").style.display = state.photos.length ? "none" : "block";
-  state.photos.forEach(function(p){
+  renderPickChips();
+  photosOfCase(state.pickCase).forEach(function(p){
     var d = document.createElement("div"); d.className = "thumb";
     var idx = state.colSel.indexOf(p.id);
     if(idx>=0) d.classList.add("sel");
     var im = document.createElement("img"); im.src = makeThumb(p); d.appendChild(im);
     if(idx>=0){
       var o = document.createElement("div"); o.className = "ord"; o.textContent = idx+1; d.appendChild(o);
+    }
+    if(effCase(p)){
+      var cs2 = document.createElement("div"); cs2.className = "cs";
+      cs2.textContent = caseLabel(effCase(p)); d.appendChild(cs2);
     }
     var nm = document.createElement("div"); nm.className = "nm"; nm.textContent = p.name; d.appendChild(nm);
     d.onclick = function(){
