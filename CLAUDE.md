@@ -23,8 +23,10 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
 
 - 首頁卡片由 `app.js` 最上方的 `APPS` 陣列產生。佔位卡片是 `{ ...wipSlot }`
   （🚧 施工中）；真正的 App 卡片格式：
-  `{ name:'工具名', desc:'一句話說明', icon:'📷', url:'apps/<slug>/index.html', added:'YYYY-MM-DD' }`
-  （`added` 是上架日期，最新的自動掛 🆕〔60 天內〕；瀏覽次數最高的自動掛 🔥）
+  `{ name:'工具名', desc:'一句話說明', icon:'📷', url:'apps/<slug>/index.html', added:'YYYY-MM-DD', updated:'YYYY-MM-DD' }`
+  （`added` 是**首次**上架日，最新的自動掛 🆕〔60 天內〕，**改版時不要動它**；
+  `updated` 是最後改版日，改版時填今天，自動掛 🔄〔14 天內〕，🆕 優先於 🔄；
+  瀏覽次數最高的自動掛 🔥）
 - **卡片分兩區**（`GROUPS`）：`group:'mobile'` 是「📱 手機也能用」——只放
   自己做成 PWA 的 App；`group:'desktop'` 是「💻 電腦操作」（預設）。
   每區用施工中佔位補滿 4 張，桌機剛好一排。
@@ -109,7 +111,8 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
 
 - 全站介面文字用繁體中文；工具頁保留原作者的版權宣告
   （©Tso KY - All Rights Reserved），功能改版時把版本號 +0.1
-  （標題、徽章、頁尾、程式註解四處同步）。
+  （標題、徽章、頁尾、程式註解四處同步），並把 `app.js` 中該 App 的
+  `updated` 改成當天（`added` 不動）。
 - 使用者偏好直接合併上線（會說「合併吧」）；夜間自主工作時先用
   Playwright 完整測過再合併，並在總結時交代測了什麼。
 - **使用統計**：首頁以 JSONP 呼叫 Google Apps Script（`app.js` 最上方的
