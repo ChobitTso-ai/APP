@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v1.8
+  案例標記工具 v1.9
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v1.8</title>
+<title>案例標記工具 v1.9</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -79,6 +79,30 @@
     display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.35);
   }
   .thumb.sel{outline:3px solid var(--accent);}
+  .thumb .cs{
+    position:absolute; left:6px; bottom:26px; background:rgba(45,48,54,.82); color:#fff;
+    font-size:11px; border-radius:12px; padding:2px 8px; max-width:80%;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .thumb .pick{
+    position:absolute; right:6px; top:6px; width:26px; height:26px; border-radius:50%;
+    border:2px solid #fff; background:rgba(20,23,28,.5); color:#fff; font-size:14px;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.35);
+  }
+  .thumb.picked .pick{background:var(--accent);}
+  /* ── 病例列 ── */
+  .case-bar{padding:6px 14px 0; display:flex; flex-direction:column; gap:8px;}
+  .case-chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:2px;}
+  .case-chips::-webkit-scrollbar{display:none;}
+  .case-chip{
+    border:1px solid var(--line); background:var(--card); border-radius:16px; font-size:13px;
+    padding:7px 12px; cursor:pointer; min-height:36px; white-space:nowrap; flex-shrink:0;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .case-chip.on{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;}
+  .case-chip .n{opacity:.7; font-size:12px;}
+  .case-chip .edit{opacity:.75; padding:0 2px;}
+  .case-act{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
   /* ── 按鈕 ── */
   .btn{
     border:1px solid var(--line); background:var(--card); color:var(--ink);
@@ -88,6 +112,8 @@
   .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
   .btn.on{background:var(--ink); border-color:var(--ink); color:#fff;}
   .btn:disabled{opacity:.45;}
+  /* .btn 的 display 會蓋掉 [hidden] 的 display:none，必須明確覆蓋 */
+  .btn[hidden]{display:none;}
   .dot{width:13px; height:13px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.15);}
   /* ── 標記編輯 ── */
   .toolbar{
@@ -247,7 +273,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.8</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.9</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -267,8 +293,18 @@
       <input type="file" id="restoreIn" accept=".zip,application/zip" hidden>
       <span style="font-size:13px;color:var(--ink-2)" id="libCount"></span>
     </div>
+    <div class="case-bar">
+      <div class="case-chips" id="caseChips"></div>
+      <div class="case-act">
+        <button class="btn" id="btnCaseNew">＋ 新病例</button>
+        <button class="btn" id="btnSelMode">☑ 選取</button>
+        <button class="btn primary" id="btnAssign" hidden>指定到病例</button>
+        <button class="btn" id="btnSelCancel" hidden>取消</button>
+        <span style="font-size:12px;color:var(--ink-2)" id="selCount"></span>
+      </div>
+    </div>
     <div class="grid-thumbs" id="libGrid"></div>
-    <div class="hint" id="libHint">尚未加入照片<br>點「＋ 加入照片」從相簿或檔案選取，<br>加入後點縮圖即可開始標記。<br><span style="font-size:13px">照片與標記會自動儲存在這台裝置的瀏覽器中；<br>換裝置或清除瀏覽器資料前，請先用「💾 備份」存成檔案。<br>加入的照片會自動移除 GPS 等 EXIF 中繼資料。</span></div>
+    <div class="hint" id="libHint">尚未加入照片<br>點「＋ 加入照片」從相簿或檔案選取，<br>加入後點縮圖即可開始標記。<br><span style="font-size:13px">照片與標記會自動儲存在這台裝置的瀏覽器中；<br>換裝置或清除瀏覽器資料前，請先用「💾 備份」存成檔案。<br>加入的照片會自動移除 GPS 等 EXIF 中繼資料。<br>病例請用<b>代號</b>（如 Case-001），不要填姓名或病歷號。</span></div>
   </section>
 
   <!-- 標記編輯 -->
@@ -403,7 +439,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v1.8　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v1.9　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -575,7 +611,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v1.8
+   案例標記工具 v1.9
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -595,6 +631,10 @@ var state = {
   crop: null,          // {x,y,w,h} normalized
   tilt: 0,             // 拉平微調角度（度）
   mask: null,          // 遮蔽框 {x,y,w,h} normalized（拖曳畫出）
+  cases: [],           // 病例（代號制）{id,code,note,ym,ts}
+  curCase: "all",      // 照片庫篩選：all｜none（未分類）｜<caseId>
+  selMode: false,      // 多選模式（指定病例用）
+  selSet: {},          // 多選中的 photo id
   colSel: [],          // photo id 依點選順序
   colTitle: {},        // id -> title
   colFocus: {},        // id -> {fx,fy} 每格取景焦點（0~1，預設置中 0.5）
@@ -642,14 +682,40 @@ function idbOpen(){
   return new Promise(function(res){
     if(idb) return res(idb);
     if(!window.indexedDB) return res(null);
-    var rq = indexedDB.open("caseMarker", 2);
+    var rq = indexedDB.open("caseMarker", 3);
     rq.onupgradeneeded = function(){
       var db = rq.result;
       if(!db.objectStoreNames.contains("photos")) db.createObjectStore("photos", {keyPath:"id"});
       if(!db.objectStoreNames.contains("projects")) db.createObjectStore("projects", {keyPath:"id"});
+      if(!db.objectStoreNames.contains("cases")) db.createObjectStore("cases", {keyPath:"id"});
     };
     rq.onsuccess = function(){ idb = rq.result; res(idb); };
     rq.onerror = function(){ res(null); };
+  });
+}
+/* 病例（代號制；存 / 刪 / 列）——刻意不設姓名、病歷號欄位 */
+function caseWrite(rec){
+  idbOpen().then(function(db){
+    if(!db) return;
+    try{ db.transaction("cases","readwrite").objectStore("cases").put(rec); }catch(e){}
+  });
+}
+function caseDelDb(id){
+  idbOpen().then(function(db){
+    if(!db) return;
+    try{ db.transaction("cases","readwrite").objectStore("cases").delete(id); }catch(e){}
+  });
+}
+function caseAll(){
+  return idbOpen().then(function(db){
+    if(!db) return [];
+    return new Promise(function(res){
+      try{
+        var rq = db.transaction("cases","readonly").objectStore("cases").getAll();
+        rq.onsuccess = function(){ res(rq.result||[]); };
+        rq.onerror = function(){ res([]); };
+      }catch(e){ res([]); }
+    });
   });
 }
 /* 組圖專案（存 / 取 / 刪 / 列） */
@@ -717,7 +783,7 @@ function markAllOrder(){
 function flushSave(){
   state.photos.forEach(function(p, i){
     if(!needSave[p.id]) return;
-    idbPut({ id:p.id, ord:i, name:p.name, img:p.srcData, markers:p.markers, title:state.colTitle[p.id]||"", focus:state.colFocus[p.id]||null });
+    idbPut({ id:p.id, ord:i, name:p.name, img:p.srcData, markers:p.markers, title:state.colTitle[p.id]||"", focus:state.colFocus[p.id]||null, caseId:p.caseId||null });
     delete needSave[p.id];
   });
 }
@@ -739,7 +805,7 @@ function restorePhotos(){
     rows.forEach(function(r){
       var img = new Image();
       img.onload = function(){
-        loaded.push({ id:r.id, name:r.name, bmp:img, srcData:r.img, markers:r.markers||[], thumb:null, dirty:true, undo:[] });
+        loaded.push({ id:r.id, name:r.name, bmp:img, srcData:r.img, markers:r.markers||[], thumb:null, dirty:true, undo:[], caseId:r.caseId||null });
         if(r.title) state.colTitle[r.id] = r.title;
         if(r.focus) state.colFocus[r.id] = r.focus;
         var n = parseInt(String(r.id).replace(/^p/,""),10);
@@ -835,7 +901,9 @@ function addFromDataUrl(dataUrl, fname, done){
     var p = {
       id:"p"+(seq++),
       name:(fname||"照片").replace(/\.[^.]+$/,""),
-      bmp:c, srcData:c.toDataURL("image/jpeg", 0.95), markers:[], thumb:null, dirty:true, undo:[]
+      bmp:c, srcData:c.toDataURL("image/jpeg", 0.95), markers:[], thumb:null, dirty:true, undo:[],
+      // 若目前正在瀏覽某個病例，新加入的照片直接歸入該病例
+      caseId: (state.curCase!=="all" && state.curCase!=="none") ? state.curCase : null
     };
     state.photos.push(p);
     markDirty(p);
@@ -863,35 +931,163 @@ function makeThumb(p){
 }
 
 /* ───────── 照片庫畫面 ───────── */
+/* ───────── 病例（代號制） ─────────
+   刻意只存「代號＋備註」，不設姓名／病歷號欄位：資料全在本機，
+   萬一裝置或備份外流也無法直接連到特定病患。 */
+function caseById(id){
+  for(var i=0;i<state.cases.length;i++){ if(state.cases[i].id===id) return state.cases[i]; }
+  return null;
+}
+function caseLabel(id){ var c = caseById(id); return c ? c.code : ""; }
+function loadCases(){
+  caseAll().then(function(rows){
+    state.cases = (rows||[]).sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    renderLib();
+  });
+}
+function photosOfCase(cid){
+  return state.photos.filter(function(p){
+    if(cid==="all") return true;
+    if(cid==="none") return !p.caseId;
+    return p.caseId === cid;
+  });
+}
+function renderCaseChips(){
+  var w = $("caseChips"); w.innerHTML = "";
+  var mk = function(id, label, count, editable){
+    var b = document.createElement("button");
+    b.className = "case-chip" + (state.curCase===id ? " on" : "");
+    b.setAttribute("data-case", id);
+    var t = document.createElement("span"); t.textContent = label; b.appendChild(t);
+    var n = document.createElement("span"); n.className="n"; n.textContent = "("+count+")"; b.appendChild(n);
+    b.onclick = function(){ state.curCase = id; renderLib(); };
+    if(editable){
+      var e = document.createElement("span"); e.className="edit"; e.textContent = "✎";
+      e.onclick = function(ev){ ev.stopPropagation(); editCase(id); };
+      b.appendChild(e);
+    }
+    w.appendChild(b);
+  };
+  mk("all", "全部", state.photos.length, false);
+  var unc = state.photos.filter(function(p){ return !p.caseId; }).length;
+  mk("none", "未分類", unc, false);
+  state.cases.forEach(function(c){
+    mk(c.id, c.code, photosOfCase(c.id).length, true);
+  });
+}
+$("btnCaseNew").onclick = function(){
+  var code = (prompt("病例代號（請用代號，不要填姓名或病歷號）\n例：Case-001、RCT-16、2026A-03", "") || "").trim();
+  if(!code) return;
+  var note = (prompt("備註（選填，例：根管再治療、上顎正中）", "") || "").trim();
+  var rec = { id:"case"+Date.now()+"_"+Math.random().toString(36).slice(2,6), code:code, note:note, ts:Date.now() };
+  state.cases.unshift(rec);
+  caseWrite(rec);
+  state.curCase = rec.id;
+  renderLib();
+};
+function editCase(id){
+  var c = caseById(id); if(!c) return;
+  var code = (prompt("病例代號（不要填姓名或病歷號）\n留空並確定＝刪除此病例（照片會回到「未分類」，不會被刪除）", c.code) || "").trim();
+  if(!code){
+    if(!confirm("刪除病例「"+c.code+"」？\n該病例的照片不會被刪除，會回到「未分類」。")) return;
+    state.photos.forEach(function(p){ if(p.caseId===id){ p.caseId = null; markDirty(p); } });
+    state.cases = state.cases.filter(function(q){ return q.id!==id; });
+    caseDelDb(id);
+    if(state.curCase===id) state.curCase = "all";
+    renderLib();
+    return;
+  }
+  var note = (prompt("備註（選填）", c.note||"") || "").trim();
+  c.code = code; c.note = note;
+  caseWrite(c);
+  renderLib();
+}
+/* 多選：指定照片到病例 */
+function selCount(){ var n=0; for(var k in state.selSet) if(state.selSet[k]) n++; return n; }
+function exitSelMode(){ state.selMode = false; state.selSet = {}; }
+$("btnSelMode").onclick = function(){
+  state.selMode = true; state.selSet = {};
+  renderLib();
+};
+$("btnSelCancel").onclick = function(){ exitSelMode(); renderLib(); };
+$("btnAssign").onclick = function(){
+  var ids = Object.keys(state.selSet).filter(function(k){ return state.selSet[k]; });
+  if(!ids.length) return;
+  var opts = state.cases.map(function(c, i){ return (i+1)+". "+c.code; }).join("\n");
+  var ans = prompt(
+    "把 "+ids.length+" 張照片指定到：\n\n0. （移除病例，回到未分類）\n" + (opts || "（尚無病例，請先建立）") + "\n\n請輸入編號：",
+    state.cases.length ? "1" : "0"
+  );
+  if(ans===null) return;
+  var n = parseInt(String(ans).trim(), 10);
+  var target = null;
+  if(n===0) target = null;
+  else if(n>=1 && n<=state.cases.length) target = state.cases[n-1].id;
+  else { alert("編號不正確。"); return; }
+  ids.forEach(function(id){
+    var p = photoById(id); if(!p) return;
+    p.caseId = target; markDirty(p);
+  });
+  exitSelMode();
+  if(target) state.curCase = target;
+  renderLib();
+};
+
 function renderLib(){
   var g = $("libGrid"); g.innerHTML = "";
+  renderCaseChips();
+  var list = photosOfCase(state.curCase);
   $("libHint").style.display = state.photos.length ? "none" : "block";
-  $("libCount").textContent = state.photos.length ? "共 "+state.photos.length+" 張" : "";
+  var scope = state.curCase==="all" ? "" : "（"+(state.curCase==="none" ? "未分類" : caseLabel(state.curCase))+"）";
+  $("libCount").textContent = state.photos.length ? "共 "+list.length+" 張"+scope : "";
   var marked = state.photos.filter(function(p){ return p.markers.length; }).length;
   $("btnBatch").disabled = !marked;
   $("btnBackup").disabled = !state.photos.length;
   $("btnBatch").textContent = marked ? "⇩ 匯出全部標記（"+marked+"）" : "⇩ 匯出全部標記";
-  state.photos.forEach(function(p){
+  // 多選模式的按鈕狀態
+  $("btnSelMode").hidden = state.selMode;
+  $("btnCaseNew").hidden = state.selMode;
+  $("btnAssign").hidden = !state.selMode;
+  $("btnSelCancel").hidden = !state.selMode;
+  $("btnAssign").disabled = state.selMode && selCount()===0;
+  $("selCount").textContent = state.selMode ? ("已選 "+selCount()+" 張") : "";
+
+  list.forEach(function(p){
     var d = document.createElement("div"); d.className = "thumb";
+    if(state.selMode && state.selSet[p.id]) d.classList.add("picked");
     var im = document.createElement("img"); im.src = makeThumb(p); d.appendChild(im);
     if(p.markers.length){
       var mk = document.createElement("div"); mk.className = "mk";
       mk.textContent = p.markers.length + " 標記"; d.appendChild(mk);
     }
-    var del = document.createElement("button"); del.className = "del"; del.textContent = "✕";
-    del.onclick = function(ev){
-      ev.stopPropagation();
-      if(!confirm("刪除照片「"+p.name+"」？")) return;
-      state.photos = state.photos.filter(function(q){ return q.id!==p.id; });
-      state.colSel = state.colSel.filter(function(id){ return id!==p.id; });
-      idbDel(p.id);
-      markAllOrder();
-      if(state.curId===p.id) state.curId = state.photos.length ? state.photos[0].id : null;
-      renderLib();
-    };
-    d.appendChild(del);
+    if(p.caseId && caseById(p.caseId)){
+      var cs = document.createElement("div"); cs.className = "cs";
+      cs.textContent = caseLabel(p.caseId); d.appendChild(cs);
+    }
+    if(state.selMode){
+      var pk = document.createElement("div"); pk.className = "pick";
+      pk.textContent = state.selSet[p.id] ? "✓" : "";
+      d.appendChild(pk);
+      d.onclick = function(){
+        state.selSet[p.id] = !state.selSet[p.id];
+        renderLib();
+      };
+    }else{
+      var del = document.createElement("button"); del.className = "del"; del.textContent = "✕";
+      del.onclick = function(ev){
+        ev.stopPropagation();
+        if(!confirm("刪除照片「"+p.name+"」？")) return;
+        state.photos = state.photos.filter(function(q){ return q.id!==p.id; });
+        state.colSel = state.colSel.filter(function(id){ return id!==p.id; });
+        idbDel(p.id);
+        markAllOrder();
+        if(state.curId===p.id) state.curId = state.photos.length ? state.photos[0].id : null;
+        renderLib();
+      };
+      d.appendChild(del);
+      d.onclick = function(){ state.curId = p.id; state.selMk = -1; exitCrop(); resetView(); show("edit"); };
+    }
     var nm = document.createElement("div"); nm.className = "nm"; nm.textContent = p.name; d.appendChild(nm);
-    d.onclick = function(){ state.curId = p.id; state.selMk = -1; exitCrop(); resetView(); show("edit"); };
     g.appendChild(d);
   });
 }
@@ -2262,6 +2458,7 @@ window.addEventListener("resize", function(){
 syncColOpt();
 renderLib();
 restorePhotos();
+loadCases();
 
 /* ───────── 備份／還原 ─────────
    備份：把所有照片（已去除 EXIF 的 JPEG）＋標記／標題／取景、組圖專案、
@@ -2290,7 +2487,7 @@ $("btnBackup").onclick = function(){
     var files = {};
     var meta = {
       app: "case-marker", version: BACKUP_VER, exportedAt: new Date().toISOString(),
-      settings: settings, photos: [], projects: projects || []
+      settings: settings, photos: [], projects: projects || [], cases: state.cases || []
     };
     state.photos.forEach(function(p, i){
       var fn = "photos/" + p.id + ".jpg";
@@ -2299,7 +2496,8 @@ $("btnBackup").onclick = function(){
         id:p.id, ord:i, name:p.name, file:fn,
         markers:p.markers,
         title: state.colTitle[p.id] || "",
-        focus: state.colFocus[p.id] || null
+        focus: state.colFocus[p.id] || null,
+        caseId: p.caseId || null
       });
     });
     files["backup.json"] = new TextEncoder().encode(JSON.stringify(meta));
@@ -2335,6 +2533,16 @@ $("restoreIn").onchange = function(e){
     if(!rows.length) throw new Error("備份檔內沒有照片");
 
     var idMap = {};                       // 舊 id → 新 id（避免與現有照片衝突）
+    // 病例：以代號比對，已存在就沿用、沒有才新建（避免重複還原產生一堆同名病例）
+    var caseMap = {};
+    (meta.cases||[]).forEach(function(oc){
+      var exist = state.cases.filter(function(c){ return c.code === oc.code; })[0];
+      if(exist){ caseMap[oc.id] = exist.id; return; }
+      var nc = { id:"case"+Date.now()+"_"+Math.random().toString(36).slice(2,6),
+                 code:oc.code, note:oc.note||"", ts:oc.ts||Date.now() };
+      state.cases.unshift(nc); caseWrite(nc);
+      caseMap[oc.id] = nc.id;
+    });
     var pending = rows.length;
     var restored = 0;
     var finish = function(){
@@ -2375,7 +2583,8 @@ $("restoreIn").onchange = function(e){
         idMap[r.id] = nid;
         var p = {
           id:nid, name:r.name||"照片", bmp:img, srcData:du,
-          markers:r.markers||[], thumb:null, dirty:true, undo:[]
+          markers:r.markers||[], thumb:null, dirty:true, undo:[],
+          caseId: r.caseId ? (caseMap[r.caseId] || null) : null
         };
         state.photos.push(p);
         if(r.title) state.colTitle[nid] = r.title;
