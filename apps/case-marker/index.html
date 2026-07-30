@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v1.9
+  案例標記工具 v2.0
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v1.9</title>
+<title>案例標記工具 v2.0</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -90,6 +90,13 @@
     display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.35);
   }
   .thumb.picked .pick{background:var(--accent);}
+  .thumb.sortable{cursor:grab; touch-action:none;}
+  .thumb.dragging{opacity:.45; outline:2px dashed var(--accent);}
+  .thumb.dropTarget{outline:3px solid var(--accent);}
+  .thumb .grip{
+    position:absolute; right:6px; top:6px; background:rgba(20,23,28,.6); color:#fff;
+    font-size:14px; border-radius:12px; padding:2px 8px; pointer-events:none;
+  }
   /* ── 病例列 ── */
   .case-bar{padding:6px 14px 0; display:flex; flex-direction:column; gap:8px;}
   .case-chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:2px;}
@@ -273,7 +280,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v1.9</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.0</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -292,12 +299,17 @@
       <button class="btn" id="btnRestore">📥 還原</button>
       <input type="file" id="restoreIn" accept=".zip,application/zip" hidden>
       <span style="font-size:13px;color:var(--ink-2)" id="libCount"></span>
+      <span style="font-size:12px;color:var(--ink-2)" id="libStorage"></span>
+      <span id="saveWarn" hidden title="點一下重試儲存" style="font-size:12px;color:#fff;background:var(--red);border-radius:12px;padding:3px 10px;cursor:pointer">⚠ 自動儲存失敗，請備份（點此重試）</span>
     </div>
     <div class="case-bar">
       <div class="case-chips" id="caseChips"></div>
+      <div id="caseNote" hidden style="font-size:13px;color:var(--ink-2);padding:0 2px"></div>
       <div class="case-act">
         <button class="btn" id="btnCaseNew">＋ 新病例</button>
         <button class="btn" id="btnSelMode">☑ 選取</button>
+        <button class="btn" id="btnSortMode">↕ 排序</button>
+        <button class="btn primary" id="btnSortDone" hidden>完成排序</button>
         <button class="btn primary" id="btnAssign" hidden>指定到病例</button>
         <button class="btn" id="btnSelCancel" hidden>取消</button>
         <span style="font-size:12px;color:var(--ink-2)" id="selCount"></span>
@@ -440,7 +452,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v1.9　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v2.0　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -479,6 +491,25 @@
         <input type="range" id="setFt" min="0.6" max="2" step="0.1">
         <span class="val" id="setFtV"></span>
       </div>
+      <div class="form-row">
+        <label>匯入照片尺寸</label>
+        <select id="setImportMax">
+          <option value="2560">標準（長邊 2560，建議）</option>
+          <option value="3200">較高（長邊 3200）</option>
+          <option value="2048">精簡（長邊 2048）</option>
+          <option value="0">原尺寸（慢，且很占空間）</option>
+        </select>
+      </div>
+      <div class="tip" style="font-size:12px;color:var(--ink-2);margin-top:-6px">
+        手機 12MP 原尺寸每張要 5 秒以上才匯入完、占約 4 倍空間；長邊 2560 對組圖、
+        投影片與列印都足夠，匯入只需約 0.2 秒。此設定只影響之後新加入的照片。
+      </div>
+      <div class="set-hr"></div>
+      <div class="form-row">
+        <label>儲存空間</label>
+        <span id="setStorage" style="font-size:14px;color:var(--ink-2)">計算中…</span>
+      </div>
+      <div class="set-hr"></div>
       <div class="form-row">
         <label>診所／署名</label>
         <input type="text" id="setClinic" placeholder="例：NCKUH ENDO">
@@ -612,7 +643,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v1.9
+   案例標記工具 v2.0
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -636,6 +667,7 @@ var state = {
   curCase: "all",      // 照片庫篩選：all｜none（未分類）｜<caseId>
   pickCase: "all",     // 組圖選照片區的病例篩選
   selMode: false,      // 多選模式（指定病例用）
+  sortMode: false,     // 排序模式（拖曳調整照片順序）
   selSet: {},          // 多選中的 photo id
   colSel: [],          // photo id 依點選順序
   colTitle: {},        // id -> title
@@ -654,7 +686,8 @@ function colFocusOf(id){ return state.colFocus[id] || {fx:0.5, fy:0.5}; }
 
 /* ── 使用者設定（localStorage） ── */
 var settings = { mkScale:1, ftScale:1, clinic:"", wmClinic:false, wmDate:false, labels:[],
-                 logo:"", wmLogo:false, logoPos:"br", logoScale:0.18, logoOpacity:0.9 };
+                 logo:"", wmLogo:false, logoPos:"br", logoScale:0.18, logoOpacity:0.9,
+                 importMax:2560 };   // 匯入時縮到的長邊上限（0＝原尺寸）
 try{
   var s0 = JSON.parse(localStorage.getItem("cm_settings")||"{}");
   for(var sk in settings){ if(s0[sk]!==undefined) settings[sk]=s0[sk]; }
@@ -745,10 +778,59 @@ function projAll(){
     });
   });
 }
-function idbPut(rec){
+/* 儲存失敗警告：容量滿或寫入失敗時一定要讓使用者知道，
+   否則會以為已存檔（先前是靜默吞掉錯誤，有資料遺失風險）。
+   同一次工作階段只提示一次，避免連續失敗時洗版。 */
+var saveWarned = false;
+function warnSaveFailed(why){
+  if(saveWarned) return;
+  saveWarned = true;
+  var q = (why && /quota/i.test(why)) ? "裝置的瀏覽器儲存空間可能已滿。" : "";
+  alert("⚠ 自動儲存失敗，這次的變更可能沒有存到裝置上。\n" + q +
+        "\n建議立即用「💾 備份」把目前資料存成檔案，並刪除不需要的照片後重新整理再試。" +
+        (why ? "\n\n（技術資訊：" + why + "）" : ""));
+  var el = $("saveWarn");
+  if(el){ el.hidden = false; }
+}
+/* 點警示徽章＝重試儲存（清理空間後可直接再試，不必重新編輯） */
+function retrySave(){
+  var n = pendingSaveCount();
+  if(!n){
+    $("saveWarn").hidden = true; saveWarned = false;
+    alert("目前沒有待儲存的變更。");
+    return;
+  }
+  saveWarned = false;
+  flushSave();
+  setTimeout(function(){
+    var left = pendingSaveCount();
+    if(left === 0){
+      $("saveWarn").hidden = true;
+      alert("已重新儲存成功（" + n + " 筆）。");
+    }
+  }, 1200);
+}
+function idbPut(rec, onOk){
   idbOpen().then(function(db){
-    if(!db) return;
-    try{ db.transaction("photos","readwrite").objectStore("photos").put(rec); }catch(e){}
+    if(!db){ warnSaveFailed("此瀏覽器不支援或已停用 IndexedDB"); return; }
+    var tx = null, failed = false;
+    var bad = function(err, what){
+      failed = true;
+      warnSaveFailed(err && err.name ? (err.name+": "+err.message) : (what||String(err)));
+    };
+    try{
+      tx = db.transaction("photos","readwrite");
+      tx.onerror  = function(){ bad(tx.error, "transaction error"); };
+      tx.onabort  = function(){ bad(tx.error, "transaction aborted"); };
+      // 只有「沒有任何失敗」才回報成功——若 put 同步拋錯，交易本身仍會 complete，
+      // 必須靠 failed 旗標攔住，否則會誤判成已存好而清掉待存標記。
+      tx.oncomplete = function(){ if(!failed && onOk) onOk(); };
+      var rq = tx.objectStore("photos").put(rec);
+      rq.onerror = function(){ bad(rq.error, "put error"); };
+    }catch(e){
+      bad(e, "put threw");
+      if(tx){ try{ tx.abort(); }catch(_e){} }
+    }
   });
 }
 function idbDel(id){
@@ -782,13 +864,17 @@ function markAllOrder(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(flushSave, 400);
 }
+/* 只有「確認寫入成功」才清除待存標記；失敗就保留，下次 flush 會重試。
+   （先前是呼叫 idbPut 後立刻清除，寫入失敗的照片就永遠不再重試而遺失。） */
 function flushSave(){
   state.photos.forEach(function(p, i){
     if(!needSave[p.id]) return;
-    idbPut({ id:p.id, ord:i, name:p.name, img:p.srcData, markers:p.markers, title:state.colTitle[p.id]||"", focus:state.colFocus[p.id]||null, caseId:p.caseId||null });
-    delete needSave[p.id];
+    var id = p.id;
+    idbPut({ id:p.id, ord:i, name:p.name, img:p.srcData, markers:p.markers, title:state.colTitle[p.id]||"", focus:state.colFocus[p.id]||null, caseId:p.caseId||null },
+           function(){ delete needSave[id]; });
   });
 }
+function pendingSaveCount(){ var n=0; for(var k in needSave) if(needSave[k]) n++; return n; }
 function restorePhotos(){
   idbAll().then(function(rows){
     if(!rows.length) return;
@@ -894,12 +980,16 @@ function addFromDataUrl(dataUrl, fname, done){
     if(done) done();
   };
   img.onload = function(){
-    // 重新編碼一次：canvas 只保留像素，GPS／機型等 EXIF 中繼資料一律不落地
-    var W = bw(img), H = bh(img);
+    // 重新編碼一次：canvas 只保留像素，GPS／機型等 EXIF 中繼資料一律不落地。
+    // 同時依設定縮到長邊上限——12MP 原尺寸重新編碼要 5 秒以上，縮到 2560 只需 0.15 秒。
+    var W0 = bw(img), H0 = bh(img);
+    var lim = settings.importMax || 0;
+    var sc = (lim > 0 && Math.max(W0,H0) > lim) ? lim/Math.max(W0,H0) : 1;
+    var W = Math.max(1, Math.round(W0*sc)), H = Math.max(1, Math.round(H0*sc));
     var c = document.createElement("canvas"); c.width = W; c.height = H;
     var g = c.getContext("2d");
     g.fillStyle = "#ffffff"; g.fillRect(0,0,W,H);      // 透明 PNG 轉 JPEG 防黑底
-    g.drawImage(img, 0, 0);
+    g.drawImage(img, 0, 0, W, H);
     var p = {
       id:"p"+(seq++),
       name:(fname||"照片").replace(/\.[^.]+$/,""),
@@ -910,6 +1000,7 @@ function addFromDataUrl(dataUrl, fname, done){
     state.photos.push(p);
     markDirty(p);
     renderLib();
+    refreshStorage();
     if(done) done();
   };
   img.src = dataUrl;
@@ -933,6 +1024,34 @@ function makeThumb(p){
 }
 
 /* ───────── 照片庫畫面 ───────── */
+/* ───────── 儲存空間 ─────────
+   顯示已用量／配額，接近上限時提醒備份（避免寫入失敗才發現）。 */
+var lastStorage = null;
+function refreshStorage(){
+  if(!navigator.storage || !navigator.storage.estimate){
+    $("libStorage").textContent = "";
+    var el0 = $("setStorage"); if(el0) el0.textContent = "此瀏覽器不提供用量資訊";
+    return Promise.resolve(null);
+  }
+  return navigator.storage.estimate().then(function(e){
+    var usedMB = e.usage/1048576, quotaMB = (e.quota||0)/1048576;
+    var pct = quotaMB ? (usedMB/quotaMB*100) : 0;
+    lastStorage = { usedMB:usedMB, quotaMB:quotaMB, pct:pct };
+    var fmt = function(mb){ return mb>=1024 ? (mb/1024).toFixed(1)+" GB" : Math.round(mb)+" MB"; };
+    var txt = "已用 " + fmt(usedMB) + (quotaMB ? " / 約 " + fmt(quotaMB) : "");
+    var elS = $("setStorage"); if(elS) elS.textContent = txt + (quotaMB ? "（" + pct.toFixed(0) + "%）" : "");
+    // 照片庫只在接近上限時才顯示，平常不干擾
+    var elL = $("libStorage");
+    if(elL){
+      if(pct >= 70){
+        elL.textContent = "⚠ 儲存空間 " + txt + "，建議先備份並清理";
+        elL.style.color = pct >= 85 ? "var(--red)" : "#b26a00";
+      }else{ elL.textContent = ""; }
+    }
+    return lastStorage;
+  }).catch(function(){ return null; });
+}
+
 /* ───────── 病例（代號制） ─────────
    刻意只存「代號＋備註」，不設姓名／病歷號欄位：資料全在本機，
    萬一裝置或備份外流也無法直接連到特定病患。 */
@@ -1038,9 +1157,84 @@ $("btnAssign").onclick = function(){
   renderLib();
 };
 
+/* ───────── 排序模式：拖曳調整照片順序 ─────────
+   以 pointer 事件實作（iPad 上比 HTML5 drag 可靠）；
+   拖到哪一格就插入到該格位置，放開即套用並保存新順序。 */
+$("btnSortMode").onclick = function(){
+  exitSelMode();
+  state.sortMode = true;
+  state.curCase = "all";        // 排序一律在完整清單上進行，避免只排到部分順序
+  renderLib();
+};
+$("btnSortDone").onclick = function(){
+  state.sortMode = false;
+  markAllOrder();               // 寫回新的 ord
+  renderLib();
+};
+var sortDrag = null;
+function movePhoto(fromId, toId){
+  if(fromId === toId) return;
+  var from = state.photos.findIndex(function(p){ return p.id===fromId; });
+  var to   = state.photos.findIndex(function(p){ return p.id===toId; });
+  if(from<0 || to<0) return;
+  var item = state.photos.splice(from,1)[0];
+  state.photos.splice(to, 0, item);
+}
+function thumbAt(x, y){
+  var el = document.elementFromPoint(x, y);
+  return (el && el.closest) ? el.closest("#libGrid .thumb") : null;
+}
+function clearDropMarks(){
+  Array.prototype.forEach.call(document.querySelectorAll("#libGrid .thumb"),
+    function(t){ t.classList.remove("dropTarget"); });
+}
+/* 監聽掛在 document 上而非縮圖本身：拖曳過程中不重建 DOM，
+   否則元素被換掉會讓 pointer capture 失效、pointerup 收不到。 */
+function onSortMove(e){
+  if(!sortDrag) return;
+  e.preventDefault();
+  var over = thumbAt(e.clientX, e.clientY);
+  clearDropMarks();
+  if(over && over.getAttribute("data-pid") !== sortDrag.id) over.classList.add("dropTarget");
+}
+function onSortUp(e){
+  if(!sortDrag) return;
+  var over = thumbAt(e.clientX, e.clientY);
+  var targetId = over ? over.getAttribute("data-pid") : null;
+  var fromId = sortDrag.id;
+  sortDrag = null;
+  document.removeEventListener("pointermove", onSortMove);
+  document.removeEventListener("pointerup", onSortUp);
+  document.removeEventListener("pointercancel", onSortUp);
+  clearDropMarks();
+  if(targetId) movePhoto(fromId, targetId);
+  markAllOrder();               // 拖曳結束即保存順序
+  renderLib();
+}
+function attachSortHandlers(d, p){
+  d.classList.add("sortable");
+  d.addEventListener("pointerdown", function(e){
+    e.preventDefault();
+    sortDrag = { id:p.id };
+    d.classList.add("dragging");
+    document.addEventListener("pointermove", onSortMove, { passive:false });
+    document.addEventListener("pointerup", onSortUp);
+    document.addEventListener("pointercancel", onSortUp);
+  });
+}
+
 function renderLib(){
   var g = $("libGrid"); g.innerHTML = "";
   renderCaseChips();
+  // 選定某個病例時顯示它的備註（先前 note 只存著、介面上看不到）
+  var noteEl = $("caseNote");
+  var curC = (state.curCase!=="all" && state.curCase!=="none") ? caseById(state.curCase) : null;
+  if(noteEl){
+    if(curC && (curC.note||"").trim()){
+      noteEl.textContent = "📋 " + curC.code + "　" + curC.note.trim();
+      noteEl.hidden = false;
+    }else{ noteEl.hidden = true; noteEl.textContent = ""; }
+  }
   var list = photosOfCase(state.curCase);
   $("libHint").style.display = state.photos.length ? "none" : "block";
   var scope = state.curCase==="all" ? "" : "（"+(state.curCase==="none" ? "未分類" : caseLabel(state.curCase))+"）";
@@ -1050,15 +1244,19 @@ function renderLib(){
   $("btnBackup").disabled = !state.photos.length;
   $("btnBatch").textContent = marked ? "⇩ 匯出全部標記（"+marked+"）" : "⇩ 匯出全部標記";
   // 多選模式的按鈕狀態
-  $("btnSelMode").hidden = state.selMode;
-  $("btnCaseNew").hidden = state.selMode;
+  $("btnSelMode").hidden = state.selMode || state.sortMode;
+  $("btnCaseNew").hidden = state.selMode || state.sortMode;
+  $("btnSortMode").hidden = state.selMode || state.sortMode;
+  $("btnSortDone").hidden = !state.sortMode;
   $("btnAssign").hidden = !state.selMode;
   $("btnSelCancel").hidden = !state.selMode;
   $("btnAssign").disabled = state.selMode && selCount()===0;
-  $("selCount").textContent = state.selMode ? ("已選 "+selCount()+" 張") : "";
+  $("selCount").textContent = state.selMode ? ("已選 "+selCount()+" 張")
+                              : (state.sortMode ? "拖曳縮圖調整順序" : "");
 
   list.forEach(function(p){
     var d = document.createElement("div"); d.className = "thumb";
+    d.setAttribute("data-pid", p.id);
     if(state.selMode && state.selSet[p.id]) d.classList.add("picked");
     var im = document.createElement("img"); im.src = makeThumb(p); d.appendChild(im);
     if(p.markers.length){
@@ -1069,7 +1267,11 @@ function renderLib(){
       var cs = document.createElement("div"); cs.className = "cs";
       cs.textContent = caseLabel(effCase(p)); d.appendChild(cs);
     }
-    if(state.selMode){
+    if(state.sortMode){
+      var gp = document.createElement("div"); gp.className = "grip"; gp.textContent = "↕";
+      d.appendChild(gp);
+      attachSortHandlers(d, p);
+    }else if(state.selMode){
       var pk = document.createElement("div"); pk.className = "pick";
       pk.textContent = state.selSet[p.id] ? "✓" : "";
       d.appendChild(pk);
@@ -1421,8 +1623,20 @@ $("btnMaskOk").onclick = function(){
 };
 
 /* ───────── 復原（Undo） ───────── */
+/* 復原快照只留影像本體與標記，不留 srcData（base64 字串）——
+   一張 12MP 照片的 15 層快照若含 base64 會吃掉上百 MB；
+   需要時（真的按下復原）再從影像重新產生。 */
+function bmpToDataUrl(bmp){
+  if(bmp && bmp.toDataURL) return bmp.toDataURL("image/jpeg", 0.95);   // 已是 canvas
+  var W = bw(bmp), H = bh(bmp);
+  var c = document.createElement("canvas"); c.width = W; c.height = H;
+  var g = c.getContext("2d");
+  g.fillStyle = "#ffffff"; g.fillRect(0,0,W,H);
+  g.drawImage(bmp, 0, 0);
+  return c.toDataURL("image/jpeg", 0.95);
+}
 function pushUndo(p){
-  p.undo.push({ bmp:p.bmp, srcData:p.srcData, markers:JSON.parse(JSON.stringify(p.markers)) });
+  p.undo.push({ bmp:p.bmp, markers:JSON.parse(JSON.stringify(p.markers)) });
   if(p.undo.length > UNDO_MAX) p.undo.shift();
   updateToolUI();
 }
@@ -1433,7 +1647,9 @@ function popUndoNoop(p){          // 拖曳沒有實際移動時，撤掉剛剛�
 $("btnUndo").onclick = function(){
   var p = cur(); if(!p || !p.undo.length) return;
   var u = p.undo.pop();
-  p.bmp = u.bmp; p.srcData = u.srcData; p.markers = u.markers;
+  p.bmp = u.bmp;
+  p.srcData = (u.bmp === p.bmp && u.srcData) ? u.srcData : bmpToDataUrl(u.bmp);
+  p.markers = u.markers;
   state.selMk = -1;
   markDirty(p);
   draw();
@@ -1807,6 +2023,8 @@ function syncSetUI(){
   $("setClinic").value = settings.clinic;
   $("setWmClinic").checked = settings.wmClinic;
   $("setWmDate").checked = settings.wmDate;
+  $("setImportMax").value = String(settings.importMax);
+  refreshStorage();
   $("setWmLogo").checked = settings.wmLogo;
   $("setLogoPos").value = settings.logoPos;
   $("setLogoScale").value = settings.logoScale; $("setLogoScaleV").textContent = Math.round(settings.logoScale*100)+"%";
@@ -1829,6 +2047,11 @@ $("setMk").oninput = function(){
 $("setFt").oninput = function(){
   settings.ftScale = parseFloat(this.value); $("setFtV").textContent = "×"+settings.ftScale.toFixed(1);
   settingChanged();
+};
+$("saveWarn").onclick = retrySave;
+$("setImportMax").onchange = function(){
+  settings.importMax = parseInt(this.value, 10) || 0;
+  saveSettings();
 };
 $("setClinic").oninput = function(){ settings.clinic = this.value; saveSettings(); };
 $("setWmClinic").onchange = function(){ settings.wmClinic = this.checked; saveSettings(); };
@@ -2487,6 +2710,7 @@ syncColOpt();
 renderLib();
 restorePhotos();
 loadCases();
+refreshStorage();
 
 /* ───────── 備份／還原 ─────────
    備份：把所有照片（已去除 EXIF 的 JPEG）＋標記／標題／取景、組圖專案、
