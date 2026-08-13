@@ -1,6 +1,6 @@
 /* 案例標記工具 Service Worker
    策略：network-first（線上永遠拿最新版，離線才回退快取），確保部署即時生效。 */
-var CACHE = "cm-v2_0";
+var CACHE = "cm-v2_1";
 var CORE = [
   "./",
   "./index.html",
