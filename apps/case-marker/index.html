@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v2.1
+  案例標記工具 v2.2
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v2.1</title>
+<title>案例標記工具 v2.2</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -119,8 +119,26 @@
   .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
   .btn.on{background:var(--ink); border-color:var(--ink); color:#fff;}
   .btn:disabled{opacity:.45;}
-  /* .btn 的 display 會蓋掉 [hidden] 的 display:none，必須明確覆蓋 */
-  .btn[hidden]{display:none;}
+  /* 全域覆蓋：任何自訂 class 的 display（如 .btn 的 inline-flex、.new-hint 的 flex）
+     都會蓋掉 [hidden] 的 display:none，導致「已隱藏」的元素照樣顯示。
+     用一條全域規則根絕這類問題，之後新增元件不必再逐一補。 */
+  [hidden]{display:none !important;}
+  /* 新功能徽章：用過一次就永久消失（記在 localStorage） */
+  .btn{position:relative;}
+  .new-hint{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:#7a4a00;
+    background:#fff6e0; border:1px solid #f0d9a8; border-radius:10px; padding:7px 10px;
+  }
+  .new-hint .nh-x{
+    margin-left:auto; border:0; background:transparent; color:#7a4a00;
+    font-size:14px; cursor:pointer; padding:2px 4px; line-height:1;
+  }
+  .btn.is-new::after{
+    content:"新"; position:absolute; top:-6px; right:-4px;
+    background:#e53935; color:#fff; font-size:10px; font-weight:700; line-height:1;
+    padding:3px 5px; border-radius:9px; border:1.5px solid #fff;
+    box-shadow:0 1px 3px rgba(0,0,0,.3); pointer-events:none;
+  }
   .dot{width:13px; height:13px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.15);}
   /* ── 標記編輯 ── */
   .toolbar{
@@ -280,7 +298,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.1</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.2</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -305,6 +323,10 @@
     <div class="case-bar">
       <div class="case-chips" id="caseChips"></div>
       <div id="caseNote" hidden style="font-size:13px;color:var(--ink-2);padding:0 2px"></div>
+      <div id="newHint" hidden class="new-hint">
+        <span id="newHintTxt"></span>
+        <button class="nh-x" id="newHintX" title="不再顯示">✕</button>
+      </div>
       <div class="case-act">
         <button class="btn" id="btnCaseNew">＋ 新病例</button>
         <button class="btn" id="btnSelMode">☑ 選取</button>
@@ -453,7 +475,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v2.1　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v2.2　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -644,7 +666,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v2.1
+   案例標記工具 v2.2
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -876,6 +898,17 @@ function flushSave(){
   });
 }
 function pendingSaveCount(){ var n=0; for(var k in needSave) if(needSave[k]) n++; return n; }
+/* 自動存檔是延遲 400ms 的批次寫入；若使用者在那之前切走 App、關閉或重新整理分頁，
+   這次變更就會遺失。頁面要離開或轉到背景時立刻補寫一次（iPad 上切換 App 很常見）。 */
+function flushNow(){
+  if(!pendingSaveCount()) return;
+  clearTimeout(saveTimer);
+  flushSave();
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "hidden") flushNow();
+});
+window.addEventListener("pagehide", flushNow);
 function restorePhotos(){
   idbAll().then(function(rows){
     if(!rows.length) return;
@@ -1025,6 +1058,51 @@ function makeThumb(p){
 }
 
 /* ───────── 照片庫畫面 ───────── */
+/* ───────── 新功能徽章 ─────────
+   近期版本新增的功能會掛上「新」；使用者點過一次就永久消失（記在 localStorage）。
+   加新功能時在 NEW_FEATURES 補一筆，並把 NEW_SINCE 設成要提示的最舊版本。 */
+var NEW_SINCE = 2.0;                 // 只提示這個版本（含）之後新增的功能
+var NEW_FEATURES = [
+  { el:"btnCaseExport", ver:2.1, name:"匯出此病例" },
+  { el:"btnSortMode",   ver:2.0, name:"照片排序" },
+  { el:"btnSet",        ver:2.0, name:"匯入尺寸與儲存空間設定" }
+];
+var seenNew = {};
+try{ seenNew = JSON.parse(localStorage.getItem("cm_seen_new") || "{}") || {}; }catch(e){ seenNew = {}; }
+function saveSeenNew(){ try{ localStorage.setItem("cm_seen_new", JSON.stringify(seenNew)); }catch(e){} }
+function isNewFeature(f){ return f.ver >= NEW_SINCE && !seenNew[f.el]; }
+function applyNewBadges(){
+  NEW_FEATURES.forEach(function(f){
+    var el = $(f.el); if(!el) return;
+    el.classList.toggle("is-new", isNewFeature(f));
+  });
+  renderNewHint();
+}
+function markFeatureSeen(id){
+  if(seenNew[id]) return;
+  seenNew[id] = 1; saveSeenNew(); applyNewBadges();
+}
+/* 點過就標記為已看過（用 capture 確保先於各自的處理器） */
+NEW_FEATURES.forEach(function(f){
+  var el = $(f.el);
+  if(el) el.addEventListener("click", function(){ markFeatureSeen(f.el); }, true);
+});
+/* 未看過的新功能清單，並在照片庫顯示一條提示（因為有些按鈕平常是隱藏的，
+   例如「匯出此病例」要選定病例後才出現，光靠徽章可能看不到） */
+function unseenFeatures(){ return NEW_FEATURES.filter(isNewFeature); }
+function renderNewHint(){
+  var el = $("newHint"); if(!el) return;
+  if(seenNew.__dismissed){ el.hidden = true; return; }
+  var list = unseenFeatures();
+  if(!list.length){ el.hidden = true; return; }
+  $("newHintTxt").textContent = "🆕 本版新增：" +
+    list.map(function(f){ return f.name; }).join("、") + "（用過就不再提示）";
+  el.hidden = false;
+}
+$("newHintX").onclick = function(){
+  seenNew.__dismissed = 1; saveSeenNew(); renderNewHint();
+};
+
 /* ───────── 儲存空間 ─────────
    顯示已用量／配額，接近上限時提醒備份（避免寫入失敗才發現）。 */
 var lastStorage = null;
@@ -1302,6 +1380,7 @@ function renderLib(){
     var nm = document.createElement("div"); nm.className = "nm"; nm.textContent = p.name; d.appendChild(nm);
     g.appendChild(d);
   });
+  applyNewBadges();
 }
 
 /* ───────── 標記／匯出共用繪製 ─────────
@@ -2712,6 +2791,7 @@ window.addEventListener("resize", function(){
 });
 
 syncColOpt();
+applyNewBadges();
 renderLib();
 restorePhotos();
 loadCases();
