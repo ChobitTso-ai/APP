@@ -63,7 +63,13 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   v2.1 單一病例匯出〔buildArchive({caseId}) 共用備份邏輯，只收該病例的照片、
   該病例本身與「照片全屬該病例」的組圖專案；meta 帶 scope/caseCode。
   匯入沿用既有「📥 還原」——格式相同、以代號比對故不會重複建病例，
-  可支援醫師標記→小編後製→回傳的接力協作〕〕。**多人即時協作需要後端、
+  可支援醫師標記→小編後製→回傳的接力協作〕；v2.2 新功能徽章
+  〔NEW_FEATURES 清單＋NEW_SINCE 門檻；近期新增的功能按鈕掛紅色「新」，
+  點過即永久消失〔localStorage cm_seen_new〕，另有可關閉的提示列列出未用過的
+  新功能——因為有些按鈕平常隱藏（如匯出此病例要選定病例才出現）。
+  **加新功能時記得在 NEW_FEATURES 補一筆並調整 NEW_SINCE。**〕、
+  切到背景／離開頁面時立刻補寫存檔〔visibilitychange＋pagehide → flushNow；
+  自動存檔原本延遲 400ms，來不及寫就切走會遺失〕〕。**多人即時協作需要後端、
   病患照片會離開裝置，屬不同風險層級，未做；要做需先確認主機、資料落點與資安審查。**
   透視校正經評估暫緩
   〔工程大、臨床用途邊際、手機拖四角體驗差〕，如日後要做再單獨一批）、
@@ -112,6 +118,10 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
 - **測試前清 IndexedDB**：頁面本身持有連線時 `indexedDB.deleteDatabase` 會
   永遠 blocked——先 `idb.close()`（case-marker 的全域連線變數叫 `idb`）
   再刪，並同時掛 `onblocked`。
+- **`[hidden]` 會被自訂 class 的 display 蓋掉**（`.btn{display:inline-flex}`、
+  `.new-hint{display:flex}` 都踩過兩次）：案例標記工具已加全域
+  `[hidden]{display:none !important;}` 根絕；新專案要留意同一陷阱。
+  驗證時要看 `getComputedStyle(el).display`，不能只看有沒有 hidden 屬性。
 - **匯出預覽斷言**：`#expImg` 會殘留上一張圖，斷言尺寸前先
   `removeAttribute('src')` 再等 `naturalWidth > 0`。
 - **Pages 是 workflow 部署**（Source = GitHub Actions，使用者已在網頁設定

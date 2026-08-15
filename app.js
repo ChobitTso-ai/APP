@@ -25,7 +25,7 @@ const VISITOR_KEY = 'nckuh_endo_vid';
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
   // 手機也能用（App 本身是 PWA，可加入主畫面）
-  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-07-31', group: 'mobile' },
+  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-08-14', group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
