@@ -4,7 +4,7 @@
 <script>if(localStorage.getItem('nckuh_endo_authed')!=='1')location.replace('../../');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>即時投票 v1.2 · 主持端</title>
+<title>即時投票 v1.3 · 主持端</title>
 <style>
 :root{
   --bg-0:#0a0e1a; --bg-1:#0f1524;
@@ -49,7 +49,7 @@ nav.tabs button.on{color:#fff;background:linear-gradient(135deg,var(--accent),va
 .card{padding:16px;margin-bottom:14px}
 .card > h2{font-size:1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:5px}
-input[type=text],input[type=number],textarea,select{
+input[type=text],input[type=number],input[type=datetime-local],textarea,select{
   width:100%;font:inherit;font-size:.95rem;color:var(--text);background:rgba(10,14,26,.6);
   border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:none}
 input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,140,255,.16)}
@@ -182,7 +182,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
 
   <header>
     <h1>🗳️ 即時投票</h1>
-    <span class="badge">v1.2</span>
+    <span class="badge">v1.3</span>
     <div class="spacer"></div>
     <!-- 後端網址已寫進 api.js 時就不顯示這個按鈕：常數優先於暫存值，
          留著只會變成「按了沒作用」的按鈕。 -->
@@ -227,11 +227,16 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
           </select>
         </div>
         <div>
-          <label for="cfgOnce">重複投票</label>
-          <select id="cfgOnce">
-            <option value="1">一支手機只能投一次</option>
-            <option value="0">不限制（可重複投）</option>
+          <label for="cfgRevote">重複投票</label>
+          <select id="cfgRevote">
+            <option value="block">一支手機只能投一次</option>
+            <option value="replace">可以重新作答（覆蓋前一次）</option>
+            <option value="allow">不限制（每次都算一筆）</option>
           </select>
+        </div>
+        <div>
+          <label for="cfgCloseAt">截止時間（不填＝不自動關）</label>
+          <input type="datetime-local" id="cfgCloseAt">
         </div>
         <div>
           <label for="cfgScore">計分方式</label>
@@ -276,7 +281,9 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
     <div class="card glass">
       <div class="row">
         <button class="btn primary" id="createBtn">🚀 建立投票（開放作答）</button>
-        <button class="btn" id="updateBtn" hidden>💾 更新目前這場的題目</button>
+        <!-- 只有當編輯中的草稿確實就是那一場的題目時才出現，
+             否則會把不相干的題目推上去蓋掉正在進行的場次 -->
+        <button class="btn" id="updateBtn" hidden>💾 更新這場的題目</button>
         <div class="spacer"></div>
         <button class="btn sm ghost" id="exportJson">⬇ 匯出題目檔</button>
         <button class="btn sm ghost" id="importBtn">⬆ 匯入題目檔</button>
@@ -319,9 +326,12 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
           <div><label>管理碼（看結果用，請留著）</label>
             <div style="font-size:1.15rem;font-weight:700;letter-spacing:.1em" id="liveKey"></div></div>
           <div><label>狀態</label><div id="liveStatus" style="font-size:.95rem"></div></div>
+          <div id="liveDeadlineWrap" hidden><label>截止時間（到了自動封存）</label>
+            <div id="liveDeadline" style="font-size:.95rem"></div></div>
         </div>
         <div class="row" style="margin-top:14px">
           <button class="btn" id="gotoRes">📊 看結果</button>
+          <button class="btn" id="editLiveBtn" hidden>📝 編輯這場的題目</button>
           <button class="btn" id="closeBtn">🔒 結束並封存</button>
           <button class="btn ghost" id="reopenBtn" hidden>🔓 重新開放</button>
         </div>
@@ -394,7 +404,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
   </section>
 
   <footer>
-    NCKUH ENDO · App 中心 —— 即時投票 v1.2<br>
+    NCKUH ENDO · App 中心 —— 即時投票 v1.3<br>
     ©Tso KY - All Rights Reserved
   </footer>
 </div>
@@ -415,10 +425,10 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
 <div id="toast"></div>
 
 <script src="vendor/qrcode.js"></script>
-<script src="api.js"></script>
+<script src="api.js?v=1.3"></script>
 <script>
 /* =========================================================
-   即時投票 v1.2 —— 主持端
+   即時投票 v1.3 —— 主持端
    ========================================================= */
 
 const DRAFT_KEY = 'lp_draft';
@@ -430,7 +440,7 @@ const TYPE_NAME = { single:'單選', truefalse:'是非', multi:'多選', scale:'
 
 /* 這一版前端搭配的後端版本（docs/voting-backend.gs 的 API_VERSION）。
    後端比較舊時只是少幾個功能，會在頁面上提醒，不會壞掉。 */
-const BACKEND_VERSION = '1.2';
+const BACKEND_VERSION = '1.3';
 
 let poll    = newPoll();   // 編輯中的題目
 let live    = null;        // { pin, key, title, status }
@@ -441,7 +451,7 @@ let scrIndex = 0;
 function newPoll(){
   return {
     title:'',
-    config:{ named:false, onceOnly:true, scoring:'none', showResult:'after', timeLimit:30 },
+    config:{ named:false, revote:'block', scoring:'none', showResult:'after', timeLimit:30, closeAt:0 },
     questions:[]
   };
 }
@@ -651,35 +661,60 @@ $('#qList').addEventListener('click', e => {
 /* ---------- 基本設定 ---------- */
 function readConfig(){
   poll.title = $('#title').value.trim();
+  const at = $('#cfgCloseAt').value;
   poll.config = {
     named: $('#cfgNamed').value === '1',
-    onceOnly: $('#cfgOnce').value === '1',
+    revote: $('#cfgRevote').value,
     scoring: $('#cfgScore').value,
     showResult: $('#cfgShow').value,
     timeLimit: Math.max(5, Math.min(600, Number($('#cfgLimit').value) || 30)),
+    closeAt: at ? new Date(at).getTime() : 0,   // 存 epoch 毫秒，避免時區誤會
   };
 }
 function writeConfig(){
-  $('#title').value    = poll.title || '';
-  $('#cfgNamed').value = poll.config.named ? '1' : '0';
-  $('#cfgOnce').value  = poll.config.onceOnly ? '1' : '0';
-  $('#cfgScore').value = poll.config.scoring;
-  $('#cfgShow').value  = poll.config.showResult;
-  $('#cfgLimit').value = poll.config.timeLimit || 30;
+  $('#title').value     = poll.title || '';
+  $('#cfgNamed').value  = poll.config.named ? '1' : '0';
+  $('#cfgRevote').value = normRevote(poll.config);
+  $('#cfgScore').value  = poll.config.scoring;
+  $('#cfgShow').value   = poll.config.showResult;
+  $('#cfgLimit').value  = poll.config.timeLimit || 30;
+  $('#cfgCloseAt').value = toLocalInput(poll.config.closeAt);
   syncScoreUI();
+}
+
+/** v1.2 以前只有布林的 onceOnly，舊草稿與舊場次要讀得回來。 */
+function normRevote(c){
+  if (['block','replace','allow'].indexOf(c.revote) !== -1) return c.revote;
+  return c.onceOnly === false ? 'allow' : 'block';
+}
+
+/** epoch 毫秒 → <input type="datetime-local"> 要的當地時間字串 */
+function toLocalInput(ms){
+  if (!ms) return '';
+  const d = new Date(Number(ms));
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) +
+         'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function fmtDeadline(ms){
+  if (!ms) return '';
+  return new Date(Number(ms)).toLocaleString('zh-TW',
+    { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 function syncScoreUI(){
   const s = $('#cfgScore').value;
   $('#limitWrap').hidden = (s !== 'speed');
   $('#scoreNote').hidden = (s === 'none');
 }
-['#title','#cfgNamed','#cfgOnce','#cfgScore','#cfgShow','#cfgLimit'].forEach(sel => {
+['#title','#cfgNamed','#cfgRevote','#cfgScore','#cfgShow','#cfgLimit','#cfgCloseAt'].forEach(sel => {
   $(sel).addEventListener('input', () => {
     readConfig(); syncScoreUI(); renderQuestions(); saveDraft();
   });
 });
 
-function saveDraft(){ readConfig(); save(DRAFT_KEY, poll); }
+function saveDraft(){ readConfig(); save(DRAFT_KEY, poll); syncEditButtons(); }
 
 /* ---------- 匯入匯出 ---------- */
 $('#exportJson').addEventListener('click', () => {
@@ -769,7 +804,7 @@ $('#createBtn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = '建立中…';
   try {
     const res = await apiSend('create', { title: poll.title, config: poll.config, questions: cleanQuestions() });
-    setLive({ pin: res.pin, key: res.key, title: res.title, status: '進行中' });
+    setLive({ pin: res.pin, key: res.key, title: res.title, status: '進行中', closeAt: poll.config.closeAt || 0 });
     poll.usedPin = res.pin;   // 這份草稿已經開成場次了，下次按「＋ 新建投票」可以安心清空
     saveDraft();
     const mine = load(MINE_KEY, []);
@@ -789,6 +824,7 @@ $('#updateBtn').addEventListener('click', async () => {
   if (!live) return;
   const err = validate();
   if (err){ toast(err, 3600); return; }
+  if (poll.usedPin !== live.pin){ toast('目前編輯的不是這一場的題目'); return; }
   if (!confirm('更新「' + live.title + '」的題目？\n已經送出的作答不會消失，但題目改了對不回去，建議只在還沒人作答前更新。')) return;
   try {
     await apiSend('update', { title: poll.title, config: poll.config, questions: cleanQuestions() }, { pin: live.pin, key: live.key });
@@ -798,6 +834,19 @@ $('#updateBtn').addEventListener('click', async () => {
   } catch(e){ toast('更新失敗：' + e.message, 5000); }
 });
 
+/**
+ * 「💾 更新這場的題目」的顯示條件。
+ * 只檢查「有沒有選定場次」是不夠的——場次可以自由切換，編輯頁卻可能放著
+ * 完全不相干的草稿，一按就把進行中那場的題目蓋掉。所以要求草稿的 usedPin
+ * 必須正好等於目前這場。
+ */
+function syncEditButtons(){
+  const match = !!(live && poll.usedPin && poll.usedPin === live.pin);
+  $('#updateBtn').hidden = !match;
+  if (match) $('#updateBtn').textContent = '💾 更新「' + live.title + '」的題目';
+  $('#editLiveBtn').hidden = !live;
+}
+
 function joinUrlFor(pin){
   return new URL('join.html?pin=' + pin, location.href).href;
 }
@@ -805,7 +854,7 @@ function joinUrlFor(pin){
 function renderLive(){
   $('#noLive').hidden  = !!live;
   $('#liveBox').hidden = !live;
-  $('#updateBtn').hidden = !live;
+  syncEditButtons();
   if (!live) return;
 
   const url = joinUrlFor(live.pin);
@@ -814,6 +863,9 @@ function renderLive(){
   $('#liveTitle').textContent = live.title;
   $('#liveKey').textContent   = live.key;
   $('#liveStatus').textContent = live.status || '進行中';
+  const dl = live.closeAt || (results && results.config && results.config.closeAt) || 0;
+  $('#liveDeadlineWrap').hidden = !dl;
+  if (dl) $('#liveDeadline').textContent = fmtDeadline(dl);
   $('#closeBtn').hidden  = live.status === '已結束';
   $('#reopenBtn').hidden = live.status !== '已結束';
 
@@ -833,6 +885,31 @@ $('#copyUrl').addEventListener('click', async () => {
 });
 $('#openJoin').addEventListener('click', () => window.open($('#joinUrl').textContent, '_blank', 'noopener'));
 $('#gotoRes').addEventListener('click', () => { showTab('res'); refreshResults(); });
+
+/**
+ * 把「這一場」的題目載回編輯頁，並標記草稿屬於這一場，
+ * 這樣「💾 更新這場的題目」才會出現——這是安全修改進行中場次的唯一入口。
+ * 本機清單有存草稿就直接用；換一台電腦取回的場次沒有，就從後端的 results 重建。
+ */
+$('#editLiveBtn').addEventListener('click', async () => {
+  if (!live) return;
+  const mine = load(MINE_KEY, []);
+  const m = mine.find(x => x.pin === live.pin);
+  let next = m && m.poll ? JSON.parse(JSON.stringify(m.poll)) : null;
+
+  if (!next){
+    try {
+      const res = results && results.pin === live.pin ? results
+                : await apiGet('results', { pin: live.pin, key: live.key });
+      next = { title: res.title, config: res.config || {}, questions: res.questions || [] };
+    } catch(e){ toast('取回題目失敗：' + e.message, 5000); return; }
+  }
+
+  next.usedPin = live.pin;
+  poll = next;
+  writeConfig(); renderQuestions(); saveDraft(); showTab('edit');
+  toast('已載入這場的題目，改完按「💾 更新」送出');
+});
 
 $('#closeBtn').addEventListener('click', async () => {
   if (!live || !confirm('結束「' + live.title + '」？結束後就不能再作答了。')) return;

@@ -170,10 +170,10 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;margin-top:22px;lin
   <footer>NCKUH ENDO · App 中心 —— 即時投票<br>©Tso KY - All Rights Reserved</footer>
 </div>
 
-<script src="api.js"></script>
+<script src="api.js?v=1.3"></script>
 <script>
 /* =========================================================
-   即時投票 v1.2 —— 觀眾端（不需登入）
+   即時投票 v1.3 —— 觀眾端（不需登入）
    ========================================================= */
 
 const TOKEN_KEY = 'lp_voter_token';
@@ -243,15 +243,31 @@ async function enter(pin){
   }
 }
 
+/** v1.2 以前只有布林的 onceOnly，舊場次要讀得回來。 */
+function revoteMode(c){
+  if (['block','replace','allow'].indexOf(c.revote) !== -1) return c.revote;
+  return c.onceOnly === false ? 'allow' : 'block';
+}
+
 function showStart(){
   const c = poll.config;
   const bits = [poll.questions.length + ' 題'];
   if (c.scoring !== 'none') bits.push('有計分');
   if (c.scoring === 'speed') bits.push('每題 ' + c.timeLimit + ' 秒');
   if (!c.named) bits.push('匿名');
-  if (c.onceOnly) bits.push('一支手機只能投一次');
+
+  const mode = revoteMode(c);
+  if (mode === 'block')   bits.push('一支手機只能投一次');
+  if (mode === 'replace') bits.push('可以重新作答（覆蓋上一次）');
+
+  if (c.closeAt){
+    bits.push('截止 ' + new Date(Number(c.closeAt)).toLocaleString('zh-TW',
+      { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }));
+  }
+
   $('#startTitle').textContent = poll.title;
   $('#startSub').textContent = bits.join('　·　');
+  $('#startGo').textContent = '開始作答';
   show('viewStart');
 }
 
@@ -455,9 +471,10 @@ async function submit(){
 }
 
 function renderDone(res){
-  $('#doneIcon').textContent  = '✅';
-  $('#doneTitle').textContent = '已送出，謝謝！';
-  $('#doneSub').textContent   = '目前共 ' + (res.count || 0) + ' 人送出。';
+  $('#doneIcon').textContent  = res.replaced ? '🔄' : '✅';
+  $('#doneTitle').textContent = res.replaced ? '已更新你的答案！' : '已送出，謝謝！';
+  $('#doneSub').textContent   = (res.replaced ? '之前那次已經被覆蓋。' : '') +
+                                '目前共 ' + (res.count || 0) + ' 人送出。';
 
   if (res.score !== undefined){
     $('#doneScore').hidden = false;
