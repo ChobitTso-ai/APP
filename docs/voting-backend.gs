@@ -10,6 +10,9 @@
  *   作答紀錄   每人每題一列（可直接看、可自行篩選排序）
  *   結果彙總   按下「結束並封存」時寫入的人類可讀結果
  *
+ * v1.1 新增 info（場次清單用的輕量狀態）與 delete（永久刪除一場）。
+ * 前端會用 ping 回報的版本判斷後端是不是舊的，舊版只是少功能、不會壞。
+ *
  * 部署步驟見 docs/VOTING_SETUP.md。
  *
  * 前端一律以 JSONP（<script> 標籤）呼叫，因此全部走 doGet；
@@ -30,7 +33,7 @@ const SHEET_SUMMARY = '結果彙總';
 
 const CACHE_TTL   = 21600; // 快取 6 小時（Apps Script 上限）
 const UPLOAD_TTL  = 600;   // 切塊上傳的暫存 10 分鐘
-const API_VERSION = '1.0';
+const API_VERSION = '1.1';
 
 const MAX_TEXTS   = 300;   // 每題文字答案在快取中最多留幾筆（試算表永遠是完整的）
 
@@ -92,8 +95,10 @@ function route(params) {
     case 'get':     return actionGet(params);          // 觀眾取題（不含正確答案）
     case 'submit':  return actionSubmit(params);       // 觀眾送出作答
     case 'results': return actionResults(params);      // 主持人看結果（需管理碼）
+    case 'info':    return actionInfo(params);         // 場次清單用的輕量狀態（需管理碼）
     case 'close':   return actionClose(params, true);  // 結束並封存（需管理碼）
     case 'reopen':  return actionClose(params, false); // 重新開放（需管理碼）
+    case 'delete':  return actionDelete(params);       // 永久刪除這場（需管理碼）
     default:        throw new Error('不認得的 action：' + action);
   }
 }
@@ -320,6 +325,72 @@ function actionResults(params) {
   out.config = row.config;
   out.questions = row.questions; // 主持人看得到正確答案
   return out;
+}
+
+/**
+ * 場次清單用的輕量查詢：只回標題／狀態／回覆人數，不做彙總。
+ * 回覆人數直接讀「投票」工作表的欄位（送出時會即時更新），
+ * 不走 loadAgg——清單上有幾場就會呼叫幾次，不能讓它去掃整張作答紀錄。
+ */
+function actionInfo(params) {
+  const pin = requirePin(params.pin);
+  const row = findPollRow(pin);
+  requireKey(row, params.key);
+  return {
+    ok: true,
+    pin: pin,
+    title: row.title,
+    status: pollsSheet().getRange(row.rowIndex, 4).getValue(),
+    count: Number(pollsSheet().getRange(row.rowIndex, 6).getValue()) || 0,
+  };
+}
+
+/**
+ * 永久刪除一場投票：拿掉「投票」工作表那一列，以及該場在「作答紀錄」的所有列。
+ * 「結果彙總」不動——那是封存後給人看的存檔，刪掉原始資料也應該留著。
+ */
+function actionDelete(params) {
+  const pin = requirePin(params.pin);
+  const row = findPollRow(pin);
+  requireKey(row, params.key);
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const removed = deleteVoteRows(pin);
+    // 刪掉投票那一列要放最後：先刪它的話，findPollRow 的 rowIndex 就對不上了
+    pollsSheet().deleteRow(row.rowIndex);
+    cacheDrop(pin);
+    // ⚠️ 刪掉一列之後，排在它下面的場次列號全部往上移一格；
+    //    若不把所有 row_* 快取作廢，下一次有人作答就會把回覆人數寫到別場那一列。
+    dropAllRowCache();
+    return { ok: true, pin: pin, title: row.title, removedVotes: removed };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** 刪掉某場的作答紀錄。由下往上、連續的整段一起刪，避免逐列刪造成索引位移與過慢。 */
+function deleteVoteRows(pin) {
+  const sheet = votesSheet();
+  const last = sheet.getLastRow();
+  if (last < 2) return 0;
+
+  const pins = sheet.getRange(2, 2, last - 1, 1).getValues();
+  const hits = [];
+  for (let r = 0; r < pins.length; r++) {
+    if (String(pins[r][0]) === String(pin)) hits.push(r + 2);
+  }
+  if (!hits.length) return 0;
+
+  let i = hits.length - 1;
+  while (i >= 0) {
+    let end = i;
+    while (i > 0 && hits[i - 1] === hits[i] - 1) i--;
+    sheet.deleteRows(hits[i], end - i + 1);
+    i--;
+  }
+  return hits.length;
 }
 
 function actionClose(params, close) {
@@ -584,6 +655,17 @@ function findPollRow(pin) {
 }
 
 function cacheDropRow(pin) { CacheService.getScriptCache().remove('row_' + pin); }
+
+/** 把所有場次的「列號快取」作廢。刪除場次後一定要呼叫（列號會位移）。 */
+function dropAllRowCache() {
+  const sheet = pollsSheet();
+  const last = sheet.getLastRow();
+  if (last < 2) return;
+  const cache = CacheService.getScriptCache();
+  sheet.getRange(2, 1, last - 1, 1).getValues().forEach(function (r) {
+    cache.remove('row_' + r[0]);
+  });
+}
 function cacheDrop(pin) {
   const cache = CacheService.getScriptCache();
   cache.remove('row_' + pin);

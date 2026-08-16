@@ -4,7 +4,7 @@
 <script>if(localStorage.getItem('nckuh_endo_authed')!=='1')location.replace('../../');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>即時投票 v1.0 · 主持端</title>
+<title>即時投票 v1.1 · 主持端</title>
 <style>
 :root{
   --bg-0:#0a0e1a; --bg-1:#0f1524;
@@ -127,12 +127,17 @@ table.board th{color:var(--muted);font-weight:500;font-size:.8rem}
 table.board td:last-child,table.board th:last-child{text-align:right}
 .rank1{color:#ffd76b}.rank2{color:#d8e0f5}.rank3{color:#e0a878}
 
-/* ---- 我的投票 ---- */
-.mine-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--line);
+/* ---- 投票場次清單 ---- */
+.mine-item{display:flex;align-items:center;gap:9px;padding:12px 14px;border:1px solid var(--line);
   border-radius:11px;margin-bottom:8px;background:rgba(10,14,26,.35);flex-wrap:wrap}
-.mine-item .t{flex:1;min-width:140px}
-.mine-item .t b{display:block;font-size:.95rem;margin-bottom:2px}
+.mine-item.current{border-color:rgba(91,140,255,.5);background:rgba(91,140,255,.09)}
+.mine-item .t{flex:1;min-width:180px}
+.mine-item .t b{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:.95rem;margin-bottom:3px}
 .mine-item .t small{color:var(--muted);font-size:.78rem}
+.badge.on{background:rgba(47,214,168,.16);border-color:rgba(47,214,168,.35);color:#7ee8c4}
+.badge.off{background:rgba(255,255,255,.06);border-color:var(--line);color:var(--muted)}
+.badge.cur{background:rgba(165,107,255,.2);border-color:rgba(165,107,255,.4);color:#d8c2ff}
+.btn.sm.primary{font-weight:600}
 
 /* ---- 投影模式 ---- */
 #screen{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#0f1524,#0a0e1a);
@@ -166,9 +171,11 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
 
   <header>
     <h1>🗳️ 即時投票</h1>
-    <span class="badge">v1.0</span>
+    <span class="badge">v1.1</span>
     <div class="spacer"></div>
-    <button class="btn sm ghost" id="cfgBtn">⚙ 後端設定</button>
+    <!-- 後端網址已寫進 api.js 時就不顯示這個按鈕：常數優先於暫存值，
+         留著只會變成「按了沒作用」的按鈕。 -->
+    <button class="btn sm ghost" id="cfgBtn" hidden>⚙ 後端設定</button>
     <a class="back" href="../../">← App 中心</a>
   </header>
 
@@ -182,11 +189,16 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
   </div>
 
   <nav class="tabs">
-    <button data-tab="edit" class="on">📝 編輯題目</button>
+    <button data-tab="list" class="on">📚 投票場次</button>
+    <button data-tab="edit">📝 編輯題目</button>
     <button data-tab="live">📣 開放投票</button>
     <button data-tab="res">📊 結果</button>
-    <button data-tab="mine">📚 我的投票</button>
   </nav>
+
+  <div class="note" id="oldBackend" hidden>
+    ⚠️ 你的 Apps Script 後端是舊版（<span id="oldVer"></span>），「永久刪除」不能用。
+    其他功能全部正常。更新方式見 <b>docs/VOTING_SETUP.md</b> 的「更新後端程式碼」。
+  </div>
 
   <!-- ============ 編輯 ============ -->
   <section id="tab-edit">
@@ -270,7 +282,8 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
   <!-- ============ 開放投票 ============ -->
   <section id="tab-live" hidden>
     <div class="card glass" id="noLive">
-      <p class="hint">還沒有進行中的投票。到「📝 編輯題目」把題目做好，按「🚀 建立投票」就會產生 PIN 與 QR Code。</p>
+      <p class="hint">還沒有選定場次。到「📚 投票場次」挑一場按「▶ 開啟這場」，
+        或按「＋ 新建投票」做一份新的。</p>
     </div>
 
     <div id="liveBox" hidden>
@@ -311,7 +324,8 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
   <!-- ============ 結果 ============ -->
   <section id="tab-res" hidden>
     <div class="card glass" id="noRes">
-      <p class="hint">還沒有可以顯示的結果。先建立一場投票，或到「📚 我的投票」用 PIN ＋ 管理碼把舊的場次叫回來。</p>
+      <p class="hint">還沒有選定場次。到「📚 投票場次」挑一場按「▶ 開啟這場」，
+        或用 PIN ＋ 管理碼把別台電腦建立的場次叫回來。</p>
     </div>
 
     <div id="resBox" hidden>
@@ -339,26 +353,37 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
     </div>
   </section>
 
-  <!-- ============ 我的投票 ============ -->
-  <section id="tab-mine" hidden>
+  <!-- ============ 投票場次（第一頁）============ -->
+  <section id="tab-list">
     <div class="card glass">
-      <h2>這台電腦記得的投票</h2>
+      <div class="row" style="margin-bottom:14px">
+        <h2 style="margin:0">投票場次</h2>
+        <div class="spacer"></div>
+        <button class="btn sm" id="listRefresh">🔄 更新狀態</button>
+        <button class="btn primary" id="newPollBtn">＋ 新建投票</button>
+      </div>
       <div id="mineList"></div>
-      <p class="hint" id="mineEmpty">還沒有紀錄。建立投票之後就會出現在這裡。</p>
+      <p class="hint" id="mineEmpty">
+        還沒有任何場次。按「＋ 新建投票」開始編題目，建立之後就會列在這裡。
+      </p>
     </div>
+
     <div class="card glass">
       <h2>用 PIN ＋ 管理碼叫回舊場次</h2>
-      <p class="hint" style="margin-bottom:11px">換一台電腦時，輸入這兩個號碼就能看回結果（資料一直都在你的 Google 試算表裡）。</p>
+      <p class="hint" style="margin-bottom:11px">
+        上面的清單只記得<b>這台電腦</b>建立的場次。換一台電腦時，輸入這兩個號碼就能把場次叫回來
+        （資料一直都在你的 Google 試算表裡，換電腦不會不見）。
+      </p>
       <div class="grid2">
         <div><label for="recPin">PIN（6 位數字）</label><input type="text" id="recPin" inputmode="numeric" maxlength="6" placeholder="123456"></div>
         <div><label for="recKey">管理碼（6 碼英數）</label><input type="text" id="recKey" maxlength="6" placeholder="A7K2QP" style="text-transform:uppercase"></div>
       </div>
-      <button class="btn primary" id="recBtn" style="margin-top:12px">取回結果</button>
+      <button class="btn primary" id="recBtn" style="margin-top:12px">取回這場</button>
     </div>
   </section>
 
   <footer>
-    NCKUH ENDO · App 中心 —— 即時投票 v1.0<br>
+    NCKUH ENDO · App 中心 —— 即時投票 v1.1<br>
     ©Tso KY - All Rights Reserved
   </footer>
 </div>
@@ -382,14 +407,19 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
 <script src="api.js"></script>
 <script>
 /* =========================================================
-   即時投票 v1.0 —— 主持端
+   即時投票 v1.1 —— 主持端
    ========================================================= */
 
 const DRAFT_KEY = 'lp_draft';
 const MINE_KEY  = 'lp_mine';
+const LIVE_KEY  = 'lp_live';     // 目前選定的場次（重新整理後才回得來）
 const HIDE_KEY  = 'lp_hidden';   // 投影時要藏起來的文字答案（只存在本機）
 
 const TYPE_NAME = { single:'單選', truefalse:'是非', multi:'多選', scale:'量表', text:'文字' };
+
+/* 這一版前端搭配的後端版本（docs/voting-backend.gs 的 API_VERSION）。
+   後端比較舊時只是少幾個功能，會在頁面上提醒，不會壞掉。 */
+const BACKEND_VERSION = '1.1';
 
 let poll    = newPoll();   // 編輯中的題目
 let live    = null;        // { pin, key, title, status }
@@ -429,11 +459,24 @@ function save(key, val){
   try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){ /* 存不下就算了 */ }
 }
 
+/* ---------- 目前選定的場次 ----------
+   存進 localStorage，這樣投影到一半不小心重新整理，PIN 與 QR 還在。 */
+function setLive(v){
+  live = v;
+  results = null;
+  if (v) save(LIVE_KEY, v); else { try { localStorage.removeItem(LIVE_KEY); } catch(e){} }
+  renderLive();
+  renderResults();
+}
+
 /* ---------- 分頁 ---------- */
+const TABS = ['list','edit','live','res'];
+
 function showTab(name){
   $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
-  ['edit','live','res','mine'].forEach(t => { $('#tab-' + t).hidden = (t !== name); });
+  TABS.forEach(t => { $('#tab-' + t).hidden = (t !== name); });
   if (name === 'res' && live && !results) refreshResults();
+  if (name === 'list') refreshList();
   setAuto(name === 'res' && $('#autoRefresh').checked);
 }
 $$('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
@@ -715,12 +758,14 @@ $('#createBtn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = '建立中…';
   try {
     const res = await apiSend('create', { title: poll.title, config: poll.config, questions: cleanQuestions() });
-    live = { pin: res.pin, key: res.key, title: res.title, status: '進行中' };
-    results = null;
+    setLive({ pin: res.pin, key: res.key, title: res.title, status: '進行中' });
+    poll.usedPin = res.pin;   // 這份草稿已經開成場次了，下次按「＋ 新建投票」可以安心清空
+    saveDraft();
     const mine = load(MINE_KEY, []);
-    mine.unshift({ pin: live.pin, key: live.key, title: live.title, at: new Date().toISOString(), poll: JSON.parse(JSON.stringify(poll)) });
+    mine.unshift({ pin: live.pin, key: live.key, title: live.title, status: '進行中', count: 0,
+                   at: new Date().toISOString(), poll: JSON.parse(JSON.stringify(poll)) });
     save(MINE_KEY, mine.slice(0, 50));
-    renderLive(); renderMine();
+    renderMine();
     showTab('live');
     toast('投票已開放，PIN ' + live.pin);
   } catch(e){
@@ -1004,20 +1049,83 @@ function renderScreen(){
 }
 
 /* =========================================================
-   我的投票
+   投票場次（第一頁）
    ========================================================= */
 
 function renderMine(){
   const mine = load(MINE_KEY, []);
   $('#mineEmpty').hidden = mine.length > 0;
-  $('#mineList').innerHTML = mine.map((m, i) => `
-    <div class="mine-item">
-      <div class="t"><b>${esc(m.title)}</b>
-        <small>PIN ${m.pin} · 管理碼 ${esc(m.key)} · ${new Date(m.at).toLocaleString('zh-TW')}</small></div>
-      <button class="btn sm" data-open="${i}">📊 看結果</button>
-      ${m.poll ? `<button class="btn sm ghost" data-edit="${i}">📝 載入題目</button>` : ''}
-      <button class="btn sm ghost danger" data-forget="${i}">移除</button>
-    </div>`).join('');
+  $('#mineList').innerHTML = mine.map((m, i) => {
+    const cur    = live && live.pin === m.pin;
+    const closed = m.status === '已結束';
+    const badge  = m.status
+      ? `<span class="badge ${closed ? 'off' : 'on'}">${closed ? '已結束' : '進行中'}</span>`
+      : '';
+    const count  = (m.count !== undefined && m.count !== null) ? `　·　${m.count} 人已送出` : '';
+    return `
+    <div class="mine-item${cur ? ' current' : ''}">
+      <div class="t">
+        <b>${esc(m.title)} ${badge}${cur ? '<span class="badge cur">目前這場</span>' : ''}</b>
+        <small>PIN ${m.pin}　·　管理碼 ${esc(m.key)}　·　${new Date(m.at).toLocaleDateString('zh-TW')}${count}</small>
+      </div>
+      <button class="btn sm primary" data-open="${i}">▶ 開啟這場</button>
+      ${m.poll ? `<button class="btn sm ghost" data-copy="${i}">📝 用這份題目新建</button>` : ''}
+      <button class="btn sm ghost" data-forget="${i}">從清單移除</button>
+      <button class="btn sm ghost danger" data-drop="${i}">🗑 永久刪除</button>
+    </div>`;
+  }).join('');
+}
+
+/** 逐一問後端每場的狀態與人數（info 很輕量，只讀兩個儲存格）。 */
+async function refreshList(){
+  const mine = load(MINE_KEY, []);
+  if (!mine.length || !pollEndpoint()) return;
+  // 注意變數名：不要叫 results，那是全域的「目前這場的彙總」
+  const infos = await Promise.all(mine.map(m =>
+    apiGet('info', { pin: m.pin, key: m.key }).catch(() => null)
+  ));
+  let changed = false;
+  infos.forEach((r, i) => {
+    if (!r) return;
+    if (mine[i].status !== r.status || mine[i].count !== r.count || mine[i].title !== r.title){
+      mine[i].status = r.status;
+      mine[i].count  = r.count;
+      mine[i].title  = r.title;
+      changed = true;
+    }
+  });
+  if (changed) save(MINE_KEY, mine);
+  // 目前這場的狀態也跟著更新，免得「結束並封存」的按鈕顯示不對
+  if (live){
+    const m = mine.find(x => x.pin === live.pin);
+    if (m && m.status && m.status !== live.status){ live.status = m.status; save(LIVE_KEY, live); renderLive(); }
+  }
+  renderMine();
+}
+
+$('#listRefresh').addEventListener('click', async () => {
+  await refreshList();
+  toast('狀態已更新');
+});
+
+$('#newPollBtn').addEventListener('click', () => {
+  // 草稿已經拿去建過場次了 → 清空重來（那份題目在清單上，隨時能「用這份題目新建」）。
+  // 還沒建過 → 是真的編輯到一半的東西，不能清掉。
+  if (poll.usedPin){
+    poll = newPoll();
+    writeConfig(); renderQuestions(); saveDraft();
+  }
+  showTab('edit');
+  toast('編好題目後按「🚀 建立投票」，就會多一場新的');
+});
+
+/** 開啟一場：還在進行中就先看 QR，已結束就直接看結果。 */
+function openSession(m){
+  setLive({ pin: m.pin, key: m.key, title: m.title, status: m.status || '進行中' });
+  const closed = m.status === '已結束';
+  showTab(closed ? 'res' : 'live');
+  // 結果分頁由 showTab 自己抓；開放投票分頁要自己抓一次才有「幾人已送出」
+  if (!closed) refreshResults();
 }
 
 $('#mineList').addEventListener('click', async e => {
@@ -1026,20 +1134,42 @@ $('#mineList').addEventListener('click', async e => {
   const mine = load(MINE_KEY, []);
 
   if (b.dataset.open !== undefined){
-    const m = mine[+b.dataset.open];
-    live = { pin: m.pin, key: m.key, title: m.title, status: '進行中' };
-    results = null;
-    renderLive(); showTab('res'); refreshResults();
-  } else if (b.dataset.edit !== undefined){
-    const m = mine[+b.dataset.edit];
-    poll = JSON.parse(JSON.stringify(m.poll));
+    openSession(mine[+b.dataset.open]);
+
+  } else if (b.dataset.copy !== undefined){
+    poll = JSON.parse(JSON.stringify(mine[+b.dataset.copy].poll));
+    delete poll.usedPin;   // 複製出來的是「還沒建立的新一份」，不要當成已用過的草稿
     writeConfig(); renderQuestions(); saveDraft(); showTab('edit');
-    toast('已載入題目，可以修改後建立新的一場');
+    toast('已載入題目，改完按「🚀 建立投票」會開一場新的（原本那場不受影響）');
+
   } else if (b.dataset.forget !== undefined){
-    if (!confirm('從這台電腦的清單移除？（試算表裡的資料不會刪掉，之後還能用 PIN ＋ 管理碼叫回來）')) return;
+    const m = mine[+b.dataset.forget];
+    if (!confirm('把「' + m.title + '」從這台電腦的清單移除？\n\n' +
+                 '試算表裡的資料不會刪掉，PIN 也還能用；之後可以再用 PIN ＋ 管理碼叫回來。')) return;
     mine.splice(+b.dataset.forget, 1);
     save(MINE_KEY, mine);
+    if (live && live.pin === m.pin) setLive(null);
     renderMine();
+
+  } else if (b.dataset.drop !== undefined){
+    const m = mine[+b.dataset.drop];
+    if (!confirm('永久刪除「' + m.title + '」？\n\n' +
+                 '會一起刪掉：\n' +
+                 '　· 試算表「投票」裡的這一列（PIN ' + m.pin + ' 立刻失效）\n' +
+                 '　· 試算表「作答紀錄」裡這場的所有作答\n\n' +
+                 '已經封存到「結果彙總」的內容會留著。這個動作沒辦法復原。')) return;
+    b.disabled = true;
+    try {
+      const r = await apiGet('delete', { pin: m.pin, key: m.key });
+      mine.splice(+b.dataset.drop, 1);
+      save(MINE_KEY, mine);
+      if (live && live.pin === m.pin) setLive(null);
+      renderMine();
+      toast('已刪除「' + m.title + '」（連同 ' + (r.removedVotes || 0) + ' 列作答紀錄）', 4000);
+    } catch(err){
+      b.disabled = false;
+      toast('刪除失敗：' + err.message, 5000);
+    }
   }
 });
 
@@ -1050,14 +1180,17 @@ $('#recBtn').addEventListener('click', async () => {
   if (!key){ toast('請填管理碼'); return; }
   try {
     const res = await apiGet('results', { pin, key });
-    live = { pin, key, title: res.title, status: res.status };
-    results = res;
     const mine = load(MINE_KEY, []);
-    if (!mine.some(m => m.pin === pin)){
-      mine.unshift({ pin, key, title: res.title, at: new Date().toISOString() });
-      save(MINE_KEY, mine.slice(0, 50));
-    }
-    renderLive(); renderMine(); renderResults(); showTab('res');
+    const at = mine.find(m => m.pin === pin);
+    const entry = { pin, key, title: res.title, status: res.status, count: res.count,
+                    at: at ? at.at : new Date().toISOString(), poll: at ? at.poll : undefined };
+    if (at) Object.assign(at, entry); else mine.unshift(entry);
+    save(MINE_KEY, mine.slice(0, 50));
+    renderMine();
+    openSession(entry);
+    results = res;
+    renderResults();
+    $('#recPin').value = ''; $('#recKey').value = '';
     toast('已取回「' + res.title + '」');
   } catch(e){ toast('取回失敗：' + e.message, 5000); }
 });
@@ -1084,10 +1217,24 @@ $('#cfgBtn').addEventListener('click', () => {
    啟動
    ========================================================= */
 
+/** 後端版本比前端舊時提醒一下（舊版只是少功能，不會壞）。 */
+async function checkBackend(){
+  if (!pollEndpoint()) return;
+  try {
+    const r = await apiGet('ping', {});
+    if (r.version !== BACKEND_VERSION){
+      $('#oldVer').textContent = r.version || '更早的版本';
+      $('#oldBackend').hidden = false;
+    }
+  } catch(e){ /* 連不上的話其他地方會報錯，這裡不用多嘴 */ }
+}
+
 (function init(){
   poll = load(DRAFT_KEY, null) || newPoll();
   if (!poll.config) poll.config = newPoll().config;
   if (!Array.isArray(poll.questions)) poll.questions = [];
+
+  live = load(LIVE_KEY, null);   // 重新整理後把「目前這場」接回來
 
   writeConfig();
   renderQuestions();
@@ -1096,6 +1243,11 @@ $('#cfgBtn').addEventListener('click', () => {
 
   $('#setupWarn').hidden = !!pollEndpoint();
   $('#tempWarn').hidden  = !endpointIsTemporary();
+  // 網址已寫進 api.js 時，「⚙ 後端設定」按了也不會生效，所以只在還沒設定時才出現
+  $('#cfgBtn').hidden    = !!POLL_ENDPOINT;
+
+  showTab('list');
+  checkBackend();
 })();
 </script>
 </body>
