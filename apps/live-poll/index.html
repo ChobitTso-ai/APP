@@ -4,7 +4,7 @@
 <script>if(localStorage.getItem('nckuh_endo_authed')!=='1')location.replace('../../');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>即時投票 v1.1 · 主持端</title>
+<title>即時投票 v1.2 · 主持端</title>
 <style>
 :root{
   --bg-0:#0a0e1a; --bg-1:#0f1524;
@@ -121,6 +121,15 @@ select option{background:#141b2e}
 .text-item button{background:transparent;border:1px solid var(--line);border-radius:7px;color:var(--muted);
   font:inherit;font-size:.75rem;padding:3px 7px;cursor:pointer;white-space:nowrap}
 .text-item button:hover{color:var(--text)}
+
+/* ---- 誰選了哪個（只有記名場次有）---- */
+.bar-row.clickable{cursor:pointer;border-radius:9px;padding:3px 6px;margin-left:-6px;margin-right:-6px;transition:.15s}
+.bar-row.clickable:hover{background:rgba(255,255,255,.05)}
+.caret{display:inline-block;width:1em;color:var(--muted);font-size:.85em}
+.who-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-left:1em}
+.who-chip{font-size:.82rem;padding:3px 10px;border-radius:999px;
+  background:rgba(91,140,255,.15);border:1px solid rgba(140,165,255,.28);color:#cfdcff}
+.who-name{color:#bcd0ff;margin-right:7px;font-weight:600}
 table.board{width:100%;border-collapse:collapse;font-size:.9rem}
 table.board th,table.board td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line)}
 table.board th{color:var(--muted);font-weight:500;font-size:.8rem}
@@ -148,6 +157,8 @@ table.board td:last-child,table.board th:last-child{text-align:right}
 #screen .bar{height:24px}
 #screen .bar-row{margin-bottom:16px}
 #screen .text-item{font-size:1.3rem}
+#screen .who-chip{font-size:1.05rem;padding:5px 14px}
+#screen .who-list{gap:8px;margin-top:12px}
 #screen .scr-nav{margin-top:auto;padding-top:22px;display:flex;gap:10px;align-items:center;justify-content:center}
 #screen .btn{font-size:1rem;padding:11px 20px}
 
@@ -171,7 +182,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
 
   <header>
     <h1>🗳️ 即時投票</h1>
-    <span class="badge">v1.1</span>
+    <span class="badge">v1.2</span>
     <div class="spacer"></div>
     <!-- 後端網址已寫進 api.js 時就不顯示這個按鈕：常數優先於暫存值，
          留著只會變成「按了沒作用」的按鈕。 -->
@@ -383,7 +394,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
   </section>
 
   <footer>
-    NCKUH ENDO · App 中心 —— 即時投票 v1.1<br>
+    NCKUH ENDO · App 中心 —— 即時投票 v1.2<br>
     ©Tso KY - All Rights Reserved
   </footer>
 </div>
@@ -407,7 +418,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
 <script src="api.js"></script>
 <script>
 /* =========================================================
-   即時投票 v1.1 —— 主持端
+   即時投票 v1.2 —— 主持端
    ========================================================= */
 
 const DRAFT_KEY = 'lp_draft';
@@ -419,7 +430,7 @@ const TYPE_NAME = { single:'單選', truefalse:'是非', multi:'多選', scale:'
 
 /* 這一版前端搭配的後端版本（docs/voting-backend.gs 的 API_VERSION）。
    後端比較舊時只是少幾個功能，會在頁面上提醒，不會壞掉。 */
-const BACKEND_VERSION = '1.1';
+const BACKEND_VERSION = '1.2';
 
 let poll    = newPoll();   // 編輯中的題目
 let live    = null;        // { pin, key, title, status }
@@ -883,16 +894,26 @@ function toggleHidden(key){
 }
 
 /** 把一題的結果畫成長條圖（投影模式用同一份 HTML，字級交給 CSS） */
+/** 這場是記名的嗎——匿名場次後端不存暱稱，名單永遠是空的。 */
+function isNamedPoll(){
+  return !!(results && results.config && results.config.named);
+}
+
+/** 展開中的「誰選了這個」：key 是「題號:選項」。 */
+const openWho = new Set();
+
 function questionHtml(r, q, idx, forScreen){
   if (r.type === 'text'){
     const hid = hiddenSet();
     const texts = r.texts || [];
+    const names = r.textNames || [];
     if (!texts.length) return '<p class="hint">還沒有人回答這一題。</p>';
     const items = texts.map((t, k) => {
       const key = idx + ':' + k;
       const isHid = hid.indexOf(key) !== -1;
       if (forScreen && isHid) return '';
-      return `<div class="text-item ${isHid?'hid':''}"><span>${esc(t)}</span>` +
+      const who = names[k] ? `<b class="who-name">${esc(names[k])}</b>` : '';
+      return `<div class="text-item ${isHid?'hid':''}"><span>${who}${esc(t)}</span>` +
              (forScreen ? '' : `<button data-hide="${key}">${isHid?'顯示':'隱藏'}</button>`) + '</div>';
     }).join('');
     return '<div class="texts">' + (items || '<p class="hint">這一題的回覆都被隱藏了。</p>') + '</div>';
@@ -900,20 +921,48 @@ function questionHtml(r, q, idx, forScreen){
 
   const labels = r.type === 'scale' ? scaleLabels(q) : (q && q.options ? q.options : []);
   const counts = r.counts || {};
+  const who    = r.who || {};
   let max = 0;
   labels.forEach((_, k) => { max = Math.max(max, counts[String(scaleKey(q, r, k))] || 0); });
   const total = labels.reduce((s, _, k) => s + (counts[String(scaleKey(q, r, k))] || 0), 0) || 0;
 
   return labels.map((label, k) => {
-    const n = counts[String(scaleKey(q, r, k))] || 0;
-    const pct = max ? Math.round(n / max * 100) : 0;
+    const ck    = String(scaleKey(q, r, k));
+    const n     = counts[ck] || 0;
+    const pct   = max ? Math.round(n / max * 100) : 0;
     const share = total ? Math.round(n / total * 100) : 0;
     const right = q && isAnswerIdx(q, k) ? ' right' : '';
-    return `<div class="bar-row${right}">
-        <div class="bar-top"><span class="lbl">${esc(label)}</span><span class="num">${n} 票 · ${share}%</span></div>
+
+    // 記名場次才點得開名單；沒人選的選項也不用點
+    const names   = who[ck] || [];
+    const openKey = idx + ':' + ck;
+    const canOpen = isNamedPoll() && n > 0;
+    const isOpen  = openWho.has(openKey);
+    const caret   = canOpen ? `<span class="caret">${isOpen ? '▾' : '▸'}</span>` : '';
+    const list    = (canOpen && isOpen)
+      ? `<div class="who-list">${names.length
+          ? names.map(nm => `<span class="who-chip">${esc(nm)}</span>`).join('')
+          : '<span class="hint">後端還是舊版，看不到名單——更新 Apps Script 就會出現。</span>'}</div>`
+      : '';
+
+    return `<div class="bar-row${right}${canOpen ? ' clickable' : ''}"${canOpen ? ` data-who="${openKey}"` : ''}>
+        <div class="bar-top"><span class="lbl">${caret}${esc(label)}</span><span class="num">${n} 票 · ${share}%</span></div>
         <div class="bar"><i style="width:${pct}%"></i></div>
+        ${list}
       </div>`;
   }).join('');
+}
+
+/** 點長條圖展開／收合名單（結果頁與投影模式共用）。 */
+function bindWhoToggle(container, rerender){
+  container.addEventListener('click', e => {
+    if (e.target.closest('button')) return;      // 「隱藏」那顆按鈕不算
+    const row = e.target.closest('.bar-row[data-who]');
+    if (!row) return;
+    const key = row.dataset.who;
+    if (openWho.has(key)) openWho.delete(key); else openWho.add(key);
+    rerender();
+  });
 }
 
 /* 量表的計數是用「數值本身」當 key，選擇題是用「選項索引」 */
@@ -977,24 +1026,29 @@ $('#resBody').addEventListener('click', e => {
   toggleHidden(b.dataset.hide);
   renderResults();
 });
+bindWhoToggle($('#resBody'), renderResults);
+bindWhoToggle($('#scrBody'), renderScreen);
 
 /* ---------- CSV ---------- */
 $('#csvBtn').addEventListener('click', () => {
   if (!results) return;
-  const rows = [['題號','題目','項目','票數']];
+  const rows = [['題號','題目','項目','票數','作答者']];
   const stat = resultStat();
   (results.questions || []).forEach((q, i) => {
     const r = stat[i] || {};
     if (q.type === 'text'){
-      (r.texts || []).forEach(t => rows.push([i+1, q.text, t, '']));
-      if (!(r.texts || []).length) rows.push([i+1, q.text, '（無人作答）', '']);
+      const names = r.textNames || [];
+      (r.texts || []).forEach((t, k) => rows.push([i+1, q.text, t, '', names[k] || '']));
+      if (!(r.texts || []).length) rows.push([i+1, q.text, '（無人作答）', '', '']);
       return;
     }
     const labels = q.type === 'scale' ? scaleLabels(q) : (q.options || []);
     labels.forEach((label, k) => {
-      rows.push([i+1, q.text, (isAnswerIdx(q,k)?'★ ':'') + label, (r.counts || {})[String(scaleKey(q, r, k))] || 0]);
+      const ck = String(scaleKey(q, r, k));
+      rows.push([i+1, q.text, (isAnswerIdx(q,k)?'★ ':'') + label,
+                 (r.counts || {})[ck] || 0, ((r.who || {})[ck] || []).join('、')]);
     });
-    if (q.type === 'scale') rows.push([i+1, q.text, '平均', r.average == null ? '' : r.average]);
+    if (q.type === 'scale') rows.push([i+1, q.text, '平均', r.average == null ? '' : r.average, '']);
   });
   const board = results.leaderboard || [];
   if (board.length){

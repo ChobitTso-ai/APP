@@ -11,6 +11,8 @@
  *   結果彙總   按下「結束並封存」時寫入的人類可讀結果
  *
  * v1.1 新增 info（場次清單用的輕量狀態）與 delete（永久刪除一場）。
+ * v1.2 結果加上「誰選了哪個選項」——**只有記名場次有**，匿名場次不存暱稱，
+ *      所以這個名單永遠是空的，匿名承諾不受影響。
  * 前端會用 ping 回報的版本判斷後端是不是舊的，舊版只是少功能、不會壞。
  *
  * 部署步驟見 docs/VOTING_SETUP.md。
@@ -33,9 +35,10 @@ const SHEET_SUMMARY = '結果彙總';
 
 const CACHE_TTL   = 21600; // 快取 6 小時（Apps Script 上限）
 const UPLOAD_TTL  = 600;   // 切塊上傳的暫存 10 分鐘
-const API_VERSION = '1.1';
+const API_VERSION = '1.2';
 
 const MAX_TEXTS   = 300;   // 每題文字答案在快取中最多留幾筆（試算表永遠是完整的）
+const MAX_NAMES   = 200;   // 每個選項最多記幾個暱稱（避免超過快取單筆 100KB 上限）
 
 /* =========================================================
    入口
@@ -279,7 +282,7 @@ function actionSubmit(params) {
       ]);
 
       detail.push({ correct: g.correct, score: g.score, max: g.max, answer: q.answer === undefined ? null : q.answer });
-      tally(agg, i, q, ans);
+      tally(agg, i, q, ans, nickname);
     }
 
     // 一次寫入（比逐列 appendRow 快很多）
@@ -301,7 +304,7 @@ function actionSubmit(params) {
       out.max = maxTotal;
       out.detail = detail;
     }
-    if (config.showResult === 'after') out.results = summarize(row, agg);
+    if (config.showResult === 'after') out.results = summarize(row, agg, true);  // true = 不含名單
     return out;
   } finally {
     lock.releaseLock();
@@ -408,15 +411,21 @@ function actionClose(params, close) {
  * 注意：彙總放在 stat，不要叫 questions——actionResults 還要另外回傳
  * 「題目定義」給主持人（含正確答案），兩個同名會互相蓋掉。
  */
-function summarize(row, agg) {
+function summarize(row, agg, hideNames) {
   const board = agg.board.slice().sort(function (a, b) { return b.score - a.score; }).slice(0, 20);
   return {
     count: agg.n,
     stat: row.questions.map(function (q, i) {
       const a = agg.q[i] || emptyQAgg();
       const item = { type: q.type, text: q.text, counts: a.counts, answered: a.answered };
+      // 誰選了哪個選項：只給主持人。hideNames 是要發到觀眾手機上的那一份，
+      // 不能把全場的名單散出去（主持人看得到就夠了）。
+      item.who = hideNames ? {} : (a.who || {});
       if (q.type === 'scale') item.average = a.cnt ? Math.round((a.sum / a.cnt) * 100) / 100 : null;
-      if (q.type === 'text')  item.texts = a.texts;
+      if (q.type === 'text') {
+        item.texts = a.texts;
+        item.textNames = hideNames ? [] : (a.textNames || []);   // 與 texts 同索引；匿名時是空字串
+      }
       return item;
     }),
     leaderboard: board,
@@ -470,24 +479,42 @@ function toIndexList(v) {
    ========================================================= */
 
 function emptyQAgg() {
-  return { counts: {}, sum: 0, cnt: 0, answered: 0, texts: [] };
+  return { counts: {}, who: {}, sum: 0, cnt: 0, answered: 0, texts: [], textNames: [] };
 }
 
-function tally(agg, i, q, ans) {
+/** 記下「誰選了這個選項」。匿名場次不會有 name，所以什麼都不會記。 */
+function pushWho(a, key, name) {
+  if (!name) return;
+  if (!a.who) a.who = {};                       // 舊版快取沒有這個欄位
+  const k = String(key);
+  if (!a.who[k]) a.who[k] = [];
+  if (a.who[k].length < MAX_NAMES) a.who[k].push(name);
+}
+
+function tally(agg, i, q, ans, name) {
   if (!agg.q[i]) agg.q[i] = emptyQAgg();
   const a = agg.q[i];
   if (ans === null || ans === undefined || ans === '') return;
   a.answered++;
 
+  // 匿名場次存的是「（匿名）」，那不是名字，不要記進名單
+  const who = (name && name !== '（匿名）') ? String(name).slice(0, 40) : '';
+
   if (q.type === 'multi') {
     toIndexList(ans).forEach(function (idx) {
       a.counts[idx] = (a.counts[idx] || 0) + 1;
+      pushWho(a, idx, who);
     });
   } else if (q.type === 'text') {
-    if (a.texts.length < MAX_TEXTS) a.texts.push(String(ans).slice(0, 500));
+    if (a.texts.length < MAX_TEXTS) {
+      a.texts.push(String(ans).slice(0, 500));
+      if (!a.textNames) a.textNames = [];
+      a.textNames.push(who);
+    }
   } else {
     const k = String(ans);
     a.counts[k] = (a.counts[k] || 0) + 1;
+    pushWho(a, k, who);
     if (q.type === 'scale') { a.sum += Number(ans) || 0; a.cnt++; }
   }
 }
@@ -530,7 +557,7 @@ function rebuildAgg(pin, row) {
 
     let ans = null;
     try { ans = JSON.parse(v[10]); } catch (err) { ans = v[7]; }
-    tally(agg, qi, q, ans);
+    tally(agg, qi, q, ans, name);
 
     agg.voters[token] = name;
     if (!scores[token]) scores[token] = { name: name, token: token, score: 0, max: 0 };
