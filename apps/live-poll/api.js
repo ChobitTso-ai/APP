@@ -11,7 +11,7 @@
    ========================================================= */
 
 /* ⬇⬇⬇ 部署好 Apps Script 後，把 /exec 網址填進這裡 ⬇⬇⬇ */
-const POLL_ENDPOINT = '';
+const POLL_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzzUPKVcXu5Xit8-A4Z_StJicoIq8iBz2lwA6xHFqtKOX2MxLZfNOzYHa65BpgInw/exec';
 
 const ENDPOINT_OVERRIDE_KEY = 'lp_endpoint_override';
 
