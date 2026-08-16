@@ -29,6 +29,7 @@ const APP_NAMES = {
   'case-marker': '案例標記工具',
   'pdf-toolbox': 'PDF工具箱',
   'endo-ppt-generator': '牙髓病科專科 PPT 製作器',
+  'live-poll': '即時投票',
 };
 
 function doGet(e) {

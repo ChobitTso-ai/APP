@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<!--
+  ⚠️ 這一頁「刻意」不加 App 中心的登入保護。
+  來作答的人（學員、與會同仁）沒有 NCKUH/ENDO 帳密，掃了 QR 被導回登入頁就投不了票。
+  因此「PIN 就是唯一的門檻」——這個工具只適合教學問答與一般意見調查，
+  不要拿來投任何個資或敏感內容。（詳見 docs/VOTING_SETUP.md）
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>投票作答</title>
+<style>
+:root{
+  --bg-0:#0a0e1a; --bg-1:#0f1524;
+  --text:#eaf0ff; --muted:#93a0bd;
+  --glass:rgba(22,30,52,.6); --line:rgba(140,165,255,.18);
+  --accent:#5b8cff; --accent-2:#a56bff; --ok:#2fd6a8; --danger:#ff6b8a;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  font-family:var(--font); color:var(--text); min-height:100vh;
+  padding:20px 16px calc(28px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(900px 700px at 20% -10%,#16204a 0%,transparent 55%),
+    radial-gradient(800px 600px at 110% 15%,#2a1a4d 0%,transparent 50%),
+    linear-gradient(160deg,var(--bg-1),var(--bg-0));
+  background-attachment:fixed;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:560px;margin:0 auto}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:20px;
+  backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%)}
+h1{font-size:1.2rem;margin-bottom:6px}
+p.sub{font-size:.88rem;color:var(--muted);line-height:1.65}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:6px}
+input[type=text],textarea{
+  width:100%;font:inherit;font-size:1.05rem;color:var(--text);background:rgba(10,14,26,.6);
+  border:1px solid var(--line);border-radius:12px;padding:13px 14px;outline:none}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,140,255,.16)}
+textarea{resize:vertical;min-height:110px;line-height:1.6}
+#pinInput{font-size:1.9rem;text-align:center;letter-spacing:.28em;font-weight:700;padding:16px 14px}
+
+.btn{font:inherit;font-size:1rem;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:15px 18px;border-radius:13px;border:1px solid var(--line);cursor:pointer;
+  background:rgba(255,255,255,.06);color:var(--text);transition:.18s}
+.btn:hover{background:rgba(255,255,255,.11)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;
+  color:#fff;font-weight:700}
+.btn.sm{font-size:.9rem;padding:11px 14px;width:auto}
+.row{display:flex;gap:10px;margin-top:14px}
+.row .btn{flex:1}
+
+/* ---- 作答 ---- */
+.progress{height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:14px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  border-radius:999px;transition:width .3s}
+.qmeta{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--muted);margin-bottom:10px}
+.timer{margin-left:auto;font-weight:700;font-size:1.1rem;color:var(--accent)}
+.timer.hot{color:var(--danger)}
+.qtext{font-size:1.3rem;line-height:1.5;font-weight:600;margin-bottom:18px;overflow-wrap:anywhere}
+
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;font:inherit;font-size:1.05rem;line-height:1.5;
+  padding:16px;border-radius:13px;border:1.5px solid var(--line);background:rgba(10,14,26,.45);
+  color:var(--text);cursor:pointer;transition:.15s;width:100%;overflow-wrap:anywhere}
+.opt:hover{border-color:rgba(140,165,255,.4)}
+.opt .k{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.08);font-size:.9rem;font-weight:700}
+.opt.on{border-color:var(--accent);background:rgba(91,140,255,.18)}
+.opt.on .k{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
+.opt.right{border-color:var(--ok);background:rgba(47,214,168,.15)}
+.opt.wrong{border-color:var(--danger);background:rgba(255,107,138,.13)}
+
+.scale{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.scale button{flex:1;min-width:52px;font:inherit;font-size:1.25rem;font-weight:700;padding:16px 6px;
+  border-radius:12px;border:1.5px solid var(--line);background:rgba(10,14,26,.45);color:var(--text);cursor:pointer}
+.scale button.on{border-color:var(--accent);background:rgba(91,140,255,.22)}
+.scale-ends{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:9px;gap:12px}
+
+/* ---- 結果 ---- */
+.bar-row{margin-bottom:11px}
+.bar-top{display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:4px;gap:10px}
+.bar-top .lbl{overflow-wrap:anywhere}
+.bar-top .num{color:var(--muted);white-space:nowrap}
+.bar{height:10px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .5s}
+.bar-row.right .bar i{background:linear-gradient(90deg,#2fd6a8,#7ee8c4)}
+.res-q{margin-bottom:20px}
+.res-q h3{font-size:.98rem;line-height:1.5;margin-bottom:8px}
+.big{text-align:center;padding:12px 0}
+.big .icon{font-size:3.2rem;line-height:1}
+.big .score{font-size:2.6rem;font-weight:800;margin-top:6px;
+  background:linear-gradient(135deg,#8fb4ff,#c9a3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.err{font-size:.9rem;line-height:1.6;color:#ffb0c2;background:rgba(255,107,138,.1);
+  border:1px solid rgba(255,107,138,.3);border-radius:11px;padding:12px 14px;margin-top:14px}
+.notice{font-size:.82rem;line-height:1.65;color:var(--muted);text-align:center;margin-top:18px}
+footer{text-align:center;color:var(--muted);font-size:.72rem;margin-top:22px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 輸入 PIN -->
+  <section id="viewPin" class="card" hidden>
+    <h1>🗳️ 加入投票</h1>
+    <p class="sub" style="margin-bottom:16px">請輸入主持人畫面上的 6 位數 PIN。</p>
+    <input type="text" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="------" autocomplete="off">
+    <button class="btn primary" id="pinGo" style="margin-top:14px">進入</button>
+    <div class="err" id="pinErr" hidden></div>
+  </section>
+
+  <!-- 暱稱 -->
+  <section id="viewName" class="card" hidden>
+    <h1 id="nameTitle"></h1>
+    <p class="sub" style="margin-bottom:16px">這場投票要記名，請輸入你的暱稱。</p>
+    <label for="nameInput">暱稱</label>
+    <input type="text" id="nameInput" maxlength="40" placeholder="例如：小王" autocomplete="nickname">
+    <button class="btn primary" id="nameGo" style="margin-top:14px">開始作答</button>
+    <div class="err" id="nameErr" hidden></div>
+  </section>
+
+  <!-- 開始畫面 -->
+  <section id="viewStart" class="card" hidden>
+    <h1 id="startTitle"></h1>
+    <p class="sub" id="startSub"></p>
+    <button class="btn primary" id="startGo" style="margin-top:18px">開始作答</button>
+  </section>
+
+  <!-- 作答 -->
+  <section id="viewQ" class="card" hidden>
+    <div class="progress"><i id="progBar" style="width:0%"></i></div>
+    <div class="qmeta">
+      <span id="qPos"></span>
+      <span id="qType"></span>
+      <span class="timer" id="qTimer" hidden></span>
+    </div>
+    <div class="qtext" id="qText"></div>
+    <div id="qBody"></div>
+    <div class="row">
+      <button class="btn" id="prevBtn">← 上一題</button>
+      <button class="btn primary" id="nextBtn">下一題 →</button>
+    </div>
+    <p class="notice" id="qNotice"></p>
+  </section>
+
+  <!-- 送出後 -->
+  <section id="viewDone" class="card" hidden>
+    <div class="big">
+      <div class="icon" id="doneIcon">✅</div>
+      <h1 id="doneTitle" style="margin-top:10px">已送出，謝謝！</h1>
+      <div class="score" id="doneScore" hidden></div>
+      <p class="sub" id="doneSub" style="margin-top:8px"></p>
+    </div>
+    <div id="doneDetail" style="margin-top:16px"></div>
+    <div id="doneResults" style="margin-top:6px"></div>
+  </section>
+
+  <!-- 錯誤 -->
+  <section id="viewErr" class="card" hidden>
+    <h1>😕 沒辦法進入</h1>
+    <p class="sub" id="errMsg" style="margin-top:8px"></p>
+    <button class="btn" id="errBack" style="margin-top:16px">重新輸入 PIN</button>
+  </section>
+
+  <footer>NCKUH ENDO · App 中心 —— 即時投票<br>©Tso KY - All Rights Reserved</footer>
+</div>
+
+<script src="api.js"></script>
+<script>
+/* =========================================================
+   即時投票 v1.0 —— 觀眾端（不需登入）
+   ========================================================= */
+
+const TOKEN_KEY = 'lp_voter_token';
+const NAME_KEY  = 'lp_voter_name';
+const TYPE_NAME = { single:'單選', truefalse:'是非', multi:'多選（可複選）', scale:'評分', text:'文字回答' };
+
+let poll = null;      // { pin, title, config, questions }（沒有正確答案）
+let idx = 0;
+let answers = [];
+let elapsed = [];     // 每題花掉的秒數（速度加分用）
+let qStart = 0;
+let timer = null;
+let submitted = null; // 送出後的回應
+
+const $ = s => document.querySelector(s);
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function show(view){
+  ['viewPin','viewName','viewStart','viewQ','viewDone','viewErr']
+    .forEach(v => { $('#' + v).hidden = (v !== view); });
+  window.scrollTo(0, 0);
+}
+function fail(msg){
+  $('#errMsg').textContent = msg;
+  show('viewErr');
+}
+
+/** 這台裝置的代號：純隨機字串，後端拿它防重複投票，認不出是誰。 */
+function token(){
+  let t;
+  try { t = localStorage.getItem(TOKEN_KEY); } catch(e){ t = null; }
+  if (!t){
+    t = 'v' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { localStorage.setItem(TOKEN_KEY, t); } catch(e){ /* 無痕模式：這次有效就好 */ }
+  }
+  return t;
+}
+
+/* =========================================================
+   進入投票
+   ========================================================= */
+
+async function enter(pin){
+  try {
+    const res = await apiGet('get', { pin });
+    poll = res;
+    if (res.status !== '進行中'){ fail('「' + res.title + '」已經結束了，沒辦法再作答。'); return; }
+
+    answers = new Array(poll.questions.length).fill(null);
+    elapsed = new Array(poll.questions.length).fill(0);
+    idx = 0;
+
+    if (poll.config.named){
+      $('#nameTitle').textContent = poll.title;
+      try { $('#nameInput').value = localStorage.getItem(NAME_KEY) || ''; } catch(e){}
+      show('viewName');
+      $('#nameInput').focus();
+    } else {
+      showStart();
+    }
+  } catch(e){
+    if (!pollEndpoint()) fail('這個投票系統還沒設定好後端，請聯絡主持人。');
+    else fail(e.message);
+  }
+}
+
+function showStart(){
+  const c = poll.config;
+  const bits = [poll.questions.length + ' 題'];
+  if (c.scoring !== 'none') bits.push('有計分');
+  if (c.scoring === 'speed') bits.push('每題 ' + c.timeLimit + ' 秒');
+  if (!c.named) bits.push('匿名');
+  if (c.onceOnly) bits.push('一支手機只能投一次');
+  $('#startTitle').textContent = poll.title;
+  $('#startSub').textContent = bits.join('　·　');
+  show('viewStart');
+}
+
+$('#pinGo').addEventListener('click', () => {
+  const pin = $('#pinInput').value.trim();
+  if (!/^\d{6}$/.test(pin)){
+    $('#pinErr').textContent = 'PIN 要是 6 位數字';
+    $('#pinErr').hidden = false;
+    return;
+  }
+  $('#pinErr').hidden = true;
+  $('#pinGo').disabled = true;
+  $('#pinGo').textContent = '連線中…';
+  enter(pin).finally(() => { $('#pinGo').disabled = false; $('#pinGo').textContent = '進入'; });
+});
+$('#pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('#pinGo').click(); });
+$('#errBack').addEventListener('click', () => { show('viewPin'); $('#pinInput').focus(); });
+
+$('#nameGo').addEventListener('click', () => {
+  const n = $('#nameInput').value.trim();
+  if (!n){ $('#nameErr').textContent = '請填一個暱稱'; $('#nameErr').hidden = false; return; }
+  try { localStorage.setItem(NAME_KEY, n); } catch(e){}
+  $('#nameErr').hidden = true;
+  showStart();
+});
+$('#nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('#nameGo').click(); });
+$('#startGo').addEventListener('click', () => { idx = 0; renderQ(); });
+
+/* =========================================================
+   作答
+   ========================================================= */
+
+/** 只有「會計分的題型」才跑倒數，免得打字打到一半被推走。 */
+function timedQuestion(q){
+  return poll.config.scoring === 'speed'
+      && poll.config.timeLimit > 0
+      && (q.type === 'single' || q.type === 'truefalse' || q.type === 'multi');
+}
+
+function renderQ(){
+  stopTimer();
+  const q = poll.questions[idx];
+  const n = poll.questions.length;
+
+  $('#progBar').style.width = Math.round(idx / n * 100) + '%';
+  $('#qPos').textContent  = '第 ' + (idx + 1) + ' / ' + n + ' 題';
+  $('#qType').textContent = '· ' + (TYPE_NAME[q.type] || '');
+  $('#qText').textContent = q.text;
+
+  let html = '';
+  if (q.type === 'single' || q.type === 'truefalse' || q.type === 'multi'){
+    const sel = answers[idx];
+    html = '<div class="opts">' + (q.options || []).map((o, k) => {
+      const on = q.type === 'multi'
+        ? (Array.isArray(sel) && sel.indexOf(k) !== -1)
+        : (sel === k);
+      return `<button class="opt ${on?'on':''}" data-k="${k}">
+                <span class="k">${q.type==='multi' ? (on?'✓':'') : String.fromCharCode(65+k)}</span>
+                <span>${esc(o)}</span></button>`;
+    }).join('') + '</div>';
+
+  } else if (q.type === 'scale'){
+    const min = Number(q.scaleMin) || 1, max = Number(q.scaleMax) || 5;
+    let btns = '';
+    for (let v = min; v <= max; v++){
+      btns += `<button class="${answers[idx]===v?'on':''}" data-v="${v}">${v}</button>`;
+    }
+    html = '<div class="scale">' + btns + '</div>' +
+           `<div class="scale-ends"><span>${esc(q.scaleMinLabel||'')}</span><span>${esc(q.scaleMaxLabel||'')}</span></div>`;
+
+  } else {
+    html = `<textarea id="textAns" maxlength="500" placeholder="輸入你的回答…">${esc(answers[idx]||'')}</textarea>`;
+  }
+  $('#qBody').innerHTML = html;
+
+  const last = idx === n - 1;
+  $('#nextBtn').textContent = last ? '✓ 送出' : '下一題 →';
+  // 有倒數計時的場次不讓人回頭改答案（回頭會讓計時失去意義）
+  $('#prevBtn').hidden = (idx === 0) || (poll.config.scoring === 'speed');
+  $('#qNotice').textContent = q.type === 'multi' ? '可以選多個答案' : '';
+
+  show('viewQ');
+  qStart = Date.now();
+  if (timedQuestion(q)) startTimer(poll.config.timeLimit);
+}
+
+$('#qBody').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const q = poll.questions[idx];
+
+  if (b.dataset.k !== undefined){
+    const k = +b.dataset.k;
+    if (q.type === 'multi'){
+      const cur = Array.isArray(answers[idx]) ? answers[idx].slice() : [];
+      const at = cur.indexOf(k);
+      if (at === -1) cur.push(k); else cur.splice(at, 1);
+      answers[idx] = cur.sort((x,y)=>x-y);
+      renderKeepTimer();
+    } else {
+      answers[idx] = k;
+      renderKeepTimer();
+      // 單選：選完直接跳下一題，手機上少按一次
+      setTimeout(() => { if (!$('#viewQ').hidden) next(); }, 260);
+    }
+  } else if (b.dataset.v !== undefined){
+    answers[idx] = +b.dataset.v;
+    renderKeepTimer();
+    setTimeout(() => { if (!$('#viewQ').hidden) next(); }, 260);
+  }
+});
+
+/** 只重畫選項的選取狀態，不重設倒數。 */
+function renderKeepTimer(){
+  const q = poll.questions[idx];
+  const sel = answers[idx];
+  Array.from($('#qBody').querySelectorAll('.opt')).forEach((el, k) => {
+    const on = q.type === 'multi' ? (Array.isArray(sel) && sel.indexOf(k) !== -1) : (sel === k);
+    el.classList.toggle('on', on);
+    if (q.type === 'multi') el.querySelector('.k').textContent = on ? '✓' : '';
+  });
+  Array.from($('#qBody').querySelectorAll('.scale button')).forEach(el => {
+    el.classList.toggle('on', Number(el.dataset.v) === sel);
+  });
+}
+
+function stopTimer(){ clearInterval(timer); timer = null; $('#qTimer').hidden = true; }
+
+function startTimer(sec){
+  let left = sec;
+  const el = $('#qTimer');
+  el.hidden = false;
+  el.textContent = left + ' 秒';
+  el.classList.toggle('hot', left <= 5);
+  timer = setInterval(() => {
+    left--;
+    el.textContent = Math.max(0, left) + ' 秒';
+    el.classList.toggle('hot', left <= 5);
+    if (left <= 0){ stopTimer(); next(); }
+  }, 1000);
+}
+
+function recordElapsed(){
+  if (qStart) elapsed[idx] = Math.round((elapsed[idx] || 0) + (Date.now() - qStart) / 1000);
+  qStart = 0;
+}
+
+/** 文字題的內容平常不在 answers 裡，換頁前要先收起來（往前往後都要）。 */
+function captureAnswer(){
+  if (poll.questions[idx].type !== 'text') return;
+  const ta = document.getElementById('textAns');
+  if (ta) answers[idx] = ta.value.trim();
+}
+
+$('#prevBtn').addEventListener('click', () => {
+  captureAnswer(); recordElapsed(); stopTimer();
+  if (idx > 0){ idx--; renderQ(); }
+});
+$('#nextBtn').addEventListener('click', next);
+
+function next(){
+  captureAnswer();
+  recordElapsed(); stopTimer();
+  if (idx < poll.questions.length - 1){ idx++; renderQ(); }
+  else submit();
+}
+
+/* =========================================================
+   送出
+   ========================================================= */
+
+async function submit(){
+  $('#nextBtn').disabled = true;
+  $('#nextBtn').textContent = '送出中…';
+  let name = '';
+  try { name = localStorage.getItem(NAME_KEY) || ''; } catch(e){}
+
+  try {
+    const res = await apiSend('submit', {
+      answers: answers, elapsed: elapsed, token: token(), nickname: name
+    }, { pin: poll.pin });
+
+    if (res.duplicate){
+      $('#doneIcon').textContent  = '🙋';
+      $('#doneTitle').textContent = '你已經投過了';
+      $('#doneSub').textContent   = res.message || '這場投票每支手機只能投一次。';
+      $('#doneScore').hidden = true;
+      $('#doneDetail').innerHTML = '';
+      $('#doneResults').innerHTML = '';
+      show('viewDone');
+      return;
+    }
+
+    submitted = res;
+    renderDone(res);
+  } catch(e){
+    $('#nextBtn').disabled = false;
+    $('#nextBtn').textContent = '✓ 再試一次送出';
+    $('#qNotice').innerHTML = '<span style="color:#ffb0c2">送出失敗：' + esc(e.message) + '</span>';
+  }
+}
+
+function renderDone(res){
+  $('#doneIcon').textContent  = '✅';
+  $('#doneTitle').textContent = '已送出，謝謝！';
+  $('#doneSub').textContent   = '目前共 ' + (res.count || 0) + ' 人送出。';
+
+  if (res.score !== undefined){
+    $('#doneScore').hidden = false;
+    $('#doneScore').textContent = res.score + ' / ' + res.max + ' 分';
+    const right = (res.detail || []).filter(d => d.correct === true).length;
+    const graded = (res.detail || []).filter(d => d.max > 0).length;
+    $('#doneSub').textContent = '答對 ' + right + ' / ' + graded + ' 題　·　目前共 ' + (res.count || 0) + ' 人送出';
+    $('#doneDetail').innerHTML = renderDetail(res.detail || []);
+  } else {
+    $('#doneScore').hidden = true;
+    $('#doneDetail').innerHTML = '';
+  }
+
+  $('#doneResults').innerHTML = res.results ? renderResults(res.results) : '';
+  show('viewDone');
+}
+
+/** 逐題對錯（正確答案由後端在送出後才給，作答時拿不到） */
+function renderDetail(detail){
+  const rows = detail.map((d, i) => {
+    if (!d.max) return '';
+    const q = poll.questions[i];
+    const mine = answers[i];
+    const mark = d.correct ? '✅' : '❌';
+    let right = '';
+    if (!d.correct && d.answer !== null && d.answer !== undefined){
+      const list = Array.isArray(d.answer) ? d.answer : [d.answer];
+      right = '　正解：' + list.map(k => (q.options || [])[k] || ('選項 ' + (k+1))).join('、');
+    }
+    return `<div class="res-q"><h3>${mark} 第 ${i+1} 題　${esc(q.text)}</h3>
+      <p class="sub">你的答案：${esc(answerText(q, mine))}${esc(right)}</p></div>`;
+  }).join('');
+  return rows ? '<h3 style="font-size:.95rem;margin-bottom:10px">逐題結果</h3>' + rows : '';
+}
+
+function answerText(q, a){
+  if (a === null || a === undefined || a === '') return '（未作答）';
+  if (q.type === 'text' || q.type === 'scale') return String(a);
+  if (q.type === 'multi'){
+    return (Array.isArray(a) ? a : []).map(k => (q.options || [])[k] || ('選項 ' + (k+1))).join('、') || '（未作答）';
+  }
+  return (q.options || [])[a] || ('選項 ' + (Number(a)+1));
+}
+
+/** 目前大家的作答分布（主持人設定「送出後可以看到結果」時才會有） */
+function renderResults(r){
+  const stat = r.stat || [];
+  const html = poll.questions.map((q, i) => {
+    const s = stat[i] || {};
+    if (q.type === 'text'){
+      const texts = s.texts || [];
+      if (!texts.length) return '';
+      return `<div class="res-q"><h3>第 ${i+1} 題　${esc(q.text)}</h3>` +
+        texts.slice(0, 30).map(t => `<p class="sub">・${esc(t)}</p>`).join('') + '</div>';
+    }
+    const labels = q.type === 'scale' ? scaleLabels(q) : (q.options || []);
+    const counts = s.counts || {};
+    const keyOf = k => q.type === 'scale' ? String((Number(q.scaleMin)||1) + k) : String(k);
+    const total = labels.reduce((sum, _, k) => sum + (counts[keyOf(k)] || 0), 0);
+    let max = 0;
+    labels.forEach((_, k) => { max = Math.max(max, counts[keyOf(k)] || 0); });
+
+    const bars = labels.map((label, k) => {
+      const n = counts[keyOf(k)] || 0;
+      const pct = max ? Math.round(n / max * 100) : 0;
+      const share = total ? Math.round(n / total * 100) : 0;
+      const right = isMyCorrect(i, k) ? ' right' : '';
+      return `<div class="bar-row${right}">
+          <div class="bar-top"><span class="lbl">${esc(label)}</span><span class="num">${n} 票 · ${share}%</span></div>
+          <div class="bar"><i style="width:${pct}%"></i></div></div>`;
+    }).join('');
+    const avg = (q.type === 'scale' && s.average != null) ? `<p class="sub">平均 ${s.average}</p>` : '';
+    return `<div class="res-q"><h3>第 ${i+1} 題　${esc(q.text)}</h3>${bars}${avg}</div>`;
+  }).join('');
+
+  return html ? '<h3 style="font-size:.95rem;margin:18px 0 10px">目前大家的答案</h3>' + html : '';
+}
+
+/** 送出後才知道的正確答案（來自 submitted.detail），用來在長條圖上標 ★ */
+function isMyCorrect(i, k){
+  const d = submitted && submitted.detail && submitted.detail[i];
+  if (!d || d.answer === null || d.answer === undefined) return false;
+  return Array.isArray(d.answer) ? d.answer.indexOf(k) !== -1 : Number(d.answer) === k;
+}
+
+function scaleLabels(q){
+  const min = Number(q.scaleMin) || 1, max = Number(q.scaleMax) || 5;
+  const out = [];
+  for (let v = min; v <= max; v++){
+    let s = String(v);
+    if (v === min && q.scaleMinLabel) s += '（' + q.scaleMinLabel + '）';
+    if (v === max && q.scaleMaxLabel) s += '（' + q.scaleMaxLabel + '）';
+    out.push(s);
+  }
+  return out;
+}
+
+/* =========================================================
+   啟動
+   ========================================================= */
+
+(function init(){
+  const pin = new URLSearchParams(location.search).get('pin');
+  if (pin && /^\d{6}$/.test(pin)){
+    $('#pinInput').value = pin;
+    show('viewPin');
+    enter(pin);
+  } else {
+    show('viewPin');
+    $('#pinInput').focus();
+  }
+})();
+</script>
+</body>
+</html>
