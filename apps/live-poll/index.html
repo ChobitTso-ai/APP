@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script>if(localStorage.getItem('nckuh_endo_authed')!=='1')location.replace('../../');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>即時投票 v1.0 · 主持端</title>
+<style>
+:root{
+  --bg-0:#0a0e1a; --bg-1:#0f1524;
+  --text:#eaf0ff; --muted:#93a0bd;
+  --glass:rgba(22,30,52,.55); --line:rgba(140,165,255,.16);
+  --accent:#5b8cff; --accent-2:#a56bff; --ok:#2fd6a8; --warn:#ffc86b; --danger:#ff6b8a;
+  --r:14px;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  font-family:var(--font); color:var(--text); min-height:100vh; padding:18px 16px 60px;
+  background:
+    radial-gradient(1200px 800px at 15% -10%,#16204a 0%,transparent 55%),
+    radial-gradient(1000px 700px at 110% 20%,#2a1a4d 0%,transparent 50%),
+    linear-gradient(160deg,var(--bg-1),var(--bg-0));
+  background-attachment:fixed;
+}
+.wrap{max-width:980px;margin:0 auto}
+.glass{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);
+  backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%)}
+
+/* ---- 頁首 ---- */
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+header h1{font-size:1.35rem;letter-spacing:.5px}
+.badge{font-size:.72rem;padding:3px 9px;border-radius:999px;background:rgba(91,140,255,.18);
+  border:1px solid var(--line);color:#bcd0ff}
+.spacer{flex:1}
+.back{color:var(--muted);text-decoration:none;font-size:.85rem;padding:7px 12px;border-radius:10px;border:1px solid var(--line)}
+.back:hover{color:var(--text)}
+
+/* ---- 分頁 ---- */
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav.tabs button{
+  font:inherit;font-size:.9rem;color:var(--muted);background:transparent;border:1px solid var(--line);
+  padding:9px 15px;border-radius:999px;cursor:pointer;transition:.18s}
+nav.tabs button:hover{color:var(--text)}
+nav.tabs button.on{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
+
+/* ---- 通用元件 ---- */
+.card{padding:16px;margin-bottom:14px}
+.card > h2{font-size:1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:5px}
+input[type=text],input[type=number],textarea,select{
+  width:100%;font:inherit;font-size:.95rem;color:var(--text);background:rgba(10,14,26,.6);
+  border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,140,255,.16)}
+textarea{resize:vertical;min-height:56px;line-height:1.5}
+select option{background:#141b2e}
+.btn{font:inherit;font-size:.9rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  padding:9px 15px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);
+  color:var(--text);transition:.18s}
+.btn:hover{background:rgba(255,255,255,.11)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;font-weight:600}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:rgba(255,107,138,.35)}
+.btn.sm{padding:5px 10px;font-size:.8rem;border-radius:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.hint{font-size:.8rem;color:var(--muted);line-height:1.6}
+.note{font-size:.82rem;line-height:1.65;padding:11px 13px;border-radius:10px;
+  background:rgba(255,200,107,.09);border:1px solid rgba(255,200,107,.28);color:#ffd79a}
+.note.info{background:rgba(91,140,255,.09);border-color:rgba(91,140,255,.3);color:#bcd0ff}
+
+/* ---- 題目卡 ---- */
+.q{border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:11px;background:rgba(10,14,26,.35)}
+.q-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.q-no{font-weight:700;font-size:.95rem;color:#bcd0ff}
+.q-type{font-size:.75rem;padding:2px 8px;border-radius:999px;background:rgba(165,107,255,.18);
+  border:1px solid rgba(165,107,255,.3);color:#d8c2ff}
+.q-tools{margin-left:auto;display:flex;gap:4px}
+.q-tools button{font:inherit;font-size:.85rem;line-height:1;color:var(--muted);background:transparent;
+  border:1px solid var(--line);border-radius:8px;padding:5px 8px;cursor:pointer}
+.q-tools button:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.opt{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.opt input[type=text]{flex:1}
+.opt .mark{display:flex;align-items:center;gap:5px;font-size:.78rem;color:var(--muted);white-space:nowrap;cursor:pointer}
+.opt .mark input{accent-color:var(--ok);width:15px;height:15px;cursor:pointer}
+.opt .del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 4px}
+.opt .del:hover{color:var(--danger)}
+
+/* ---- 開房畫面 ---- */
+.pinbox{text-align:center;padding:22px}
+.pin{font-size:3.6rem;font-weight:800;letter-spacing:.16em;line-height:1.1;
+  background:linear-gradient(135deg,#8fb4ff,#c9a3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pin-label{font-size:.82rem;color:var(--muted);margin-bottom:4px}
+.qr{background:#fff;padding:12px;border-radius:12px;display:inline-block;line-height:0;margin:14px 0}
+.qr svg{width:190px;height:190px;display:block}
+.joinurl{font-size:.85rem;color:#bcd0ff;word-break:break-all;background:rgba(10,14,26,.6);
+  border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin:6px 0 12px}
+.counter{font-size:2rem;font-weight:700}
+.counter small{font-size:.85rem;font-weight:400;color:var(--muted)}
+
+/* ---- 結果 ---- */
+.res-q{margin-bottom:20px}
+.res-q h3{font-size:.98rem;margin-bottom:4px;line-height:1.5}
+.res-meta{font-size:.78rem;color:var(--muted);margin-bottom:9px}
+.bar-row{margin-bottom:8px}
+.bar-top{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:3px;gap:10px}
+.bar-top .lbl{overflow-wrap:anywhere}
+.bar-top .num{color:var(--muted);white-space:nowrap}
+.bar{height:11px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width .5s ease}
+.bar-row.right .bar i{background:linear-gradient(90deg,#2fd6a8,#7ee8c4)}
+.bar-row.right .lbl::after{content:" ★";color:var(--ok)}
+.texts{display:flex;flex-direction:column;gap:7px}
+.text-item{display:flex;gap:9px;align-items:flex-start;font-size:.9rem;line-height:1.55;
+  background:rgba(10,14,26,.45);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.text-item span{flex:1;overflow-wrap:anywhere}
+.text-item.hid{opacity:.4}
+.text-item button{background:transparent;border:1px solid var(--line);border-radius:7px;color:var(--muted);
+  font:inherit;font-size:.75rem;padding:3px 7px;cursor:pointer;white-space:nowrap}
+.text-item button:hover{color:var(--text)}
+table.board{width:100%;border-collapse:collapse;font-size:.9rem}
+table.board th,table.board td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line)}
+table.board th{color:var(--muted);font-weight:500;font-size:.8rem}
+table.board td:last-child,table.board th:last-child{text-align:right}
+.rank1{color:#ffd76b}.rank2{color:#d8e0f5}.rank3{color:#e0a878}
+
+/* ---- 我的投票 ---- */
+.mine-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--line);
+  border-radius:11px;margin-bottom:8px;background:rgba(10,14,26,.35);flex-wrap:wrap}
+.mine-item .t{flex:1;min-width:140px}
+.mine-item .t b{display:block;font-size:.95rem;margin-bottom:2px}
+.mine-item .t small{color:var(--muted);font-size:.78rem}
+
+/* ---- 投影模式 ---- */
+#screen{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#0f1524,#0a0e1a);
+  padding:34px 40px;display:flex;flex-direction:column;overflow:auto}
+#screen h2{font-size:2.1rem;line-height:1.35;margin-bottom:6px}
+#screen .res-meta{font-size:1rem;margin-bottom:20px}
+#screen .bar-top{font-size:1.5rem}
+#screen .bar{height:24px}
+#screen .bar-row{margin-bottom:16px}
+#screen .text-item{font-size:1.3rem}
+#screen .scr-nav{margin-top:auto;padding-top:22px;display:flex;gap:10px;align-items:center;justify-content:center}
+#screen .btn{font-size:1rem;padding:11px 20px}
+
+/* ---- 提示 ---- */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:90;
+  background:rgba(18,24,42,.96);border:1px solid var(--line);border-radius:11px;padding:11px 18px;
+  font-size:.9rem;opacity:0;pointer-events:none;transition:.25s;max-width:88vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;line-height:1.8}
+
+@media (max-width:560px){
+  .pin{font-size:2.6rem}
+  #screen{padding:20px 18px}
+  #screen h2{font-size:1.4rem}
+  #screen .bar-top{font-size:1.05rem}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>🗳️ 即時投票</h1>
+    <span class="badge">v1.0</span>
+    <div class="spacer"></div>
+    <button class="btn sm ghost" id="cfgBtn">⚙ 後端設定</button>
+    <a class="back" href="../../">← App 中心</a>
+  </header>
+
+  <div class="note" id="setupWarn" hidden>
+    ⚠️ 還沒設定投票後端，目前只能編輯題目、沒辦法開放投票。
+    設定方式見 <b>docs/VOTING_SETUP.md</b>（在 Google 試算表部署一次 Apps Script，約 5 分鐘）。
+  </div>
+  <div class="note" id="tempWarn" hidden>
+    ⚠️ 目前用的是「暫時填入」的後端網址，只存在這台電腦。
+    <b>觀眾掃 QR 會連不上</b>——要正式使用，請把網址交給 Claude 填進程式碼再上線。
+  </div>
+
+  <nav class="tabs">
+    <button data-tab="edit" class="on">📝 編輯題目</button>
+    <button data-tab="live">📣 開放投票</button>
+    <button data-tab="res">📊 結果</button>
+    <button data-tab="mine">📚 我的投票</button>
+  </nav>
+
+  <!-- ============ 編輯 ============ -->
+  <section id="tab-edit">
+    <div class="card glass">
+      <h2>投票基本設定</h2>
+      <label for="title">標題</label>
+      <input type="text" id="title" placeholder="例如：糖尿病用藥小測驗" maxlength="200">
+
+      <div class="grid2" style="margin-top:14px">
+        <div>
+          <label for="cfgNamed">參與者身分</label>
+          <select id="cfgNamed">
+            <option value="0">匿名（不填名字）</option>
+            <option value="1">記名（自己填暱稱）</option>
+          </select>
+        </div>
+        <div>
+          <label for="cfgOnce">重複投票</label>
+          <select id="cfgOnce">
+            <option value="1">一支手機只能投一次</option>
+            <option value="0">不限制（可重複投）</option>
+          </select>
+        </div>
+        <div>
+          <label for="cfgScore">計分方式</label>
+          <select id="cfgScore">
+            <option value="none">不計分（純民調／問卷）</option>
+            <option value="correct">答對得分（有排行榜）</option>
+            <option value="speed">答對得分 ＋ 答得快加分</option>
+          </select>
+        </div>
+        <div>
+          <label for="cfgShow">觀眾送出後</label>
+          <select id="cfgShow">
+            <option value="after">可以看到目前結果</option>
+            <option value="never">只顯示已送出，看不到結果</option>
+          </select>
+        </div>
+        <div id="limitWrap" hidden>
+          <label for="cfgLimit">每題作答秒數（速度加分用）</label>
+          <input type="number" id="cfgLimit" min="5" max="600" step="5" value="30">
+        </div>
+      </div>
+
+      <div class="note info" id="scoreNote" style="margin-top:13px" hidden>
+        ℹ️ 計分小提醒：正確答案存在後端、<b>不會傳給觀眾的手機</b>，看網頁原始碼也偷不到。
+        但因為是各自作答、沒有統一倒數，<b>「答得快加分」只是趣味性質</b>，
+        這個工具適合教學互動，不適合當正式考核。多選題採<b>全對才給分</b>。
+      </div>
+    </div>
+
+    <div class="card glass">
+      <h2>題目 <span class="badge" id="qCount">0 題</span></h2>
+      <div id="qList"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn sm" data-add="single">＋ 單選題</button>
+        <button class="btn sm" data-add="truefalse">＋ 是非題</button>
+        <button class="btn sm" data-add="multi">＋ 多選題</button>
+        <button class="btn sm" data-add="scale">＋ 評分量表</button>
+        <button class="btn sm" data-add="text">＋ 開放文字</button>
+      </div>
+    </div>
+
+    <div class="card glass">
+      <div class="row">
+        <button class="btn primary" id="createBtn">🚀 建立投票（開放作答）</button>
+        <button class="btn" id="updateBtn" hidden>💾 更新目前這場的題目</button>
+        <div class="spacer"></div>
+        <button class="btn sm ghost" id="exportJson">⬇ 匯出題目檔</button>
+        <button class="btn sm ghost" id="importBtn">⬆ 匯入題目檔</button>
+        <button class="btn sm ghost danger" id="clearBtn">清空重來</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+      <p class="hint" style="margin-top:10px">
+        編輯中的內容會自動存在這台電腦（草稿）。按「建立投票」才會上傳到你的 Google 試算表並產生 PIN；
+        同一份題目可以重複建立多場，結果各自分開。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 開放投票 ============ -->
+  <section id="tab-live" hidden>
+    <div class="card glass" id="noLive">
+      <p class="hint">還沒有進行中的投票。到「📝 編輯題目」把題目做好，按「🚀 建立投票」就會產生 PIN 與 QR Code。</p>
+    </div>
+
+    <div id="liveBox" hidden>
+      <div class="card glass pinbox">
+        <div class="pin-label">請參加的人掃描 QR Code，或到網址輸入這組 PIN</div>
+        <div class="pin" id="pinText">------</div>
+        <div class="qr" id="qrBox"></div>
+        <div class="joinurl" id="joinUrl"></div>
+        <div class="row" style="justify-content:center">
+          <button class="btn sm" id="copyUrl">📋 複製連結</button>
+          <button class="btn sm" id="openJoin">🔗 開啟作答頁</button>
+        </div>
+        <div style="margin-top:20px">
+          <div class="counter"><span id="liveCount">0</span> <small>人已送出</small></div>
+        </div>
+      </div>
+
+      <div class="card glass">
+        <h2>這場投票</h2>
+        <div class="grid2">
+          <div><label>標題</label><div id="liveTitle" style="font-size:.95rem"></div></div>
+          <div><label>管理碼（看結果用，請留著）</label>
+            <div style="font-size:1.15rem;font-weight:700;letter-spacing:.1em" id="liveKey"></div></div>
+          <div><label>狀態</label><div id="liveStatus" style="font-size:.95rem"></div></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn" id="gotoRes">📊 看結果</button>
+          <button class="btn" id="closeBtn">🔒 結束並封存</button>
+          <button class="btn ghost" id="reopenBtn" hidden>🔓 重新開放</button>
+        </div>
+        <p class="hint" style="margin-top:10px">
+          「結束並封存」之後就不能再作答，結果會寫進試算表的「結果彙總」工作表。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 結果 ============ -->
+  <section id="tab-res" hidden>
+    <div class="card glass" id="noRes">
+      <p class="hint">還沒有可以顯示的結果。先建立一場投票，或到「📚 我的投票」用 PIN ＋ 管理碼把舊的場次叫回來。</p>
+    </div>
+
+    <div id="resBox" hidden>
+      <div class="card glass">
+        <div class="row">
+          <div>
+            <div style="font-size:1.05rem;font-weight:600" id="resTitle"></div>
+            <div class="res-meta" id="resSub"></div>
+          </div>
+          <div class="spacer"></div>
+          <label class="hint" style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+            <input type="checkbox" id="autoRefresh" checked style="width:15px;height:15px;accent-color:var(--accent)"> 自動更新
+          </label>
+          <button class="btn sm" id="refreshBtn">🔄 重新整理</button>
+          <button class="btn sm" id="screenBtn">🖥 投影模式</button>
+          <button class="btn sm" id="csvBtn">⬇ 匯出 CSV</button>
+        </div>
+      </div>
+      <div class="card glass" id="resBody"></div>
+      <div class="card glass" id="boardBox" hidden>
+        <h2>🏆 排行榜</h2>
+        <table class="board"><thead><tr><th>名次</th><th>參與者</th><th>得分</th></tr></thead>
+          <tbody id="boardBody"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 我的投票 ============ -->
+  <section id="tab-mine" hidden>
+    <div class="card glass">
+      <h2>這台電腦記得的投票</h2>
+      <div id="mineList"></div>
+      <p class="hint" id="mineEmpty">還沒有紀錄。建立投票之後就會出現在這裡。</p>
+    </div>
+    <div class="card glass">
+      <h2>用 PIN ＋ 管理碼叫回舊場次</h2>
+      <p class="hint" style="margin-bottom:11px">換一台電腦時，輸入這兩個號碼就能看回結果（資料一直都在你的 Google 試算表裡）。</p>
+      <div class="grid2">
+        <div><label for="recPin">PIN（6 位數字）</label><input type="text" id="recPin" inputmode="numeric" maxlength="6" placeholder="123456"></div>
+        <div><label for="recKey">管理碼（6 碼英數）</label><input type="text" id="recKey" maxlength="6" placeholder="A7K2QP" style="text-transform:uppercase"></div>
+      </div>
+      <button class="btn primary" id="recBtn" style="margin-top:12px">取回結果</button>
+    </div>
+  </section>
+
+  <footer>
+    NCKUH ENDO · App 中心 —— 即時投票 v1.0<br>
+    ©Tso KY - All Rights Reserved
+  </footer>
+</div>
+
+<!-- 投影模式 -->
+<div id="screen" hidden>
+  <h2 id="scrTitle"></h2>
+  <div class="res-meta" id="scrMeta"></div>
+  <div id="scrBody"></div>
+  <div class="scr-nav">
+    <button class="btn" id="scrPrev">← 上一題</button>
+    <span id="scrPos" style="color:var(--muted)"></span>
+    <button class="btn" id="scrNext">下一題 →</button>
+    <button class="btn" id="scrClose">✕ 離開投影</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="api.js"></script>
+<script>
+/* =========================================================
+   即時投票 v1.0 —— 主持端
+   ========================================================= */
+
+const DRAFT_KEY = 'lp_draft';
+const MINE_KEY  = 'lp_mine';
+const HIDE_KEY  = 'lp_hidden';   // 投影時要藏起來的文字答案（只存在本機）
+
+const TYPE_NAME = { single:'單選', truefalse:'是非', multi:'多選', scale:'量表', text:'文字' };
+
+let poll    = newPoll();   // 編輯中的題目
+let live    = null;        // { pin, key, title, status }
+let results = null;        // 後端回來的彙總
+let autoTimer = null;
+let scrIndex = 0;
+
+function newPoll(){
+  return {
+    title:'',
+    config:{ named:false, onceOnly:true, scoring:'none', showResult:'after', timeLimit:30 },
+    questions:[]
+  };
+}
+
+/* ---------- 小工具 ---------- */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+function toast(msg, ms){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), ms || 2600);
+}
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function load(key, fallback){
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e){ return fallback; }
+}
+function save(key, val){
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){ /* 存不下就算了 */ }
+}
+
+/* ---------- 分頁 ---------- */
+function showTab(name){
+  $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  ['edit','live','res','mine'].forEach(t => { $('#tab-' + t).hidden = (t !== name); });
+  if (name === 'res' && live && !results) refreshResults();
+  setAuto(name === 'res' && $('#autoRefresh').checked);
+}
+$$('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+/* =========================================================
+   題目編輯
+   ========================================================= */
+
+function blankQuestion(type){
+  const q = { type, text:'', points:10 };
+  if (type === 'single' || type === 'multi') q.options = ['', ''];
+  if (type === 'truefalse') { q.options = ['是','否']; q.answer = 0; }
+  if (type === 'scale') { q.scaleMin = 1; q.scaleMax = 5; q.scaleMinLabel = '完全不同意'; q.scaleMaxLabel = '非常同意'; }
+  return q;
+}
+
+$$('[data-add]').forEach(b => b.addEventListener('click', () => {
+  poll.questions.push(blankQuestion(b.dataset.add));
+  renderQuestions();
+  saveDraft();
+  const cards = $$('#qList .q');
+  const last = cards[cards.length - 1];
+  if (last) { last.scrollIntoView({ behavior:'smooth', block:'center' }); const ta = last.querySelector('textarea'); if (ta) ta.focus(); }
+}));
+
+function renderQuestions(){
+  const list = $('#qList');
+  const scoring = poll.config.scoring !== 'none';
+  $('#qCount').textContent = poll.questions.length + ' 題';
+
+  if (!poll.questions.length){
+    list.innerHTML = '<p class="hint">還沒有題目——用下面的按鈕新增第一題。</p>';
+    return;
+  }
+
+  list.innerHTML = poll.questions.map((q, i) => {
+    let body = '';
+
+    if (q.type === 'single' || q.type === 'multi' || q.type === 'truefalse'){
+      const fixed = q.type === 'truefalse';
+      const multi = q.type === 'multi';
+      const opts = (q.options || []).map((o, k) => {
+        const checked = multi
+          ? (Array.isArray(q.answer) && q.answer.indexOf(k) !== -1)
+          : (Number(q.answer) === k);
+        const mark = scoring
+          ? `<label class="mark"><input type="${multi?'checkbox':'radio'}" name="ans${i}"
+               data-ans="${i}" data-k="${k}" ${checked?'checked':''}>正解</label>`
+          : '';
+        const del = (!fixed && (q.options||[]).length > 2)
+          ? `<button class="del" data-delopt="${i}" data-k="${k}" title="刪除這個選項">✕</button>` : '';
+        return `<div class="opt">
+            <input type="text" value="${esc(o)}" data-opt="${i}" data-k="${k}" maxlength="200"
+                   placeholder="選項 ${k+1}" ${fixed?'disabled':''}>
+            ${mark}${del}
+          </div>`;
+      }).join('');
+      const addOpt = fixed ? '' : `<button class="btn sm ghost" data-addopt="${i}">＋ 選項</button>`;
+      body = opts + addOpt;
+
+    } else if (q.type === 'scale'){
+      body = `<div class="grid2">
+          <div><label>最小值</label><input type="number" min="0" max="9" value="${Number(q.scaleMin)||1}" data-num="scaleMin" data-i="${i}"></div>
+          <div><label>最大值</label><input type="number" min="2" max="10" value="${Number(q.scaleMax)||5}" data-num="scaleMax" data-i="${i}"></div>
+          <div><label>最小值說明</label><input type="text" value="${esc(q.scaleMinLabel)}" data-str="scaleMinLabel" data-i="${i}" maxlength="40"></div>
+          <div><label>最大值說明</label><input type="text" value="${esc(q.scaleMaxLabel)}" data-str="scaleMaxLabel" data-i="${i}" maxlength="40"></div>
+        </div>`;
+
+    } else {
+      body = '<p class="hint">開放文字題：參與者自己打字回答，結果會列出所有回覆（不計分）。</p>';
+    }
+
+    const pts = (scoring && q.type !== 'text' && q.type !== 'scale')
+      ? `<div style="margin-top:9px;max-width:150px"><label>配分</label>
+           <input type="number" min="0" max="1000" value="${Number(q.points)||10}" data-num="points" data-i="${i}"></div>` : '';
+
+    return `<div class="q" data-q="${i}">
+        <div class="q-head">
+          <span class="q-no">第 ${i+1} 題</span>
+          <span class="q-type">${TYPE_NAME[q.type] || q.type}</span>
+          <div class="q-tools">
+            <button data-move="${i}" data-dir="-1" title="上移" ${i===0?'disabled':''}>↑</button>
+            <button data-move="${i}" data-dir="1" title="下移" ${i===poll.questions.length-1?'disabled':''}>↓</button>
+            <button data-dup="${i}" title="複製這題">⧉</button>
+            <button data-del="${i}" title="刪除這題">🗑</button>
+          </div>
+        </div>
+        <textarea data-text="${i}" placeholder="輸入題目…" maxlength="500">${esc(q.text)}</textarea>
+        <div style="margin-top:9px">${body}</div>
+        ${pts}
+      </div>`;
+  }).join('');
+}
+
+/* 用事件委派處理題目卡裡的所有互動——重繪 DOM 也不會失效 */
+$('#qList').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.text !== undefined){ poll.questions[+t.dataset.text].text = t.value; saveDraft(); return; }
+  if (t.dataset.opt !== undefined){ poll.questions[+t.dataset.opt].options[+t.dataset.k] = t.value; saveDraft(); return; }
+  if (t.dataset.str){ poll.questions[+t.dataset.i][t.dataset.str] = t.value; saveDraft(); return; }
+  if (t.dataset.num){
+    const q = poll.questions[+t.dataset.i];
+    q[t.dataset.num] = Number(t.value);
+    saveDraft();
+    // 量表上下限改變時不重繪（會讓輸入框失焦），送出前才正規化
+  }
+});
+
+$('#qList').addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.ans === undefined) return;
+  const i = +t.dataset.ans, k = +t.dataset.k, q = poll.questions[i];
+  if (q.type === 'multi'){
+    const cur = Array.isArray(q.answer) ? q.answer.slice() : [];
+    const at = cur.indexOf(k);
+    if (t.checked && at === -1) cur.push(k);
+    if (!t.checked && at !== -1) cur.splice(at, 1);
+    q.answer = cur.sort((a,b)=>a-b);
+  } else {
+    q.answer = k;
+  }
+  saveDraft();
+});
+
+$('#qList').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+
+  if (b.dataset.move !== undefined){
+    const i = +b.dataset.move, j = i + (+b.dataset.dir);
+    if (j < 0 || j >= poll.questions.length) return;
+    const tmp = poll.questions[i]; poll.questions[i] = poll.questions[j]; poll.questions[j] = tmp;
+  } else if (b.dataset.dup !== undefined){
+    const i = +b.dataset.dup;
+    poll.questions.splice(i + 1, 0, JSON.parse(JSON.stringify(poll.questions[i])));
+  } else if (b.dataset.del !== undefined){
+    const i = +b.dataset.del;
+    if (poll.questions[i].text && !confirm('確定刪除第 ' + (i+1) + ' 題？')) return;
+    poll.questions.splice(i, 1);
+  } else if (b.dataset.addopt !== undefined){
+    const q = poll.questions[+b.dataset.addopt];
+    if ((q.options || []).length >= 10){ toast('一題最多 10 個選項'); return; }
+    q.options.push('');
+  } else if (b.dataset.delopt !== undefined){
+    const q = poll.questions[+b.dataset.delopt], k = +b.dataset.k;
+    q.options.splice(k, 1);
+    // 刪掉選項後，正解的索引要跟著移動
+    if (q.type === 'multi'){
+      q.answer = (Array.isArray(q.answer)?q.answer:[])
+        .filter(a => a !== k).map(a => a > k ? a - 1 : a);
+    } else if (q.answer !== undefined){
+      if (Number(q.answer) === k) delete q.answer;
+      else if (Number(q.answer) > k) q.answer = Number(q.answer) - 1;
+    }
+  } else return;
+
+  renderQuestions();
+  saveDraft();
+});
+
+/* ---------- 基本設定 ---------- */
+function readConfig(){
+  poll.title = $('#title').value.trim();
+  poll.config = {
+    named: $('#cfgNamed').value === '1',
+    onceOnly: $('#cfgOnce').value === '1',
+    scoring: $('#cfgScore').value,
+    showResult: $('#cfgShow').value,
+    timeLimit: Math.max(5, Math.min(600, Number($('#cfgLimit').value) || 30)),
+  };
+}
+function writeConfig(){
+  $('#title').value    = poll.title || '';
+  $('#cfgNamed').value = poll.config.named ? '1' : '0';
+  $('#cfgOnce').value  = poll.config.onceOnly ? '1' : '0';
+  $('#cfgScore').value = poll.config.scoring;
+  $('#cfgShow').value  = poll.config.showResult;
+  $('#cfgLimit').value = poll.config.timeLimit || 30;
+  syncScoreUI();
+}
+function syncScoreUI(){
+  const s = $('#cfgScore').value;
+  $('#limitWrap').hidden = (s !== 'speed');
+  $('#scoreNote').hidden = (s === 'none');
+}
+['#title','#cfgNamed','#cfgOnce','#cfgScore','#cfgShow','#cfgLimit'].forEach(sel => {
+  $(sel).addEventListener('input', () => {
+    readConfig(); syncScoreUI(); renderQuestions(); saveDraft();
+  });
+});
+
+function saveDraft(){ readConfig(); save(DRAFT_KEY, poll); }
+
+/* ---------- 匯入匯出 ---------- */
+$('#exportJson').addEventListener('click', () => {
+  readConfig();
+  const blob = new Blob([JSON.stringify(poll, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (poll.title || '投票題目') + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!data || !Array.isArray(data.questions)) throw new Error('檔案格式不對');
+    poll = { title: data.title || '', config: Object.assign(newPoll().config, data.config || {}), questions: data.questions };
+    writeConfig(); renderQuestions(); saveDraft();
+    toast('已匯入 ' + poll.questions.length + ' 題');
+  } catch(err){
+    toast('匯入失敗：' + err.message, 4000);
+  }
+  e.target.value = '';
+});
+$('#clearBtn').addEventListener('click', () => {
+  if (!confirm('清空目前編輯中的所有題目？（已建立的投票不受影響）')) return;
+  poll = newPoll();
+  writeConfig(); renderQuestions(); saveDraft();
+});
+
+/* =========================================================
+   建立投票 / 開房
+   ========================================================= */
+
+function validate(){
+  readConfig();
+  if (!poll.title) return '請先填投票標題';
+  if (!poll.questions.length) return '至少要有一題';
+  for (let i = 0; i < poll.questions.length; i++){
+    const q = poll.questions[i], no = '第 ' + (i+1) + ' 題';
+    if (!q.text.trim()) return no + '還沒填題目';
+    if (q.type === 'single' || q.type === 'multi'){
+      const opts = (q.options || []).filter(o => o.trim());
+      if (opts.length < 2) return no + '至少要有 2 個選項';
+    }
+    if (q.type === 'scale' && Number(q.scaleMax) <= Number(q.scaleMin)) return no + '的最大值要比最小值大';
+    if (poll.config.scoring !== 'none' && q.type !== 'text' && q.type !== 'scale'){
+      const has = q.type === 'multi' ? (Array.isArray(q.answer) && q.answer.length) : (q.answer !== undefined && q.answer !== null);
+      if (!has) return no + '有計分卻沒有標正確答案';
+    }
+  }
+  return '';
+}
+
+/** 送出前把空選項清掉、量表上下限修正 */
+function cleanQuestions(){
+  return poll.questions.map(q => {
+    const out = JSON.parse(JSON.stringify(q));
+    if (out.type === 'single' || out.type === 'multi'){
+      const keep = [];
+      out.options.forEach((o, k) => { if (String(o).trim()) keep.push(k); });
+      const map = {};
+      keep.forEach((k, n) => { map[k] = n; });
+      out.options = keep.map(k => q.options[k].trim());
+      if (out.type === 'multi'){
+        out.answer = (Array.isArray(q.answer)?q.answer:[]).filter(a => map[a] !== undefined).map(a => map[a]);
+      } else if (q.answer !== undefined && map[q.answer] !== undefined){
+        out.answer = map[q.answer];
+      } else delete out.answer;
+    }
+    if (out.type === 'scale'){
+      out.scaleMin = Math.max(0, Math.min(9, Number(out.scaleMin) || 1));
+      out.scaleMax = Math.max(out.scaleMin + 1, Math.min(10, Number(out.scaleMax) || 5));
+    }
+    return out;
+  });
+}
+
+$('#createBtn').addEventListener('click', async () => {
+  const err = validate();
+  if (err){ toast(err, 3600); return; }
+  if (!pollEndpoint()){ toast('還沒設定投票後端網址', 3600); showTab('edit'); return; }
+
+  const btn = $('#createBtn');
+  btn.disabled = true; btn.textContent = '建立中…';
+  try {
+    const res = await apiSend('create', { title: poll.title, config: poll.config, questions: cleanQuestions() });
+    live = { pin: res.pin, key: res.key, title: res.title, status: '進行中' };
+    results = null;
+    const mine = load(MINE_KEY, []);
+    mine.unshift({ pin: live.pin, key: live.key, title: live.title, at: new Date().toISOString(), poll: JSON.parse(JSON.stringify(poll)) });
+    save(MINE_KEY, mine.slice(0, 50));
+    renderLive(); renderMine();
+    showTab('live');
+    toast('投票已開放，PIN ' + live.pin);
+  } catch(e){
+    toast('建立失敗：' + e.message, 5000);
+  }
+  btn.disabled = false; btn.textContent = '🚀 建立投票（開放作答）';
+});
+
+$('#updateBtn').addEventListener('click', async () => {
+  if (!live) return;
+  const err = validate();
+  if (err){ toast(err, 3600); return; }
+  if (!confirm('更新「' + live.title + '」的題目？\n已經送出的作答不會消失，但題目改了對不回去，建議只在還沒人作答前更新。')) return;
+  try {
+    await apiSend('update', { title: poll.title, config: poll.config, questions: cleanQuestions() }, { pin: live.pin, key: live.key });
+    live.title = poll.title;
+    renderLive();
+    toast('題目已更新');
+  } catch(e){ toast('更新失敗：' + e.message, 5000); }
+});
+
+function joinUrlFor(pin){
+  return new URL('join.html?pin=' + pin, location.href).href;
+}
+
+function renderLive(){
+  $('#noLive').hidden  = !!live;
+  $('#liveBox').hidden = !live;
+  $('#updateBtn').hidden = !live;
+  if (!live) return;
+
+  const url = joinUrlFor(live.pin);
+  $('#pinText').textContent   = live.pin;
+  $('#joinUrl').textContent   = url;
+  $('#liveTitle').textContent = live.title;
+  $('#liveKey').textContent   = live.key;
+  $('#liveStatus').textContent = live.status || '進行中';
+  $('#closeBtn').hidden  = live.status === '已結束';
+  $('#reopenBtn').hidden = live.status !== '已結束';
+
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    $('#qrBox').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 0, scalable: true });
+  } catch(e){
+    $('#qrBox').innerHTML = '<span style="color:#333;font-size:.8rem">QR 產生失敗</span>';
+  }
+}
+
+$('#copyUrl').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('#joinUrl').textContent); toast('連結已複製'); }
+  catch(e){ toast('複製失敗，請手動選取網址'); }
+});
+$('#openJoin').addEventListener('click', () => window.open($('#joinUrl').textContent, '_blank', 'noopener'));
+$('#gotoRes').addEventListener('click', () => { showTab('res'); refreshResults(); });
+
+$('#closeBtn').addEventListener('click', async () => {
+  if (!live || !confirm('結束「' + live.title + '」？結束後就不能再作答了。')) return;
+  try {
+    await apiGet('close', { pin: live.pin, key: live.key });
+    live.status = '已結束';
+    renderLive();
+    toast('已結束並封存，結果寫進試算表的「結果彙總」');
+  } catch(e){ toast('操作失敗：' + e.message, 4500); }
+});
+$('#reopenBtn').addEventListener('click', async () => {
+  if (!live) return;
+  try {
+    await apiGet('reopen', { pin: live.pin, key: live.key });
+    live.status = '進行中';
+    renderLive();
+    toast('已重新開放作答');
+  } catch(e){ toast('操作失敗：' + e.message, 4500); }
+});
+
+/* =========================================================
+   結果
+   ========================================================= */
+
+function setAuto(on){
+  clearInterval(autoTimer);
+  autoTimer = null;
+  if (on && live) autoTimer = setInterval(refreshResults, 5000);
+}
+$('#autoRefresh').addEventListener('change', e => setAuto(e.target.checked && !$('#tab-res').hidden));
+$('#refreshBtn').addEventListener('click', () => refreshResults(true));
+
+async function refreshResults(manual){
+  if (!live) return;
+  try {
+    const res = await apiGet('results', { pin: live.pin, key: live.key });
+    results = res;
+    if (res.status && res.status !== live.status){ live.status = res.status; renderLive(); }
+    $('#liveCount').textContent = res.count || 0;
+    renderResults();
+    if (manual) toast('已更新');
+  } catch(e){
+    if (manual) toast('讀取失敗：' + e.message, 4500);
+  }
+}
+
+function hiddenSet(){
+  const all = load(HIDE_KEY, {});
+  return all[live ? live.pin : ''] || [];
+}
+function toggleHidden(key){
+  const all = load(HIDE_KEY, {});
+  const pin = live ? live.pin : '';
+  const list = all[pin] || [];
+  const at = list.indexOf(key);
+  if (at === -1) list.push(key); else list.splice(at, 1);
+  all[pin] = list;
+  save(HIDE_KEY, all);
+}
+
+/** 把一題的結果畫成長條圖（投影模式用同一份 HTML，字級交給 CSS） */
+function questionHtml(r, q, idx, forScreen){
+  if (r.type === 'text'){
+    const hid = hiddenSet();
+    const texts = r.texts || [];
+    if (!texts.length) return '<p class="hint">還沒有人回答這一題。</p>';
+    const items = texts.map((t, k) => {
+      const key = idx + ':' + k;
+      const isHid = hid.indexOf(key) !== -1;
+      if (forScreen && isHid) return '';
+      return `<div class="text-item ${isHid?'hid':''}"><span>${esc(t)}</span>` +
+             (forScreen ? '' : `<button data-hide="${key}">${isHid?'顯示':'隱藏'}</button>`) + '</div>';
+    }).join('');
+    return '<div class="texts">' + (items || '<p class="hint">這一題的回覆都被隱藏了。</p>') + '</div>';
+  }
+
+  const labels = r.type === 'scale' ? scaleLabels(q) : (q && q.options ? q.options : []);
+  const counts = r.counts || {};
+  let max = 0;
+  labels.forEach((_, k) => { max = Math.max(max, counts[String(scaleKey(q, r, k))] || 0); });
+  const total = labels.reduce((s, _, k) => s + (counts[String(scaleKey(q, r, k))] || 0), 0) || 0;
+
+  return labels.map((label, k) => {
+    const n = counts[String(scaleKey(q, r, k))] || 0;
+    const pct = max ? Math.round(n / max * 100) : 0;
+    const share = total ? Math.round(n / total * 100) : 0;
+    const right = q && isAnswerIdx(q, k) ? ' right' : '';
+    return `<div class="bar-row${right}">
+        <div class="bar-top"><span class="lbl">${esc(label)}</span><span class="num">${n} 票 · ${share}%</span></div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+      </div>`;
+  }).join('');
+}
+
+/* 量表的計數是用「數值本身」當 key，選擇題是用「選項索引」 */
+function scaleKey(q, r, k){
+  if (r.type !== 'scale') return k;
+  return (Number(q && q.scaleMin) || 1) + k;
+}
+function scaleLabels(q){
+  const min = Number(q && q.scaleMin) || 1, max = Number(q && q.scaleMax) || 5;
+  const out = [];
+  for (let v = min; v <= max; v++){
+    let s = String(v);
+    if (v === min && q.scaleMinLabel) s += '（' + q.scaleMinLabel + '）';
+    if (v === max && q.scaleMaxLabel) s += '（' + q.scaleMaxLabel + '）';
+    out.push(s);
+  }
+  return out;
+}
+function isAnswerIdx(q, k){
+  if (!q || q.answer === undefined || q.answer === null || q.type === 'scale') return false;
+  if (q.type === 'multi') return (Array.isArray(q.answer) ? q.answer : []).indexOf(k) !== -1;
+  return Number(q.answer) === k;
+}
+
+function renderResults(){
+  $('#noRes').hidden  = !!results;   // 有結果時才把「還沒有結果」的提示藏起來
+  $('#resBox').hidden = !results;
+  if (!results) return;
+
+  $('#resTitle').textContent = results.title || (live && live.title) || '';
+  $('#resSub').textContent = 'PIN ' + (results.pin || '') + ' · ' + (results.status || '') +
+                             ' · ' + (results.count || 0) + ' 人已送出';
+
+  // results.questions = 題目定義（含正確答案）；results.stat = 每題的彙總票數
+  const qs = results.questions || [];
+  const stat = resultStat();
+  $('#resBody').innerHTML = qs.length
+    ? qs.map((q, i) => renderOneResult(q, stat[i], i)).join('')
+    : '<p class="hint">這場投票沒有題目。</p>';
+
+  const board = results.leaderboard || [];
+  $('#boardBox').hidden = !board.length;
+  $('#boardBody').innerHTML = board.map((b, i) =>
+    `<tr><td class="rank${i+1}">${i+1}</td><td>${esc(b.name)}</td><td>${b.score}${b.max?' / '+b.max:''}</td></tr>`
+  ).join('');
+}
+
+function renderOneResult(q, r, i){
+  r = r || { type: q.type, counts:{}, texts:[], answered:0 };
+  const avg = (r.type === 'scale' && r.average != null) ? ' · 平均 ' + r.average : '';
+  return `<div class="res-q">
+      <h3>第 ${i+1} 題　${esc(q.text)}</h3>
+      <div class="res-meta">${TYPE_NAME[q.type] || q.type} · ${r.answered || 0} 人作答${avg}</div>
+      ${questionHtml(r, q, i, false)}
+    </div>`;
+}
+
+$('#resBody').addEventListener('click', e => {
+  const b = e.target.closest('button[data-hide]');
+  if (!b) return;
+  toggleHidden(b.dataset.hide);
+  renderResults();
+});
+
+/* ---------- CSV ---------- */
+$('#csvBtn').addEventListener('click', () => {
+  if (!results) return;
+  const rows = [['題號','題目','項目','票數']];
+  const stat = resultStat();
+  (results.questions || []).forEach((q, i) => {
+    const r = stat[i] || {};
+    if (q.type === 'text'){
+      (r.texts || []).forEach(t => rows.push([i+1, q.text, t, '']));
+      if (!(r.texts || []).length) rows.push([i+1, q.text, '（無人作答）', '']);
+      return;
+    }
+    const labels = q.type === 'scale' ? scaleLabels(q) : (q.options || []);
+    labels.forEach((label, k) => {
+      rows.push([i+1, q.text, (isAnswerIdx(q,k)?'★ ':'') + label, (r.counts || {})[String(scaleKey(q, r, k))] || 0]);
+    });
+    if (q.type === 'scale') rows.push([i+1, q.text, '平均', r.average == null ? '' : r.average]);
+  });
+  const board = results.leaderboard || [];
+  if (board.length){
+    rows.push(['','','','']);
+    rows.push(['名次','參與者','得分','滿分']);
+    board.forEach((b, i) => rows.push([i+1, b.name, b.score, b.max || '']));
+  }
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (results.title || '投票結果') + '_' + (results.pin || '') + '.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+/* =========================================================
+   投影模式
+   ========================================================= */
+
+/** 每題的彙總票數（後端 summarize() 放在 stat）。 */
+function resultStat(){
+  return (results && results.stat) || [];
+}
+
+$('#screenBtn').addEventListener('click', () => { scrIndex = 0; $('#screen').hidden = false; renderScreen(); });
+$('#scrClose').addEventListener('click', () => { $('#screen').hidden = true; });
+$('#scrPrev').addEventListener('click', () => { scrIndex = Math.max(0, scrIndex - 1); renderScreen(); });
+$('#scrNext').addEventListener('click', () => {
+  scrIndex = Math.min((results.questions || []).length - 1, scrIndex + 1); renderScreen();
+});
+document.addEventListener('keydown', e => {
+  if ($('#screen').hidden) return;
+  if (e.key === 'Escape') $('#screen').hidden = true;
+  if (e.key === 'ArrowLeft') $('#scrPrev').click();
+  if (e.key === 'ArrowRight') $('#scrNext').click();
+});
+
+function renderScreen(){
+  if (!results) return;
+  const qs = results.questions || [];
+  const q = qs[scrIndex];
+  if (!q) return;
+  const r = resultStat()[scrIndex] || {};
+  const avg = (q.type === 'scale' && r.average != null) ? ' · 平均 ' + r.average : '';
+  $('#scrTitle').textContent = q.text;
+  $('#scrMeta').textContent  = (r.answered || 0) + ' 人作答' + avg + ' · 共 ' + (results.count || 0) + ' 人送出';
+  $('#scrBody').innerHTML    = questionHtml(Object.assign({ type:q.type }, r), q, scrIndex, true);
+  $('#scrPos').textContent   = (scrIndex + 1) + ' / ' + qs.length;
+  $('#scrPrev').disabled = scrIndex === 0;
+  $('#scrNext').disabled = scrIndex === qs.length - 1;
+}
+
+/* =========================================================
+   我的投票
+   ========================================================= */
+
+function renderMine(){
+  const mine = load(MINE_KEY, []);
+  $('#mineEmpty').hidden = mine.length > 0;
+  $('#mineList').innerHTML = mine.map((m, i) => `
+    <div class="mine-item">
+      <div class="t"><b>${esc(m.title)}</b>
+        <small>PIN ${m.pin} · 管理碼 ${esc(m.key)} · ${new Date(m.at).toLocaleString('zh-TW')}</small></div>
+      <button class="btn sm" data-open="${i}">📊 看結果</button>
+      ${m.poll ? `<button class="btn sm ghost" data-edit="${i}">📝 載入題目</button>` : ''}
+      <button class="btn sm ghost danger" data-forget="${i}">移除</button>
+    </div>`).join('');
+}
+
+$('#mineList').addEventListener('click', async e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const mine = load(MINE_KEY, []);
+
+  if (b.dataset.open !== undefined){
+    const m = mine[+b.dataset.open];
+    live = { pin: m.pin, key: m.key, title: m.title, status: '進行中' };
+    results = null;
+    renderLive(); showTab('res'); refreshResults();
+  } else if (b.dataset.edit !== undefined){
+    const m = mine[+b.dataset.edit];
+    poll = JSON.parse(JSON.stringify(m.poll));
+    writeConfig(); renderQuestions(); saveDraft(); showTab('edit');
+    toast('已載入題目，可以修改後建立新的一場');
+  } else if (b.dataset.forget !== undefined){
+    if (!confirm('從這台電腦的清單移除？（試算表裡的資料不會刪掉，之後還能用 PIN ＋ 管理碼叫回來）')) return;
+    mine.splice(+b.dataset.forget, 1);
+    save(MINE_KEY, mine);
+    renderMine();
+  }
+});
+
+$('#recBtn').addEventListener('click', async () => {
+  const pin = $('#recPin').value.trim();
+  const key = $('#recKey').value.trim().toUpperCase();
+  if (!/^\d{6}$/.test(pin)){ toast('PIN 要是 6 位數字'); return; }
+  if (!key){ toast('請填管理碼'); return; }
+  try {
+    const res = await apiGet('results', { pin, key });
+    live = { pin, key, title: res.title, status: res.status };
+    results = res;
+    const mine = load(MINE_KEY, []);
+    if (!mine.some(m => m.pin === pin)){
+      mine.unshift({ pin, key, title: res.title, at: new Date().toISOString() });
+      save(MINE_KEY, mine.slice(0, 50));
+    }
+    renderLive(); renderMine(); renderResults(); showTab('res');
+    toast('已取回「' + res.title + '」');
+  } catch(e){ toast('取回失敗：' + e.message, 5000); }
+});
+
+/* =========================================================
+   後端網址設定
+   ========================================================= */
+
+$('#cfgBtn').addEventListener('click', () => {
+  const cur = pollEndpoint();
+  const v = prompt(
+    '貼上 Google Apps Script 的網頁應用程式網址（/exec 結尾）。\n' +
+    '這只會存在這台電腦，正式上線要把網址交給 Claude 填進程式碼。\n' +
+    '留空並確定＝清除。', cur);
+  if (v === null) return;
+  try {
+    if (v.trim()) localStorage.setItem(ENDPOINT_OVERRIDE_KEY, v.trim());
+    else localStorage.removeItem(ENDPOINT_OVERRIDE_KEY);
+  } catch(e){ /* 無痕模式可能存不了 */ }
+  location.reload();
+});
+
+/* =========================================================
+   啟動
+   ========================================================= */
+
+(function init(){
+  poll = load(DRAFT_KEY, null) || newPoll();
+  if (!poll.config) poll.config = newPoll().config;
+  if (!Array.isArray(poll.questions)) poll.questions = [];
+
+  writeConfig();
+  renderQuestions();
+  renderMine();
+  renderLive();
+
+  $('#setupWarn').hidden = !!pollEndpoint();
+  $('#tempWarn').hidden  = !endpointIsTemporary();
+})();
+</script>
+</body>
+</html>

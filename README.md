@@ -63,9 +63,11 @@ apps/<代號>/          各個 App（每個一資料夾）
   case-marker/        案例標記工具（照片標記、裁切、組圖匯出）
   pdf-toolbox/        PDF工具箱（合併與分割，本機處理）
   endo-ppt-generator/ 牙髓病科專科 PPT 製作器（照片 ZIP 依學會範本套版產 PPT）
+  live-poll/          即時投票（主持端建題開房，觀眾掃 QR 用手機作答）
 manifest.webmanifest  PWA 設定（可加入主畫面）
 sw.js                 Service Worker（首頁殼層離線快取）
 docs/ADDING_APPS.md   App 上架規則
 docs/STATS_SETUP.md   使用統計後端設定步驟
+docs/VOTING_SETUP.md  即時投票後端設定步驟（Google 試算表 + Apps Script）
 .github/workflows/    合併 main 後自動部署 GitHub Pages
 ```
