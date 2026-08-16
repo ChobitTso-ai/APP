@@ -175,13 +175,22 @@ function makeCard(app) {
 }
 
 /* ---- 開啟 App ---- */
+/* App 改版後瀏覽器常常還抓到舊版（GitHub Pages 會讓瀏覽器快取一段時間）。
+   網址帶上該 App 的日期，改版後就是不同的網址，一定會重新抓。
+   分享出去的連結不加，保持乾淨。 */
+function versionedUrl(app) {
+  const v = app.updated || app.added;
+  if (!v) return app.url;
+  return app.url + (app.url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(v);
+}
+
 function openApp(app) {
   if (!app.url || app.url === '#') {
     showToast(`「${app.name}」尚未設定連結`);
     return;
   }
   trackOpen(app);
-  window.open(app.url, '_blank', 'noopener');
+  window.open(versionedUrl(app), '_blank', 'noopener');
 }
 
 /* ---- 分享 App（複製連結）---- */

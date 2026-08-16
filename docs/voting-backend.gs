@@ -13,6 +13,7 @@
  * v1.1 新增 info（場次清單用的輕量狀態）與 delete（永久刪除一場）。
  * v1.2 結果加上「誰選了哪個選項」——**只有記名場次有**，匿名場次不存暱稱，
  *      所以這個名單永遠是空的，匿名承諾不受影響。
+ * v1.3 可設定「重新作答覆蓋前一次」，以及截止時間到了自動封存。
  * 前端會用 ping 回報的版本判斷後端是不是舊的，舊版只是少功能、不會壞。
  *
  * 部署步驟見 docs/VOTING_SETUP.md。
@@ -35,7 +36,7 @@ const SHEET_SUMMARY = '結果彙總';
 
 const CACHE_TTL   = 21600; // 快取 6 小時（Apps Script 上限）
 const UPLOAD_TTL  = 600;   // 切塊上傳的暫存 10 分鐘
-const API_VERSION = '1.2';
+const API_VERSION = '1.3';
 
 const MAX_TEXTS   = 300;   // 每題文字答案在快取中最多留幾筆（試算表永遠是完整的）
 const MAX_NAMES   = 200;   // 每個選項最多記幾個暱稱（避免超過快取單筆 100KB 上限）
@@ -203,7 +204,7 @@ function actionUpdate(params) {
 
 function actionGet(params) {
   const pin = requirePin(params.pin);
-  const row = findPollRow(pin);
+  const row = enforceDeadline(findPollRow(pin));
   return {
     ok: true,
     pin: pin,
@@ -230,7 +231,7 @@ function stripAnswer(q) {
 function actionSubmit(params) {
   const data = getPayload(params);
   const pin  = requirePin(params.pin || data.pin);
-  const row  = findPollRow(pin);
+  const row  = enforceDeadline(findPollRow(pin));
 
   if (row.status !== '進行中') throw new Error('這場投票已經結束了');
 
@@ -246,11 +247,23 @@ function actionSubmit(params) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    const agg = loadAgg(pin, row);
+    let agg = loadAgg(pin, row);
+    const votedBefore = agg.voters.hasOwnProperty(token);
 
-    // 重複投票不算錯誤（前端要用不同的畫面處理），所以不放 error 欄位
-    if (config.onceOnly && agg.voters.hasOwnProperty(token)) {
-      return { ok: false, duplicate: true, message: '這台裝置已經投過這場投票了' };
+    if (votedBefore) {
+      // 重複投票不算錯誤（前端要用不同的畫面處理），所以不放 error 欄位
+      if (config.revote === 'block') {
+        return { ok: false, duplicate: true, message: '這台裝置已經投過這場投票了' };
+      }
+      if (config.revote === 'replace') {
+        // 先把這台裝置上一次的作答從試算表刪掉，再讓彙總「從試算表重建」。
+        // 不能只在快取上做減法——票數、名單、排行榜、平均都要一起退掉，
+        // 重建雖然要掃一次表，但只有真的有人改答案時才發生。
+        deleteVoteRows(pin, token);
+        CacheService.getScriptCache().remove('agg_' + pin);
+        agg = rebuildAgg(pin, row);
+      }
+      // revote === 'allow'：不做任何事，直接再記一筆（票數會累加，這就是「不限制」的意思）
     }
 
     const now = new Date();
@@ -299,6 +312,7 @@ function actionSubmit(params) {
     pollsSheet().getRange(row.rowIndex, 6).setValue(agg.n);
 
     const out = { ok: true, count: agg.n };
+    if (votedBefore && config.revote === 'replace') out.replaced = true;
     if (maxTotal > 0) {
       out.score = total;
       out.max = maxTotal;
@@ -319,6 +333,7 @@ function actionResults(params) {
   const pin = requirePin(params.pin);
   const row = findPollRow(pin);
   requireKey(row, params.key);
+  enforceDeadline(row);
   const agg = loadAgg(pin, row);
   const out = summarize(row, agg);
   out.ok = true;
@@ -339,6 +354,7 @@ function actionInfo(params) {
   const pin = requirePin(params.pin);
   const row = findPollRow(pin);
   requireKey(row, params.key);
+  enforceDeadline(row);
   return {
     ok: true,
     pin: pin,
@@ -373,16 +389,22 @@ function actionDelete(params) {
   }
 }
 
-/** 刪掉某場的作答紀錄。由下往上、連續的整段一起刪，避免逐列刪造成索引位移與過慢。 */
-function deleteVoteRows(pin) {
+/**
+ * 刪掉某場的作答紀錄；給了 token 就只刪那一台裝置的（重新作答時用）。
+ * 由下往上、連續的整段一起刪，避免逐列刪造成索引位移與過慢。
+ */
+function deleteVoteRows(pin, token) {
   const sheet = votesSheet();
   const last = sheet.getLastRow();
   if (last < 2) return 0;
 
-  const pins = sheet.getRange(2, 2, last - 1, 1).getValues();
+  // B..D = PIN／投票標題／裝置代號
+  const rows = sheet.getRange(2, 2, last - 1, 3).getValues();
   const hits = [];
-  for (let r = 0; r < pins.length; r++) {
-    if (String(pins[r][0]) === String(pin)) hits.push(r + 2);
+  for (let r = 0; r < rows.length; r++) {
+    if (String(rows[r][0]) !== String(pin)) continue;
+    if (token && String(rows[r][2]) !== String(token)) continue;
+    hits.push(r + 2);
   }
   if (!hits.length) return 0;
 
@@ -394,6 +416,25 @@ function deleteVoteRows(pin) {
     i--;
   }
   return hits.length;
+}
+
+/**
+ * 到了截止時間就自動封存。惰性檢查——有人來存取（取題／作答／看結果）時才處理，
+ * 不需要 Apps Script 的觸發器，也就不會有額外的定時執行配額。
+ */
+function enforceDeadline(row) {
+  const at = Number(row.config && row.config.closeAt) || 0;
+  if (!at || row.status !== '進行中' || Date.now() < at) return row;
+
+  pollsSheet().getRange(row.rowIndex, 4).setValue('已結束');
+  row.status = '已結束';
+  cacheDropRow(row.pin);
+  try {
+    writeSummary(row, loadAgg(row.pin, row));
+  } catch (err) {
+    // 寫彙總失敗不該讓整個請求爆掉——投票已經確實關閉了
+  }
+  return row;
 }
 
 function actionClose(params, close) {
@@ -749,12 +790,22 @@ function parseJson(v, fallback) {
 function normalizeConfig(c) {
   c = c || {};
   const scoring = ['none', 'correct', 'speed'].indexOf(c.scoring) !== -1 ? c.scoring : 'none';
+
+  // 重複投票：block=一機一票／replace=可重新作答覆蓋前次／allow=不限制
+  // v1.2 以前只有布林的 onceOnly，這裡把舊資料對應過來（舊場次讀得回來）
+  let revote = c.revote;
+  if (['block', 'replace', 'allow'].indexOf(revote) === -1) {
+    revote = (c.onceOnly === false) ? 'allow' : 'block';
+  }
+
   return {
     named: !!c.named,
-    onceOnly: c.onceOnly !== false,
+    revote: revote,
+    onceOnly: revote === 'block',   // 保留舊欄位，萬一有舊版前端還在讀
     scoring: scoring,
     showResult: c.showResult === 'never' ? 'never' : 'after',
     timeLimit: Math.max(0, Math.min(600, Number(c.timeLimit) || 0)),
+    closeAt: Number(c.closeAt) > 0 ? Number(c.closeAt) : 0,   // epoch 毫秒，0 = 不設截止
   };
 }
 
