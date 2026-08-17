@@ -3194,9 +3194,14 @@ function renderGeo(){
     var out = renderAligned(g.p.bmp, g.m, g.rW, g.rH);
     if(g.rect){ out = cropCanvas(out, g.rect); showA = cropCanvas(g.r.bmp, g.rect); }
     showB = out;
+    // 事先提醒：會被裁掉的標記（幾何改變後落在框外的標記無法保留）
+    var lost = g.p.markers.length - remapMarkers(g.p.markers, g.m, g.tW, g.tH, g.rW, g.rH, g.rect).length;
+    if(g.rect && geo2.cropRef)
+      lost += g.r.markers.length - remapMarkers(g.r.markers, null, g.tW, g.tH, g.rW, g.rH, g.rect).length;
     $("geoInfo").textContent = "旋轉 " + g.m.deg.toFixed(1) + "°、縮放 " + Math.round(g.m.scale*100) +
       "%、輸出 " + bw(out) + "×" + bh(out) +
-      (g.rect ? "" : (geo2.autoCrop ? "（找不到可裁切的區域，改為不裁切）" : "（未裁切，邊緣留白）"));
+      (g.rect ? "" : (geo2.autoCrop ? "（找不到可裁切的區域，改為不裁切）" : "（未裁切，邊緣留白）")) +
+      (lost > 0 ? "　⚠ 有 " + lost + " 個標記會落在範圍外被移除" : "");
   }else{
     $("geoInfo").textContent = "";
   }
