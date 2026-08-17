@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v2.2
+  案例標記工具 v2.3
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v2.2</title>
+<title>案例標記工具 v2.3</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -298,7 +298,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.2</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.3</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -357,6 +357,7 @@
       <button class="btn" id="btnRotL">↺</button>
       <button class="btn" id="btnRotR">↻</button>
       <button class="btn" id="btnAlign">🎚 色彩對齊</button>
+      <button class="btn" id="btnTeeth">🦷 牙齒對齊</button>
       <button class="btn" id="btnSet">⚙</button>
       <button class="btn primary" id="btnExport">匯出</button>
     </div>
@@ -475,7 +476,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v2.2　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v2.3　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -658,6 +659,61 @@
   </div>
 </div>
 
+<!-- 牙齒對齊 -->
+<div class="modal" id="geoModal">
+  <div class="box">
+    <div class="m-title">牙齒對齊</div>
+    <div class="m-body" style="gap:10px">
+      <div class="form-row">
+        <label>基準照片</label>
+        <select id="geoRef"></select>
+      </div>
+      <div class="alg-tip" id="geoStep">請在兩張照片上，各點兩個「同一個解剖位置」（例如左右犬齒尖、同一顆牙的兩個牙尖）。</div>
+      <div class="alg-pair">
+        <div class="alg-col">
+          <div class="alg-cap">基準照片</div>
+          <div class="alg-wrap"><canvas id="geoCvA"></canvas></div>
+        </div>
+        <div class="alg-col">
+          <div class="alg-cap">要對齊的照片（目前這張）</div>
+          <div class="alg-wrap"><canvas id="geoCvB"></canvas></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <label style="min-width:0;font-weight:600;font-size:13px">
+          <input type="checkbox" id="geoCrop" checked> 自動裁掉旋轉後的空白邊
+        </label>
+        <label style="min-width:0;font-weight:600;font-size:13px">
+          <input type="checkbox" id="geoCropRef" checked> 基準照也裁成同一個框
+        </label>
+      </div>
+      <div class="alg-cap" style="margin-top:2px">對齊後預覽</div>
+      <div class="alg-pair">
+        <div class="alg-col">
+          <div class="alg-cap" style="font-weight:400">基準</div>
+          <div class="alg-prev"><canvas id="geoPrevA"></canvas></div>
+        </div>
+        <div class="alg-col">
+          <div class="alg-cap" style="font-weight:400">對齊後</div>
+          <div class="alg-prev"><canvas id="geoPrevB"></canvas></div>
+        </div>
+      </div>
+      <div class="alg-cap" id="geoInfo" style="font-weight:400"></div>
+      <div class="tip" style="font-size:12px;color:var(--ink-2)">
+        用途：讓同一病例不同時間拍的照片，牙齒的角度、大小、位置一致，排在一起比較才好看。
+        只能修正<b>旋轉、大小、位移</b>；兩張若是從不同角度拍的（透視差異）無法靠這個修正。
+        照片會被重繪與裁切；勾選「基準照也裁成同一個框」時基準照也會一併變更，
+        兩張各自都可以用「↶ 復原」還原。<b>非測量或診斷用途</b>。
+      </div>
+    </div>
+    <div class="m-foot" style="padding:0 16px 16px">
+      <button class="btn primary" id="btnGeoOk" disabled>✓ 套用</button>
+      <button class="btn" id="btnGeoReset">↺ 重新取點</button>
+      <button class="btn" id="btnGeoNo">取消</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="busyModal">
   <div class="box narrow"><div class="m-body" style="align-items:center;text-align:center">
     <div id="busyTxt" style="font-size:15px;font-weight:600">處理中…</div>
@@ -666,7 +722,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v2.2
+   案例標記工具 v2.3
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -1061,8 +1117,9 @@ function makeThumb(p){
 /* ───────── 新功能徽章 ─────────
    近期版本新增的功能會掛上「新」；使用者點過一次就永久消失（記在 localStorage）。
    加新功能時在 NEW_FEATURES 補一筆，並把 NEW_SINCE 設成要提示的最舊版本。 */
-var NEW_SINCE = 2.0;                 // 只提示這個版本（含）之後新增的功能
+var NEW_SINCE = 2.1;                 // 只提示這個版本（含）之後新增的功能
 var NEW_FEATURES = [
+  { el:"btnTeeth",      ver:2.3, name:"牙齒對齊" },
   { el:"btnCaseExport", ver:2.1, name:"匯出此病例" },
   { el:"btnSortMode",   ver:2.0, name:"照片排序" },
   { el:"btnSet",        ver:2.0, name:"匯入尺寸與儲存空間設定" }
@@ -2986,6 +3043,229 @@ $("restoreIn").onchange = function(e){
     busy(null);
     alert("還原失敗："+(err && err.message ? err.message : err));
   });
+};
+
+/* ───────── 牙齒對齊（幾何對齊） ─────────
+   原理：在「基準照」與「目標照」上各點同兩個解剖標記（例如兩側犬齒尖），
+   由兩組對應點解出相似變換（旋轉＋等比縮放＋平移），把目標照重新繪製到
+   基準照的座標系；接著自動裁掉變換後露出的空白區域。
+   · 幾何會改變 → 標記座標必須一併換算（與裁切／拉平相同做法）
+   限制：只能修正旋轉／大小／位置。若兩張是從不同角度拍攝，屬於透視差異，
+   本功能無法修正（那需要透視校正）。非診斷或測量用途。 */
+var geo2 = { refId:null, a:[], b:[], autoCrop:true, cropRef:true };
+
+/* 由兩組對應點解出相似變換：把目標照座標映射到基準照座標
+   回傳 {a,b,c,d,e,f}，對應 canvas setTransform(a,b,c,d,e,f)
+   即 x' = a*x + c*y + e ; y' = b*x + d*y + f */
+function similarityFrom(aPts, bPts, tW, tH, rW, rH){
+  if(aPts.length < 2 || bPts.length < 2) return null;
+  // 取樣點存的是正規化座標，先換回各自的像素座標
+  var b0 = { x:bPts[0].nx*tW, y:bPts[0].ny*tH };
+  var b1 = { x:bPts[1].nx*tW, y:bPts[1].ny*tH };
+  var a0 = { x:aPts[0].nx*rW, y:aPts[0].ny*rH };
+  var a1 = { x:aPts[1].nx*rW, y:aPts[1].ny*rH };
+  var db = { x:b1.x-b0.x, y:b1.y-b0.y };
+  var da = { x:a1.x-a0.x, y:a1.y-a0.y };
+  var lb = Math.hypot(db.x, db.y), la = Math.hypot(da.x, da.y);
+  if(lb < 1e-6 || la < 1e-6) return null;             // 兩點重疊，無法決定
+  var s = la/lb;
+  var th = Math.atan2(da.y, da.x) - Math.atan2(db.y, db.x);
+  var cos = Math.cos(th)*s, sin = Math.sin(th)*s;
+  // t = a0 - M*b0
+  var e = a0.x - (cos*b0.x - sin*b0.y);
+  var f = a0.y - (sin*b0.x + cos*b0.y);
+  return { a:cos, b:sin, c:-sin, d:cos, e:e, f:f, scale:s, deg:th*180/Math.PI };
+}
+function applyMat(m, x, y){ return { x: m.a*x + m.c*y + m.e, y: m.b*x + m.d*y + m.f }; }
+
+/* 在二值遮罩中找最大的軸對齊矩形（直方圖法）
+   用來決定「完全落在有效影像內」的裁切框，避免留下空白角落 */
+function maxRectInMask(mask, W, H){
+  var heights = new Int32Array(W);
+  var best = { x:0, y:0, w:0, h:0, area:0 };
+  for(var y=0; y<H; y++){
+    for(var x=0; x<W; x++) heights[x] = mask[y*W+x] ? heights[x]+1 : 0;
+    var stack = [];
+    for(var xx=0; xx<=W; xx++){
+      var curh = (xx===W) ? 0 : heights[xx];
+      while(stack.length && heights[stack[stack.length-1]] >= curh){
+        var hh = heights[stack.pop()];
+        var left = stack.length ? stack[stack.length-1]+1 : 0;
+        var ww = xx - left;
+        var area = hh*ww;
+        if(area > best.area) best = { x:left, y:y-hh+1, w:ww, h:hh, area:area };
+      }
+      stack.push(xx);
+    }
+  }
+  return best;
+}
+/* 算出對齊後應該裁切的矩形（基準照座標系，正規化 0~1）
+   有效區 = 目標照變換後覆蓋的範圍 ∩ 基準照範圍 */
+function alignCropRect(m, tW, tH, rW, rH){
+  var MW = 360;                                        // 以低解析度求解，夠準又快
+  var sc = Math.min(1, MW/rW);
+  var W = Math.max(8, Math.round(rW*sc)), H = Math.max(8, Math.round(rH*sc));
+  var c = document.createElement("canvas"); c.width = W; c.height = H;
+  var g = c.getContext("2d");
+  g.fillStyle = "#000"; g.fillRect(0,0,W,H);
+  g.setTransform(m.a*sc, m.b*sc, m.c*sc, m.d*sc, m.e*sc, m.f*sc);
+  g.fillStyle = "#fff"; g.fillRect(0, 0, tW, tH);      // 目標照覆蓋的區域
+  g.setTransform(1,0,0,1,0,0);
+  var d = g.getImageData(0,0,W,H).data;
+  var mask = new Uint8Array(W*H);
+  for(var i=0, k=0; i<d.length; i+=4, k++) mask[k] = d[i] > 128 ? 1 : 0;
+  var r = maxRectInMask(mask, W, H);
+  if(!r.area) return null;
+  return { x:r.x/W, y:r.y/H, w:r.w/W, h:r.h/H };
+}
+/* 把目標照依變換重繪到基準照尺寸，回傳新 canvas */
+function renderAligned(bmp, m, rW, rH){
+  var c = document.createElement("canvas"); c.width = rW; c.height = rH;
+  var g = c.getContext("2d");
+  g.fillStyle = "#ffffff"; g.fillRect(0,0,rW,rH);      // 露出的區域填白（與拉平一致）
+  g.imageSmoothingQuality = "high";
+  g.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
+  g.drawImage(bmp, 0, 0);
+  g.setTransform(1,0,0,1,0,0);
+  return c;
+}
+/* 依正規化矩形裁切 canvas */
+function cropCanvas(src, rect){
+  var W = bw(src), H = bh(src);
+  var x = Math.round(rect.x*W), y = Math.round(rect.y*H);
+  var w = Math.max(1, Math.round(rect.w*W)), h = Math.max(1, Math.round(rect.h*H));
+  var c = document.createElement("canvas"); c.width = w; c.height = h;
+  c.getContext("2d").drawImage(src, x, y, w, h, 0, 0, w, h);
+  return c;
+}
+/* 標記換算：先套相似變換（目標照才需要），再依裁切框重新正規化 */
+function remapMarkers(markers, m, tW, tH, rW, rH, rect){
+  var out = [];
+  markers.forEach(function(mk){
+    var conv = function(nx, ny){
+      var p = m ? applyMat(m, nx*tW, ny*tH) : { x:nx*rW, y:ny*rH };
+      var gx = p.x/rW, gy = p.y/rH;                    // 基準照座標系的正規化位置
+      if(rect){ gx = (gx-rect.x)/rect.w; gy = (gy-rect.y)/rect.h; }
+      return { x:gx, y:gy };
+    };
+    var d = conv(mk.x, mk.y);
+    if(d.x < 0 || d.x > 1 || d.y < 0 || d.y > 1) return;   // 標記點落在裁切範圍外就捨棄
+    var l = conv(mk.lx, mk.ly);
+    var o = {};
+    for(var k in mk) o[k] = mk[k];
+    o.x = d.x; o.y = d.y;
+    o.lx = clamp(l.x, 0.05, 0.95); o.ly = clamp(l.y, 0.05, 0.95);
+    out.push(o);
+  });
+  return out;
+}
+
+/* ── 牙齒對齊視窗 ── */
+function geoRefPhoto(){ return photoById(geo2.refId); }
+/* 解出目前這組取點的變換與裁切框；資料不足回傳 null */
+function geoResult(){
+  var p = cur(), r = geoRefPhoto();
+  if(!p || !r) return null;
+  if(geo2.a.length < 2 || geo2.b.length < 2) return null;
+  var tW = bw(p.bmp), tH = bh(p.bmp), rW = bw(r.bmp), rH = bh(r.bmp);
+  var m = similarityFrom(geo2.a, geo2.b, tW, tH, rW, rH);
+  if(!m) return null;
+  var rect = geo2.autoCrop ? alignCropRect(m, tW, tH, rW, rH) : null;
+  return { p:p, r:r, m:m, rect:rect, tW:tW, tH:tH, rW:rW, rH:rH };
+}
+function renderGeo(){
+  var p = cur(), r = geoRefPhoto();
+  drawAlgCanvas("geoCvA", r ? r.bmp : null, geo2.a);
+  drawAlgCanvas("geoCvB", p ? p.bmp : null, geo2.b);
+  var msg;
+  if(!r) msg = "請先選擇基準照片（需要照片庫裡的另一張）。";
+  else if(geo2.a.length < 2) msg = "請在【基準照片】上點第 " + (geo2.a.length+1) + " 個解剖標記" +
+    (geo2.a.length ? "（與第 1 點越遠越準）" : "（例如左側犬齒尖）") + "。";
+  else if(geo2.b.length < 2) msg = "請在【要對齊的照片】上點第 " + (geo2.b.length+1) + " 個「同一位置」的標記。";
+  else msg = "取點完成，看下方預覽；可按「套用」或重新取點。";
+  $("geoStep").textContent = msg;
+
+  var g = geoResult();
+  $("btnGeoOk").disabled = !g;
+  var pa = $("geoPrevA"), pb = $("geoPrevB");
+  var showA = r ? r.bmp : null, showB = p ? p.bmp : null;
+  if(g){
+    var out = renderAligned(g.p.bmp, g.m, g.rW, g.rH);
+    if(g.rect){ out = cropCanvas(out, g.rect); showA = cropCanvas(g.r.bmp, g.rect); }
+    showB = out;
+    $("geoInfo").textContent = "旋轉 " + g.m.deg.toFixed(1) + "°、縮放 " + Math.round(g.m.scale*100) +
+      "%、輸出 " + bw(out) + "×" + bh(out) +
+      (g.rect ? "" : (geo2.autoCrop ? "（找不到可裁切的區域，改為不裁切）" : "（未裁切，邊緣留白）"));
+  }else{
+    $("geoInfo").textContent = "";
+  }
+  var put = function(c, src){
+    if(!src){ c.width = 1; c.height = 1; return; }
+    var s = Math.min(1, 520/bw(src));
+    c.width = Math.round(bw(src)*s); c.height = Math.round(bh(src)*s);
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  };
+  put(pa, showA); put(pb, showB);
+}
+function geoPick(canvasId, arr, ev){
+  var p = cur(), r = geoRefPhoto();
+  var src = (canvasId === "geoCvA") ? (r && r.bmp) : (p && p.bmp);
+  if(!src) return;
+  if(arr.length >= 2) return;
+  var c = $(canvasId), rect = c.getBoundingClientRect();
+  arr.push({
+    nx: clamp((ev.clientX-rect.left)/rect.width, 0, 1),
+    ny: clamp((ev.clientY-rect.top)/rect.height, 0, 1)
+  });
+  renderGeo();
+}
+$("geoCvA").addEventListener("click", function(e){ geoPick("geoCvA", geo2.a, e); });
+$("geoCvB").addEventListener("click", function(e){ geoPick("geoCvB", geo2.b, e); });
+$("geoRef").onchange = function(){ geo2.refId = this.value; geo2.a = []; geo2.b = []; renderGeo(); };
+$("geoCrop").onchange = function(){ geo2.autoCrop = this.checked; $("geoCropRef").disabled = !this.checked; renderGeo(); };
+$("geoCropRef").onchange = function(){ geo2.cropRef = this.checked; };
+$("btnGeoReset").onclick = function(){ geo2.a = []; geo2.b = []; renderGeo(); };
+$("btnGeoNo").onclick = function(){ $("geoModal").classList.remove("on"); };
+$("btnTeeth").onclick = function(){
+  var p = cur();
+  if(!p){ alert("請先選擇要對齊的照片。"); return; }
+  var others = state.photos.filter(function(q){ return q.id!==p.id; });
+  if(!others.length){ alert("牙齒對齊需要照片庫裡至少 2 張照片（一張當基準）。"); return; }
+  var sel = $("geoRef"); sel.innerHTML = "";
+  others.forEach(function(q){
+    var o = document.createElement("option"); o.value = q.id; o.textContent = q.name; sel.appendChild(o);
+  });
+  geo2.refId = others[0].id;
+  geo2.autoCrop = $("geoCrop").checked;
+  geo2.cropRef = $("geoCropRef").checked;
+  $("geoCropRef").disabled = !geo2.autoCrop;
+  geo2.a = []; geo2.b = [];
+  exitCrop();
+  renderGeo();
+  $("geoModal").classList.add("on");
+};
+$("btnGeoOk").onclick = function(){
+  var g = geoResult(); if(!g) return;
+  var out = renderAligned(g.p.bmp, g.m, g.rW, g.rH);
+  if(g.rect) out = cropCanvas(out, g.rect);
+  pushUndo(g.p);
+  g.p.markers = remapMarkers(g.p.markers, g.m, g.tW, g.tH, g.rW, g.rH, g.rect);
+  g.p.bmp = out;
+  g.p.srcData = out.toDataURL("image/jpeg", 0.95);
+  markDirty(g.p);
+  // 基準照也裁成同一個框，兩張才會是同尺寸同取景
+  if(g.rect && geo2.cropRef){
+    pushUndo(g.r);
+    var rc = cropCanvas(g.r.bmp, g.rect);
+    g.r.markers = remapMarkers(g.r.markers, null, g.tW, g.tH, g.rW, g.rH, g.rect);
+    g.r.bmp = rc;
+    g.r.srcData = rc.toDataURL("image/jpeg", 0.95);
+    markDirty(g.r);
+  }
+  state.selMk = -1;
+  $("geoModal").classList.remove("on");
+  resetView(); draw();
 };
 
 /* ───────── 色彩對齊 ─────────
