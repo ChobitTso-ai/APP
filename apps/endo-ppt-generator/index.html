@@ -185,7 +185,7 @@
   </section>
 
   <div class="foot">
-    牙髓病科專科 PPT 製作器<span class="ver">v1.0</span><br>
+    牙髓病科專科 PPT 製作器<span class="ver">v1.1</span><br>
     範本版面與字型沿用中華民國牙髓病學會範本 · NCKUH ENDO
   </div>
 </div>
@@ -194,7 +194,7 @@
 <script src="vendor/fflate.min.js"></script>
 <script>
 /* =======================================================================
-   牙髓病科專科 PPT 製作器 v1.0
+   牙髓病科專科 PPT 製作器 v1.1
    作法：把學會範本 .pptx 當底稿，複製對應投影片、清除白線/箭頭/標註，
    把使用者照片依編號套進影像版面配置區。全程瀏覽器內處理。
    ======================================================================= */
@@ -225,6 +225,11 @@ var IMG_REMOVE={'Rectangle 8':1,'Line 9':1,'Text Box 10':1,'Line 11':1,'Text Box
 var IMG_TITLE_NAME='Rectangle 5';
 var IMG_DATE_NAME='Text Box 14';                 // 影像頁：影像攝取時間
 var CMP_REMOVE={'Rectangle 3':1,'Line 4':1,'Text Box 5':1,'Line 6':1,'Text Box 7':1,'AutoShape 10':1,'AutoShape 11':1};
+/* 範本形狀自帶白色外框線，輸出時關掉（標題框、影像攝取時間框）*/
+var IMG_NOLINE=['Rectangle 5','Text Box 14'];
+var CMP_NOLINE=['Rectangle 2','Text Box 12','Text Box 17'];
+/* 字型統一：中文標楷體、英文 Times New Roman（範本部分文字寫死 Arial／新細明體）*/
+var FONT_LATIN='Times New Roman', FONT_EA='標楷體';
 var CMP_DATE_LEFT='Text Box 17';                 // 比較頁：術前(左)日期
 var CMP_DATE_RIGHT='Text Box 12';                // 比較頁：術後(右)日期
 
@@ -277,6 +282,27 @@ function setTitle(doc,name,text){
     }
     return;
   }
+}
+function stripOutline(doc,names){
+  var sps=els(doc,NS.p,'sp'),i,j;
+  for(i=0;i<sps.length;i++){
+    var nm=shapeName(sps[i]);
+    if(!nm||names.indexOf(nm)<0)continue;
+    var spPr=sps[i].getElementsByTagNameNS(NS.p,'spPr')[0];
+    if(!spPr)continue;
+    var ln=null;
+    for(j=0;j<spPr.childNodes.length;j++){
+      var c=spPr.childNodes[j];
+      if(c.nodeType===1&&c.namespaceURI===NS.a&&c.localName==='ln'){ln=c;break;}
+    }
+    if(!ln){ln=doc.createElementNS(NS.a,'a:ln');spPr.appendChild(ln);}
+    while(ln.firstChild)ln.removeChild(ln.firstChild);
+    ln.appendChild(doc.createElementNS(NS.a,'a:noFill'));
+  }
+}
+function normalizeFonts(doc){
+  els(doc,NS.a,'latin').forEach(function(e){e.setAttribute('typeface',FONT_LATIN);});
+  els(doc,NS.a,'ea').forEach(function(e){e.setAttribute('typeface',FONT_EA);});
 }
 function removeByNames(doc,names){
   var st=spTree(doc),ch=Array.prototype.slice.call(st.children),i;
@@ -425,6 +451,8 @@ async function buildCase(templateParts,cfg,caseObj,lang){
     var doc=parseXml(protoXml('image'));
     setTitle(doc,IMG_TITLE_NAME,TITLES[lang][stage]);
     removeByNames(doc,IMG_REMOVE);
+    stripOutline(doc,IMG_NOLINE);
+    normalizeFonts(doc);
     var rels=parseXml(protoRels('image'));
     var rid=addRel(rels.documentElement,NS.REL_IMG,'../media/'+fn);
     var dims=await getDims(img.data,ext);
@@ -436,6 +464,8 @@ async function buildCase(templateParts,cfg,caseObj,lang){
   async function addCmpSlide(left,right){
     var doc=parseXml(protoXml('cmp'));
     removeByNames(doc,CMP_REMOVE);
+    stripOutline(doc,CMP_NOLINE);
+    normalizeFonts(doc);
     var rels=parseXml(protoRels('cmp'));
     var st=spTree(doc);
     var pairs=[[left,CMP_L,CMP_DATE_LEFT],[right,CMP_R,CMP_DATE_RIGHT]],i;
@@ -449,7 +479,11 @@ async function buildCase(templateParts,cfg,caseObj,lang){
     }
     outSlides.push({xml:serializeXml(doc),rels:serializeXml(rels)});
   }
-  function addPlainSlide(key){outSlides.push({xml:XML_HEAD+protoXml(key).replace(/^<\?xml[^>]*\?>\s*/,''),rels:protoRels(key)});}
+  function addPlainSlide(key){
+    var doc=parseXml(protoXml(key));
+    normalizeFonts(doc);
+    outSlides.push({xml:serializeXml(doc),rels:protoRels(key)});
+  }
 
   addPlainSlide('cover');
   addPlainSlide('cas');
