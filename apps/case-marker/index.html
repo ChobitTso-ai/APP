@@ -146,6 +146,8 @@
     -webkit-overflow-scrolling:touch;
   }
   .toolbar::-webkit-scrollbar{display:none;}
+  /* 工具列是橫向捲動設計：按鈕不要被壓縮成兩行文字，寧可讓工具列捲動 */
+  .toolbar .btn{flex:0 0 auto; white-space:nowrap;}
   .canvas-wrap{flex:1; min-height:0; margin:4px 14px; position:relative; background:#14171c; border-radius:var(--radius); overflow:hidden;}
   #edCanvas{position:absolute; inset:0; width:100%; height:100%; touch-action:none;}
   .float-bar{
