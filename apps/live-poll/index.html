@@ -4,7 +4,7 @@
 <script>if(localStorage.getItem('nckuh_endo_authed')!=='1')location.replace('../../');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>即時投票 v1.3 · 主持端</title>
+<title>即時投票 v1.4 · 主持端</title>
 <style>
 :root{
   --bg-0:#0a0e1a; --bg-1:#0f1524;
@@ -162,6 +162,42 @@ table.board td:last-child,table.board th:last-child{text-align:right}
 #screen .scr-nav{margin-top:auto;padding-top:22px;display:flex;gap:10px;align-items:center;justify-content:center}
 #screen .btn{font-size:1rem;padding:11px 20px}
 
+/* ---- 貼上題目 / 快速投票（共用的全螢幕面板）---- */
+.sheet{position:fixed;inset:0;z-index:70;background:rgba(6,9,18,.82);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;overflow:auto}
+.sheet-box{width:100%;max-width:720px;background:var(--bg-1);border:1px solid var(--line);
+  border-radius:16px;padding:20px}
+.sheet-box h2{font-size:1.1rem;margin-bottom:6px}
+.sheet-box .hint{margin-bottom:12px}
+.syntax{font-size:.8rem;line-height:1.9;color:var(--muted);background:rgba(10,14,26,.55);
+  border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:12px}
+.syntax code{color:#bcd0ff;background:rgba(91,140,255,.14);padding:1px 6px;border-radius:5px;font-size:.95em}
+textarea.paste{min-height:230px;font-size:.95rem;line-height:1.7;font-family:ui-monospace,"Noto Sans TC",monospace}
+.preview{font-size:.85rem;line-height:1.7;border:1px solid var(--line);border-radius:10px;
+  padding:11px 13px;margin-top:12px;background:rgba(10,14,26,.45);max-height:210px;overflow:auto}
+.preview b{color:#bcd0ff}
+.preview ol{margin:6px 0 0 20px}
+.preview li{margin-bottom:3px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;padding:8px 14px;border-radius:999px;
+  border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;user-select:none}
+.chip input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.chip.on{color:var(--text);border-color:rgba(91,140,255,.5);background:rgba(91,140,255,.14)}
+#quick textarea{min-height:190px}
+
+/* ---- 全螢幕 QR（投影用）---- */
+#bigqr{position:fixed;inset:0;z-index:75;background:linear-gradient(160deg,#0f1524,#0a0e1a);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:28px;overflow:auto}
+#bigqr .t{font-size:1.6rem;font-weight:700;text-align:center;line-height:1.4;max-width:90vw}
+#bigqr .pin{font-size:clamp(3rem,11vw,6rem)}
+#bigqr .qr svg{width:min(46vh,340px);height:min(46vh,340px)}
+#bigqr .u{font-size:.9rem;color:#bcd0ff;word-break:break-all;text-align:center;max-width:90vw}
+#bigqr .c{font-size:1.6rem;font-weight:700}
+#bigqr .c small{font-size:.85rem;font-weight:400;color:var(--muted)}
+/* 下方留白，避免按鈕被畫面底部的提示訊息壓到 */
+#bigqr .row{justify-content:center;margin-top:6px;margin-bottom:56px}
+
 /* ---- 提示 ---- */
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:90;
   background:rgba(18,24,42,.96);border:1px solid var(--line);border-radius:11px;padding:11px 18px;
@@ -182,7 +218,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
 
   <header>
     <h1>🗳️ 即時投票</h1>
-    <span class="badge">v1.3</span>
+    <span class="badge">v1.4</span>
     <div class="spacer"></div>
     <!-- 後端網址已寫進 api.js 時就不顯示這個按鈕：常數優先於暫存值，
          留著只會變成「按了沒作用」的按鈕。 -->
@@ -275,6 +311,8 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
         <button class="btn sm" data-add="multi">＋ 多選題</button>
         <button class="btn sm" data-add="scale">＋ 評分量表</button>
         <button class="btn sm" data-add="text">＋ 開放文字</button>
+        <div class="spacer"></div>
+        <button class="btn sm primary" id="pasteBtn">📋 貼上題目</button>
       </div>
     </div>
 
@@ -313,6 +351,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
         <div class="row" style="justify-content:center">
           <button class="btn sm" id="copyUrl">📋 複製連結</button>
           <button class="btn sm" id="openJoin">🔗 開啟作答頁</button>
+          <button class="btn sm" id="bigQrBtn">🖥 全螢幕 QR</button>
         </div>
         <div style="margin-top:20px">
           <div class="counter"><span id="liveCount">0</span> <small>人已送出</small></div>
@@ -381,6 +420,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
         <h2 style="margin:0">投票場次</h2>
         <div class="spacer"></div>
         <button class="btn sm" id="listRefresh">🔄 更新狀態</button>
+        <button class="btn" id="quickBtn">⚡ 快速投票</button>
         <button class="btn primary" id="newPollBtn">＋ 新建投票</button>
       </div>
       <div id="mineList"></div>
@@ -404,7 +444,7 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
   </section>
 
   <footer>
-    NCKUH ENDO · App 中心 —— 即時投票 v1.3<br>
+    NCKUH ENDO · App 中心 —— 即時投票 v1.4<br>
     ©Tso KY - All Rights Reserved
   </footer>
 </div>
@@ -422,13 +462,70 @@ footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:26px;lin
   </div>
 </div>
 
+<!-- 貼上題目 -->
+<div id="paste" class="sheet" hidden>
+  <div class="sheet-box">
+    <h2>📋 貼上題目</h2>
+    <p class="hint">把整份題目一次貼進來，不用一格一格打。也可以先在 LINE 或筆記軟體裡想好再貼。</p>
+    <div class="syntax">
+      <b>空一行</b>分隔不同題　·　<code>-</code> 開頭是選項　·　<code>*</code> 開頭是<b>正確答案</b><br>
+      忘了加符號也沒關係，題目下面的每一行都會當成選項<br>
+      題目後面（或下一行）可加：<code>（文字）</code><code>（是非）</code><code>（複選）</code><code>（量表）</code><code>（量表 0-10）</code><br>
+      只有題目、沒有選項 → 自動當成<b>開放文字題</b>
+    </div>
+    <textarea id="pasteText" class="paste" placeholder="出席幾人&#10;- 一人&#10;- 兩人&#10;- 無法出席&#10;&#10;想吃什麼？（文字）&#10;&#10;第一線降血糖藥&#10;* Metformin&#10;- Insulin"></textarea>
+    <div class="preview" id="pastePreview">貼上內容後這裡會顯示解析結果。</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" id="pasteAppend">＋ 加在現有題目後面</button>
+      <button class="btn" id="pasteReplace">取代目前所有題目</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="pasteCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 快速投票 -->
+<div id="quick" class="sheet" hidden>
+  <div class="sheet-box">
+    <h2>⚡ 快速投票</h2>
+    <p class="hint">臨時要問一句話的時候用。第一行是題目，接下來每行一個選項，按「開！」立刻產生 QR。</p>
+    <textarea id="quickText" class="paste" placeholder="今天午餐吃什麼？&#10;便當&#10;麵&#10;自己解決"></textarea>
+    <div class="chips">
+      <label class="chip" id="qcNamedWrap"><input type="checkbox" id="qcNamed">要填暱稱</label>
+      <label class="chip" id="qcRevoteWrap"><input type="checkbox" id="qcRevote">可以改答案</label>
+    </div>
+    <p class="hint" style="margin-top:10px">
+      不填暱稱＝匿名、一支手機一票、不計分。要更細的設定就用「＋ 新建投票」。
+    </p>
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" id="quickGo">⚡ 開！</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="quickCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 全螢幕 QR（投影用）-->
+<div id="bigqr" hidden>
+  <div class="t" id="bqTitle"></div>
+  <div class="pin-label">掃描 QR Code，或輸入 PIN</div>
+  <div class="pin" id="bqPin"></div>
+  <div class="qr" id="bqQr"></div>
+  <div class="u" id="bqUrl"></div>
+  <div class="c"><span id="bqCount">0</span> <small>人已送出</small></div>
+  <div class="row">
+    <button class="btn" id="bqRes">📊 看結果</button>
+    <button class="btn" id="bqClose">✕ 離開全螢幕</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="vendor/qrcode.js"></script>
-<script src="api.js?v=1.3"></script>
+<script src="api.js?v=1.4"></script>
 <script>
 /* =========================================================
-   即時投票 v1.3 —— 主持端
+   即時投票 v1.4 —— 主持端
    ========================================================= */
 
 const DRAFT_KEY = 'lp_draft';
@@ -795,6 +892,22 @@ function cleanQuestions(){
   });
 }
 
+/**
+ * 送出一份題目、開一場新的，並記進本機清單。
+ * 「🚀 建立投票」與「⚡ 快速投票」共用這一條路，行為才會一致。
+ */
+async function createSession(p){
+  const res = await apiSend('create', { title: p.title, config: p.config, questions: p.questions });
+  setLive({ pin: res.pin, key: res.key, title: res.title, status: '進行中', closeAt: p.config.closeAt || 0 });
+  const mine = load(MINE_KEY, []);
+  mine.unshift({ pin: live.pin, key: live.key, title: live.title, status: '進行中', count: 0,
+                 at: new Date().toISOString(),
+                 poll: { title: p.title, config: p.config, questions: p.questions, usedPin: res.pin } });
+  save(MINE_KEY, mine.slice(0, 50));
+  renderMine();
+  return res;
+}
+
 $('#createBtn').addEventListener('click', async () => {
   const err = validate();
   if (err){ toast(err, 3600); return; }
@@ -803,15 +916,9 @@ $('#createBtn').addEventListener('click', async () => {
   const btn = $('#createBtn');
   btn.disabled = true; btn.textContent = '建立中…';
   try {
-    const res = await apiSend('create', { title: poll.title, config: poll.config, questions: cleanQuestions() });
-    setLive({ pin: res.pin, key: res.key, title: res.title, status: '進行中', closeAt: poll.config.closeAt || 0 });
+    const res = await createSession({ title: poll.title, config: poll.config, questions: cleanQuestions() });
     poll.usedPin = res.pin;   // 這份草稿已經開成場次了，下次按「＋ 新建投票」可以安心清空
     saveDraft();
-    const mine = load(MINE_KEY, []);
-    mine.unshift({ pin: live.pin, key: live.key, title: live.title, status: '進行中', count: 0,
-                   at: new Date().toISOString(), poll: JSON.parse(JSON.stringify(poll)) });
-    save(MINE_KEY, mine.slice(0, 50));
-    renderMine();
     showTab('live');
     toast('投票已開放，PIN ' + live.pin);
   } catch(e){
@@ -949,6 +1056,7 @@ async function refreshResults(manual){
     results = res;
     if (res.status && res.status !== live.status){ live.status = res.status; renderLive(); }
     $('#liveCount').textContent = res.count || 0;
+    $('#bqCount').textContent   = res.count || 0;
     renderResults();
     if (manual) toast('已更新');
   } catch(e){
@@ -1324,6 +1432,249 @@ $('#recBtn').addEventListener('click', async () => {
     $('#recPin').value = ''; $('#recKey').value = '';
     toast('已取回「' + res.title + '」');
   } catch(e){ toast('取回失敗：' + e.message, 5000); }
+});
+
+/* =========================================================
+   純文字 → 題目（貼上題目 / 快速投票 共用）
+
+   規則刻意寬容，因為人不會乖乖照格式打：
+     ‧ 空行分題；每段第一行是題幹
+     ‧ 「- 」開頭是選項，「* 」開頭是選項且為正解
+     ‧ 沒加符號的後續行也當成選項
+     ‧ 題幹後面或單獨一行可加：（文字）（是非）（複選）（量表）（量表 0-10）
+     ‧ 只有一行、沒有選項 → 開放文字題
+   ========================================================= */
+
+const TYPE_MARKS = [
+  { re: /[（(]\s*(文字|開放文字|問答)\s*[)）]\s*$/, type: 'text' },
+  { re: /[（(]\s*(是非|對錯)\s*[)）]\s*$/,          type: 'truefalse' },
+  { re: /[（(]\s*(複選|多選)\s*[)）]\s*$/,          type: 'multi' },
+  { re: /[（(]\s*量表\s*(\d+)\s*[-~–]\s*(\d+)\s*[)）]\s*$/, type: 'scale' },
+  { re: /[（(]\s*(量表|評分)\s*[)）]\s*$/,          type: 'scale' },
+];
+
+/** 一行是不是選項？回傳 { text, correct } 或 null */
+function parseOptionLine(line){
+  let m = line.match(/^([-*•·–—])\s*(.*)$/);
+  if (m) return { text: m[2].trim(), correct: m[1] === '*' };
+  m = line.match(/^\d+\s*[.)、]\s*(.*)$/);            // 1. 1) 1、
+  if (m) return { text: m[1].trim(), correct: false };
+  m = line.match(/^[（(]?[A-Za-z][）).、]\s*(.*)$/);   // A. A) (A)
+  if (m) return { text: m[1].trim(), correct: false };
+  return null;
+}
+
+function parseQuestions(text){
+  const blocks = String(text || '').replace(/\r/g, '').split(/\n\s*\n+/);
+  const out = [];
+
+  blocks.forEach(block => {
+    const lines = block.split('\n').map(x => x.trim()).filter(Boolean);
+    if (!lines.length) return;
+
+    let head = lines[0].replace(/^\s*(?:\d+\s*[.)、]|[Qq]\d*\s*[.):：])\s*/, '');
+    let type = null, scaleMin = 1, scaleMax = 5;
+    for (const m of TYPE_MARKS){
+      const hit = head.match(m.re);
+      if (!hit) continue;
+      type = m.type;
+      if (m.type === 'scale' && hit[1] && hit[2]){ scaleMin = Number(hit[1]); scaleMax = Number(hit[2]); }
+      head = head.replace(m.re, '').trim();
+      break;
+    }
+    if (!head) return;
+
+    // 型別標記也可以自己單獨佔一行
+    let rest = lines.slice(1);
+    if (!type){
+      for (let i = 0; i < rest.length; i++){
+        const only = rest[i];
+        if (!/^[（(]/.test(only)) continue;
+        const m = TYPE_MARKS.find(x => x.re.test(only));
+        if (!m) continue;
+        const hit = only.match(m.re);
+        type = m.type;
+        if (m.type === 'scale' && hit[1] && hit[2]){ scaleMin = Number(hit[1]); scaleMax = Number(hit[2]); }
+        rest = rest.slice(0, i).concat(rest.slice(i + 1));
+        break;
+      }
+    }
+
+    let opts = rest.map(parseOptionLine).filter(Boolean);
+    if (!opts.length && rest.length) opts = rest.map(l => ({ text: l, correct: false }));
+    opts = opts.filter(o => o.text);
+
+    const q = { type: type || 'single', text: head.slice(0, 500), points: 10 };
+
+    if (q.type === 'text'){ out.push(q); return; }
+
+    if (q.type === 'scale'){
+      q.scaleMin = Math.max(0, Math.min(9, scaleMin));
+      q.scaleMax = Math.max(q.scaleMin + 1, Math.min(10, scaleMax));
+      if (opts.length >= 2){
+        q.scaleMinLabel = opts[0].text.slice(0, 40);
+        q.scaleMaxLabel = opts[opts.length - 1].text.slice(0, 40);
+      }
+      out.push(q); return;
+    }
+
+    if (q.type === 'truefalse'){
+      q.options = ['是', '否'];
+      const idx = opts.findIndex(o => o.correct);
+      if (idx !== -1) q.answer = /^(否|錯|不對|N|F)/i.test(opts[idx].text) ? 1 : 0;
+      out.push(q); return;
+    }
+
+    // 只有題目沒有選項 → 開放文字題
+    if (!opts.length){ out.push({ type:'text', text:q.text, points:10 }); return; }
+
+    q.options = opts.slice(0, 10).map(o => o.text.slice(0, 200));
+    const correct = [];
+    opts.slice(0, 10).forEach((o, i) => { if (o.correct) correct.push(i); });
+
+    if (type === 'multi' || correct.length > 1){
+      q.type = 'multi';
+      if (correct.length) q.answer = correct;
+    } else if (correct.length === 1){
+      q.answer = correct[0];
+    }
+    out.push(q);
+  });
+
+  return out.slice(0, 100);
+}
+
+/* =========================================================
+   貼上題目
+   ========================================================= */
+
+function openPaste(){
+  $('#pasteText').value = '';
+  renderPastePreview();
+  $('#paste').hidden = false;
+  $('#pasteText').focus();
+}
+$('#pasteBtn').addEventListener('click', openPaste);
+$('#pasteCancel').addEventListener('click', () => { $('#paste').hidden = true; });
+$('#pasteText').addEventListener('input', renderPastePreview);
+
+function renderPastePreview(){
+  const qs = parseQuestions($('#pasteText').value);
+  const box = $('#pastePreview');
+  if (!qs.length){
+    box.innerHTML = '貼上內容後這裡會顯示解析結果。';
+    $('#pasteAppend').disabled = true;
+    $('#pasteReplace').disabled = true;
+    return;
+  }
+  const tally = {};
+  qs.forEach(q => { tally[q.type] = (tally[q.type] || 0) + 1; });
+  const sum = Object.keys(tally).map(t => (TYPE_NAME[t] || t) + ' ' + tally[t] + ' 題').join('、');
+  box.innerHTML = '<b>解析到 ' + qs.length + ' 題</b>（' + esc(sum) + '）<ol>' +
+    qs.map(q => {
+      const bits = [TYPE_NAME[q.type] || q.type];
+      if (q.options && q.options.length) bits.push(q.options.length + ' 選項');
+      if (q.answer !== undefined) bits.push('已標正解');
+      return '<li>' + esc(q.text) + ' <span style="color:var(--muted)">（' + bits.join('、') + '）</span></li>';
+    }).join('') + '</ol>';
+  $('#pasteAppend').disabled = false;
+  $('#pasteReplace').disabled = false;
+}
+
+function applyPaste(replace){
+  const qs = parseQuestions($('#pasteText').value);
+  if (!qs.length){ toast('沒有解析到任何題目'); return; }
+  poll.questions = replace ? qs : poll.questions.concat(qs);
+  delete poll.usedPin;              // 題目換過了，不再算是某一場的草稿
+  if (!poll.title && qs[0]) $('#title').value = qs[0].text.slice(0, 40);
+  renderQuestions(); saveDraft();
+  $('#paste').hidden = true;
+  showTab('edit');
+  toast((replace ? '已取代為 ' : '已加入 ') + qs.length + ' 題');
+}
+$('#pasteAppend').addEventListener('click', () => applyPaste(false));
+$('#pasteReplace').addEventListener('click', () => applyPaste(true));
+
+/* =========================================================
+   快速投票：一個畫面開完一場（不會動到編輯中的草稿）
+   ========================================================= */
+
+$('#quickBtn').addEventListener('click', () => {
+  $('#quickText').value = '';
+  $('#quick').hidden = false;
+  $('#quickText').focus();
+});
+$('#quickCancel').addEventListener('click', () => { $('#quick').hidden = true; });
+
+// 勾選狀態反映在 chip 外觀上
+[['#qcNamed','#qcNamedWrap'], ['#qcRevote','#qcRevoteWrap']].forEach(([box, wrap]) => {
+  $(box).addEventListener('change', () => $(wrap).classList.toggle('on', $(box).checked));
+});
+
+$('#quickGo').addEventListener('click', async () => {
+  const qs = parseQuestions($('#quickText').value);
+  if (!qs.length){ toast('至少要有一個題目'); return; }
+  if (!pollEndpoint()){ toast('還沒設定投票後端網址', 3600); return; }
+
+  const btn = $('#quickGo');
+  btn.disabled = true; btn.textContent = '建立中…';
+  try {
+    const quickPoll = {
+      title: qs[0].text.slice(0, 60),
+      config: {
+        named: $('#qcNamed').checked,
+        revote: $('#qcRevote').checked ? 'replace' : 'block',
+        scoring: 'none', showResult: 'after', timeLimit: 30, closeAt: 0,
+      },
+      questions: qs,
+    };
+    await createSession(quickPoll);
+    $('#quick').hidden = true;
+    showTab('live');      // 關掉全螢幕之後會落在這一頁
+    openBigQr();
+    toast('投票已開放，PIN ' + live.pin);
+  } catch(e){
+    toast('建立失敗：' + e.message, 5000);
+  }
+  btn.disabled = false; btn.textContent = '⚡ 開！';
+});
+
+/* =========================================================
+   全螢幕 QR（投影用）
+   ========================================================= */
+
+function openBigQr(){
+  if (!live) return;
+  const url = joinUrlFor(live.pin);
+  $('#bqTitle').textContent = live.title;
+  $('#bqPin').textContent   = live.pin;
+  $('#bqUrl').textContent   = url;
+  $('#bqCount').textContent = (results && results.count) || 0;
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(url); qr.make();
+    $('#bqQr').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+  } catch(e){ $('#bqQr').innerHTML = ''; }
+  $('#bigqr').hidden = false;
+  setAuto(true);            // 全螢幕時也要持續更新人數
+  refreshResults();
+}
+$('#bigQrBtn').addEventListener('click', openBigQr);
+$('#bqClose').addEventListener('click', () => {
+  $('#bigqr').hidden = true;
+  setAuto(!$('#tab-res').hidden && $('#autoRefresh').checked);
+});
+$('#bqRes').addEventListener('click', () => {
+  $('#bigqr').hidden = true;
+  showTab('res'); refreshResults();
+});
+
+/* Esc 關掉最上層的面板 */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  for (const id of ['#bigqr', '#quick', '#paste']){
+    if (!$(id).hidden){ $(id).hidden = true; return; }
+  }
 });
 
 /* =========================================================
