@@ -16,6 +16,7 @@ assets/         LOGO（TS 標誌）、favicon、PWA 圖示
 manifest.webmanifest / sw.js   首頁 PWA（可加入主畫面、離線開得起來）
 apps/<slug>/    各個 App，一個資料夾一個 App，入口一律 index.html
   vendor/       該 App 用到的第三方函式庫（本地檔案，不用 CDN）
+tests/          案例標記工具端到端測試（`./tests/run.sh` 一次跑完）
 docs/ADDING_APPS.md           App 上架規則（檢查清單版）
 docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/stats-backend.gs
 .github/workflows/pages.yml   合併到 main 自動部署 GitHub Pages
@@ -97,11 +98,14 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
    真卡片（真 App 在前、施工中在後）；沒有佔位了就直接往前插。
 4. **改 README**：檔案結構區塊補一行新 App 的說明。
 5. **本機驗證**（一定要做）：
-   - `python3 -m http.server 8765 --directory <repo根目錄> &`
-   - 用 playwright-core（scratchpad `npm install playwright-core`，
-     Chromium 執行檔在 `/opt/pw-browsers/chromium-*/chrome-linux/chrome`，
-     不要跑 `playwright install`）寫腳本：登入 → 點卡片 → 確認新分頁開到
-     工具頁、標題正確，再對工具本身做基本操作測試並截圖。
+   - **既有測試先跑過**：`./tests/run.sh`（會自己起本機伺服器、第一次自動
+     `npm install`）。案例標記工具的四組端到端測試在 `tests/*.test.js`，
+     改完一定要全綠再送出；新功能請在 `tests/` 補一組，寫法與陷阱見
+     `tests/README.md`。
+   - 新 App 另外寫腳本：登入 → 點卡片 → 確認新分頁開到工具頁、標題正確，
+     再對工具本身做基本操作測試並截圖。
+     （Chromium 執行檔在 `/opt/pw-browsers/chromium-*/chrome-linux/chrome`，
+     不要跑 `playwright install`。）
    - 順帶驗證登入保護：未登入直開工具頁網址，應被導回登入頁。
 6. **提交**：在指定的 `claude/...` 工作分支 commit → push → 開 draft PR →
    轉 ready → 合併進 main。合併會自動觸發 `pages.yml` 部署，約 1 分鐘生效。

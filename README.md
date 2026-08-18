@@ -69,5 +69,6 @@ sw.js                 Service Worker（首頁殼層離線快取）
 docs/ADDING_APPS.md   App 上架規則
 docs/STATS_SETUP.md   使用統計後端設定步驟
 docs/VOTING_SETUP.md  即時投票後端設定步驟（Google 試算表 + Apps Script）
+tests/                案例標記工具端到端測試（`./tests/run.sh`）
 .github/workflows/    合併 main 後自動部署 GitHub Pages
 ```

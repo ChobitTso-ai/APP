@@ -1,0 +1,7 @@
+{
+  "name": "app-tests",
+  "private": true,
+  "description": "案例標記工具端到端測試（Playwright）",
+  "scripts": { "test": "./run.sh" },
+  "dependencies": { "playwright-core": "^1.62.1" }
+}
