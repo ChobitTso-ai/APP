@@ -130,11 +130,19 @@
   <!-- 畫面二：工作區 -->
   <section id="workView" class="hidden">
     <div class="panel">
-      <h3>① 影像標題語言</h3>
+      <h3>① 輸出設定</h3>
       <div class="hint">影像頁上方的階段標題文字，可選中文或英文（範本本身的藍底黃白字樣式不變）。</div>
       <div class="seg" id="langSeg">
         <button data-lang="zh" class="on">中文標題</button>
         <button data-lang="en">English</button>
+      </div>
+      <div class="hint" style="margin-top:16px">
+        標題框與「影像攝取時間」框的白色外框，可選擇保留或移除。
+        （比較頁的術前／術後影像方框與說明文字兩種都會保留）
+      </div>
+      <div class="seg" id="frameSeg">
+        <button data-frame="none" class="on">移除白框（乾淨版）</button>
+        <button data-frame="keep">保留白框（範本原樣）</button>
       </div>
     </div>
 
@@ -427,7 +435,7 @@ var MIME={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',tif:'image/tiff',ti
 function extOf(name){var m=/\.([a-z0-9]+)$/i.exec(name);return m?m[1].toLowerCase():'';}
 
 /* ================= 組一份病例 PPTX ================= */
-async function buildCase(templateParts,cfg,caseObj,lang){
+async function buildCase(templateParts,cfg,caseObj,lang,frame){
   var proto=cfg.proto;
   var parts={};                     // 輸出零件（複製範本，稍後換掉投影片）
   for(var k in templateParts){ if(!/^ppt\/slides\//.test(k)) parts[k]=templateParts[k]; }
@@ -451,7 +459,7 @@ async function buildCase(templateParts,cfg,caseObj,lang){
     var doc=parseXml(protoXml('image'));
     setTitle(doc,IMG_TITLE_NAME,TITLES[lang][stage]);
     removeByNames(doc,IMG_REMOVE);
-    stripOutline(doc,IMG_NOLINE);
+    if(frame!=='keep')stripOutline(doc,IMG_NOLINE);
     normalizeFonts(doc);
     var rels=parseXml(protoRels('image'));
     var rid=addRel(rels.documentElement,NS.REL_IMG,'../media/'+fn);
@@ -464,7 +472,7 @@ async function buildCase(templateParts,cfg,caseObj,lang){
   async function addCmpSlide(left,right){
     var doc=parseXml(protoXml('cmp'));
     removeByNames(doc,CMP_REMOVE);
-    stripOutline(doc,CMP_NOLINE);
+    if(frame!=='keep')stripOutline(doc,CMP_NOLINE);
     normalizeFonts(doc);
     var rels=parseXml(protoRels('cmp'));
     var st=spTree(doc);
@@ -630,7 +638,7 @@ async function filesFromDataTransfer(dt){
 }
 
 /* ================= UI 狀態 ================= */
-var state={report:null,lang:'zh',templateParts:null,cases:null,outputs:null};
+var state={report:null,lang:'zh',frame:'none',templateParts:null,cases:null,outputs:null};
 var $=function(id){return document.getElementById(id);};
 
 function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('show');},2200);}
@@ -657,6 +665,12 @@ $('backBtn').addEventListener('click',function(){
 });
 
 /* 語言切換 */
+Array.prototype.forEach.call($('frameSeg').children,function(b){
+  b.addEventListener('click',function(){
+    Array.prototype.forEach.call($('frameSeg').children,function(x){x.classList.remove('on');});
+    b.classList.add('on');state.frame=b.getAttribute('data-frame');
+  });
+});
 Array.prototype.forEach.call($('langSeg').children,function(b){
   b.addEventListener('click',function(){
     Array.prototype.forEach.call($('langSeg').children,function(x){x.classList.remove('on');});
@@ -765,7 +779,7 @@ $('genBtn').addEventListener('click',async function(){
     var cfg=REPORTS[state.report],outputs=[];
     for(var i=0;i<state.cases.length;i++){
       note.innerHTML='<span class="spin"></span> 產生中… ('+(i+1)+'/'+state.cases.length+')';
-      var bytes=await buildCase(state.templateParts,cfg,state.cases[i],state.lang);
+      var bytes=await buildCase(state.templateParts,cfg,state.cases[i],state.lang,state.frame);
       outputs.push({name:safeName(state.cases[i].name)+'.pptx',bytes:bytes,cases:state.cases[i]});
     }
     state.outputs=outputs;
