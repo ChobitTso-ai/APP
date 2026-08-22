@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v2.3
+  案例標記工具 v2.4
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v2.3</title>
+<title>案例標記工具 v2.4</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -256,8 +256,16 @@
   }
   .alg-wrap canvas{
     max-width:100%; max-height:26vh; width:auto; height:auto; display:block;
-    cursor:crosshair; touch-action:manipulation;
+    cursor:crosshair; touch-action:none;          /* 拖曳微調時不要捲動視窗 */
   }
+  /* 取點放大鏡：手指會擋住要點的位置，按住拖曳時在旁邊顯示局部放大 */
+  .pick-mag{
+    position:fixed; z-index:120; width:132px; height:132px; border-radius:50%;
+    border:3px solid #fff; box-shadow:0 6px 18px rgba(0,0,0,.45);
+    overflow:hidden; pointer-events:none; background:#14171c; display:none;
+  }
+  .pick-mag.on{display:block;}
+  .pick-mag canvas{width:100%; height:100%; display:block;}
   .alg-prev canvas{max-width:100%; max-height:22vh; width:auto; height:auto; display:block;}
   .alg-samples{display:flex; flex-wrap:wrap; gap:8px;}
   .alg-chip{
@@ -300,7 +308,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.3</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.4</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -478,7 +486,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v2.3　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v2.4　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -649,6 +657,7 @@
       <div class="alg-cap" style="margin-top:2px">調整後預覽</div>
       <div class="alg-prev"><canvas id="algPrev"></canvas></div>
       <div class="tip" style="font-size:12px;color:var(--ink-2)">
+        取點時可<b>按住拖曳微調</b>，旁邊會出現放大鏡，放開才落點。
         用途：讓同一病例不同時間／燈光拍的照片色調一致。若兩張光源差異過大，或取樣到不同材質，效果會受限。
         本功能僅為快速改善一致性，<b>不能取代標準化攝影、比色或診斷</b>。
       </div>
@@ -704,8 +713,11 @@
       <div class="tip" style="font-size:12px;color:var(--ink-2)">
         用途：讓同一病例不同時間拍的照片，牙齒的角度、大小、位置一致，排在一起比較才好看。
         只能修正<b>旋轉、大小、位移</b>；兩張若是從不同角度拍的（透視差異）無法靠這個修正。
+        取點時可<b>按住拖曳微調</b>，旁邊會出現放大鏡，放開才落點。
         照片會被重繪與裁切；勾選「基準照也裁成同一個框」時基準照也會一併變更，
-        兩張各自都可以用「↶ 復原」還原。<b>非測量或診斷用途</b>。
+        兩張各自都可以用「↶ 復原」還原。<b>每套用一次就再裁一輪</b>，
+        反覆嘗試會讓照片越來越小，不滿意請先「復原」再重來。
+        <b>非測量或診斷用途</b>。
       </div>
     </div>
     <div class="m-foot" style="padding:0 16px 16px">
@@ -716,6 +728,8 @@
   </div>
 </div>
 
+<div class="pick-mag" id="pickMag"><canvas id="pickMagCv" width="132" height="132"></canvas></div>
+
 <div class="modal" id="busyModal">
   <div class="box narrow"><div class="m-body" style="align-items:center;text-align:center">
     <div id="busyTxt" style="font-size:15px;font-weight:600">處理中…</div>
@@ -724,7 +738,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v2.3
+   案例標記工具 v2.4
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -764,6 +778,15 @@ var state = {
 };
 var seq = 1;
 function colFocusOf(id){ return state.colFocus[id] || {fx:0.5, fy:0.5}; }
+/* 幾何改變（裁切／旋轉／拉平／牙齒對齊）時，組圖的每格取景焦點要一併換算，
+   否則焦點還指在舊座標，組圖會框到別的地方去。
+   fn 收 (fx,fy) 回傳新的 {x,y}；落在新畫面外就取消焦點（回到置中）。 */
+function remapFocus(id, fn){
+  var f = state.colFocus[id]; if(!f) return;
+  var n = fn(f.fx, f.fy);
+  if(!n || !(n.x >= 0 && n.x <= 1 && n.y >= 0 && n.y <= 1)) delete state.colFocus[id];
+  else state.colFocus[id] = { fx:n.x, fy:n.y };
+}
 
 /* ── 使用者設定（localStorage） ── */
 var settings = { mkScale:1, ftScale:1, clinic:"", wmClinic:false, wmDate:false, labels:[],
@@ -2309,6 +2332,7 @@ $("btnCropOk").onclick = function(){
         text:m.text, color:m.color
       };
     });
+  remapFocus(p.id, function(fx, fy){ return { x:(fx-c.x)/c.w, y:(fy-c.y)/c.h }; });
   state.selMk = -1; markDirty(p);
   exitCrop(); resetView(); draw();
 };
@@ -2330,6 +2354,9 @@ function rotate(cw){
     var a, b;
     if(cw){ a=1-m.y; b=m.x;  m.x=a; m.y=b; a=1-m.ly; b=m.lx; m.lx=a; m.ly=b; }
     else  { a=m.y;  b=1-m.x; m.x=a; m.y=b; a=m.ly;  b=1-m.lx; m.lx=a; m.ly=b; }
+  });
+  remapFocus(p.id, function(fx, fy){
+    return cw ? { x:1-fy, y:fx } : { x:fy, y:1-fx };
   });
   markDirty(p);
   resetView();
@@ -2369,6 +2396,7 @@ $("btnTiltOk").onclick = function(){
     var a = tf(m.x, m.y);   m.x = a.x;  m.y = a.y;
     var b = tf(m.lx, m.ly); m.lx = b.x; m.ly = b.y;
   });
+  remapFocus(p.id, function(fx, fy){ return tf(fx, fy); });
   p.bmp = nc;
   p.srcData = nc.toDataURL("image/jpeg", 0.95);
   markDirty(p);
@@ -3163,6 +3191,60 @@ function remapMarkers(markers, m, tW, tH, rW, rH, rect){
   return out;
 }
 
+/* ── 取點放大鏡與共用取點器 ──
+   取點畫布在手機上只有 ~290px 寬，一根手指就蓋掉要點的位置，
+   所以改成「按住 → 拖曳微調（旁邊顯示放大鏡）→ 放開才落點」。
+   滑鼠單擊仍然是按下即放開，行為不變。 */
+var MAG_SRC = 64;                       // 放大鏡裡看到的原圖範圍（像素）
+function showMag(canvas, bmp, nx, ny){
+  var el = $("pickMag"), c = $("pickMagCv"), g = c.getContext("2d");
+  var W = bw(bmp), H = bh(bmp);
+  g.fillStyle = "#14171c"; g.fillRect(0, 0, c.width, c.height);
+  g.imageSmoothingEnabled = false;      // 要看得到像素邊界才好對準
+  g.drawImage(bmp, nx*W - MAG_SRC/2, ny*H - MAG_SRC/2, MAG_SRC, MAG_SRC, 0, 0, c.width, c.height);
+  var m = c.width/2;
+  g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(m, 0); g.lineTo(m, c.height); g.moveTo(0, m); g.lineTo(c.width, m); g.stroke();
+  g.strokeStyle = "#e53935"; g.lineWidth = 2;
+  g.beginPath(); g.arc(m, m, 7, 0, Math.PI*2); g.stroke();
+  var r = canvas.getBoundingClientRect();
+  var px = r.left + nx*r.width, py = r.top + ny*r.height;
+  var x = clamp(px - 66, 6, Math.max(6, window.innerWidth - 138));
+  var y = py - 152;                                   // 預設放在手指上方
+  if(y < 6) y = Math.min(py + 26, Math.max(6, window.innerHeight - 138));
+  el.style.left = Math.round(x) + "px"; el.style.top = Math.round(y) + "px";
+  el.classList.add("on");
+}
+function hideMag(){ $("pickMag").classList.remove("on"); }
+function attachPicker(canvasId, srcFn, onPick){
+  var c = $(canvasId), live = null;
+  var at = function(ev){
+    var r = c.getBoundingClientRect();
+    return { nx: clamp((ev.clientX-r.left)/r.width, 0, 1), ny: clamp((ev.clientY-r.top)/r.height, 0, 1) };
+  };
+  c.addEventListener("pointerdown", function(e){
+    var src = srcFn(); if(!src) return;
+    e.preventDefault();
+    try{ c.setPointerCapture(e.pointerId); }catch(err){}
+    live = at(e); showMag(c, src, live.nx, live.ny);
+  });
+  c.addEventListener("pointermove", function(e){
+    if(!live) return;
+    var src = srcFn(); if(!src) return;
+    live = at(e); showMag(c, src, live.nx, live.ny);
+  });
+  var end = function(commit){
+    return function(e){
+      if(!live) return;
+      var pt = live; live = null; hideMag();
+      try{ c.releasePointerCapture(e.pointerId); }catch(err){}
+      if(commit) onPick(pt.nx, pt.ny);
+    };
+  };
+  c.addEventListener("pointerup", end(true));
+  c.addEventListener("pointercancel", end(false));
+}
+
 /* ── 牙齒對齊視窗 ── */
 function geoRefPhoto(){ return photoById(geo2.refId); }
 /* 解出目前這組取點的變換與裁切框；資料不足回傳 null */
@@ -3215,20 +3297,15 @@ function renderGeo(){
   };
   put(pa, showA); put(pb, showB);
 }
-function geoPick(canvasId, arr, ev){
-  var p = cur(), r = geoRefPhoto();
-  var src = (canvasId === "geoCvA") ? (r && r.bmp) : (p && p.bmp);
-  if(!src) return;
+function geoSrcA(){ var r = geoRefPhoto(); return r && r.bmp; }
+function geoSrcB(){ var p = cur(); return p && p.bmp; }
+function geoPick(arr, nx, ny){
   if(arr.length >= 2) return;
-  var c = $(canvasId), rect = c.getBoundingClientRect();
-  arr.push({
-    nx: clamp((ev.clientX-rect.left)/rect.width, 0, 1),
-    ny: clamp((ev.clientY-rect.top)/rect.height, 0, 1)
-  });
+  arr.push({ nx:nx, ny:ny });
   renderGeo();
 }
-$("geoCvA").addEventListener("click", function(e){ geoPick("geoCvA", geo2.a, e); });
-$("geoCvB").addEventListener("click", function(e){ geoPick("geoCvB", geo2.b, e); });
+attachPicker("geoCvA", geoSrcA, function(nx, ny){ geoPick(geo2.a, nx, ny); });
+attachPicker("geoCvB", geoSrcB, function(nx, ny){ geoPick(geo2.b, nx, ny); });
 $("geoRef").onchange = function(){ geo2.refId = this.value; geo2.a = []; geo2.b = []; renderGeo(); };
 $("geoCrop").onchange = function(){ geo2.autoCrop = this.checked; $("geoCropRef").disabled = !this.checked; renderGeo(); };
 $("geoCropRef").onchange = function(){ geo2.cropRef = this.checked; };
@@ -3258,6 +3335,12 @@ $("btnGeoOk").onclick = function(){
   if(g.rect) out = cropCanvas(out, g.rect);
   pushUndo(g.p);
   g.p.markers = remapMarkers(g.p.markers, g.m, g.tW, g.tH, g.rW, g.rH, g.rect);
+  remapFocus(g.p.id, function(fx, fy){
+    var q = applyMat(g.m, fx*g.tW, fy*g.tH);
+    var x = q.x/g.rW, y = q.y/g.rH;
+    if(g.rect){ x = (x-g.rect.x)/g.rect.w; y = (y-g.rect.y)/g.rect.h; }
+    return { x:x, y:y };
+  });
   g.p.bmp = out;
   g.p.srcData = out.toDataURL("image/jpeg", 0.95);
   markDirty(g.p);
@@ -3266,6 +3349,9 @@ $("btnGeoOk").onclick = function(){
     pushUndo(g.r);
     var rc = cropCanvas(g.r.bmp, g.rect);
     g.r.markers = remapMarkers(g.r.markers, null, g.tW, g.tH, g.rW, g.rH, g.rect);
+    remapFocus(g.r.id, function(fx, fy){
+      return { x:(fx-g.rect.x)/g.rect.w, y:(fy-g.rect.y)/g.rect.h };
+    });
     g.r.bmp = rc;
     g.r.srcData = rc.toDataURL("image/jpeg", 0.95);
     markDirty(g.r);
@@ -3394,19 +3480,16 @@ function renderAlg(){
     pc.getContext("2d").drawImage(out, 0, 0, pc.width, pc.height);
   }
 }
-function algPick(canvasId, arr, ev){
-  var p = cur(), r = refPhoto();
-  var src = (canvasId==="algCvA") ? (r && r.bmp) : (p && p.bmp);
-  if(!src) return;
+function algSrcA(){ var r = refPhoto(); return r && r.bmp; }
+function algSrcB(){ var p = cur(); return p && p.bmp; }
+function algPick(srcFn, arr, nx, ny){
+  var src = srcFn(); if(!src) return;
   if(arr.length >= algNeeded()) return;                  // 取滿了就不再加
-  var c = $(canvasId), rect = c.getBoundingClientRect();
-  var nx = clamp((ev.clientX-rect.left)/rect.width, 0, 1);
-  var ny = clamp((ev.clientY-rect.top)/rect.height, 0, 1);
   arr.push({ nx:nx, ny:ny, rgb: samplePatch(src, nx, ny) });
   renderAlg();
 }
-$("algCvA").addEventListener("click", function(e){ algPick("algCvA", alg.a, e); });
-$("algCvB").addEventListener("click", function(e){ algPick("algCvB", alg.b, e); });
+attachPicker("algCvA", algSrcA, function(nx, ny){ algPick(algSrcA, alg.a, nx, ny); });
+attachPicker("algCvB", algSrcB, function(nx, ny){ algPick(algSrcB, alg.b, nx, ny); });
 $("algMode").onchange = function(){ alg.mode = this.value; alg.a = []; alg.b = []; renderAlg(); };
 $("algRef").onchange = function(){ alg.refId = this.value; alg.a = []; alg.b = []; renderAlg(); };
 $("btnAlgReset").onclick = function(){ alg.a = []; alg.b = []; renderAlg(); };
