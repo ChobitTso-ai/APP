@@ -220,6 +220,97 @@ const TGT_PTS = [[150,100],[250,200]];
   ok('不裁切時角落是白色留邊', noCrop.corner.every(v => v > 235), JSON.stringify(noCrop.corner));
   await page.click('#btnUndo');
 
+  console.log('— 組圖取景焦點要跟著幾何一起換算 —');
+  const foc = await page.evaluate(() => {
+    const p = cur(), r = state.photos.find(q => q.name.indexOf('ref') === 0);
+    const out = {};
+    // 中央的焦點：對齊後應該還在中央附近
+    state.colFocus[p.id] = { fx:0.5, fy:0.5 };
+    state.colFocus[r.id] = { fx:0.5, fy:0.5 };
+    geo2.a = [{nx:0.25,ny:0.5},{nx:0.75,ny:0.5}];
+    geo2.b = [{nx:0.375,ny:0.333},{nx:0.625,ny:0.667}];
+    geo2.autoCrop = true; geo2.cropRef = true;
+    renderGeo();
+    const rect = geoResult().rect;
+    document.getElementById('btnGeoOk').onclick();
+    out.tgt = state.colFocus[p.id] || null;
+    out.ref = state.colFocus[r.id] || null;
+    out.exp = { fx:(0.5-rect.x)/rect.w, fy:(0.5-rect.y)/rect.h };
+    return out;
+  });
+  ok('目標照的取景焦點已換算', foc.tgt && near(foc.tgt.fx, foc.exp.fx, 0.02) && near(foc.tgt.fy, foc.exp.fy, 0.02),
+     JSON.stringify(foc.tgt) + ' 應為 ' + JSON.stringify(foc.exp));
+  ok('基準照的取景焦點也換算', foc.ref && near(foc.ref.fx, foc.exp.fx, 0.02) && near(foc.ref.fy, foc.exp.fy, 0.02),
+     JSON.stringify(foc.ref));
+  const focOut = await page.evaluate(() => {
+    const p = cur();
+    state.colFocus[p.id] = { fx:0.02, fy:0.02 };     // 角落，對齊後一定在框外
+    geo2.a = [{nx:0.25,ny:0.5},{nx:0.75,ny:0.5}];
+    geo2.b = [{nx:0.375,ny:0.333},{nx:0.625,ny:0.667}];
+    geo2.autoCrop = true; renderGeo();
+    document.getElementById('btnGeoOk').onclick();
+    return state.colFocus[p.id] || null;
+  });
+  ok('落在框外的焦點會取消（回到置中）', focOut === null, JSON.stringify(focOut));
+  await page.click('#btnUndo');
+
+  console.log('— 裁切／旋轉／拉平也要換算焦點（原本都沒處理） —');
+  const g2 = await page.evaluate(() => {
+    const p = cur(), out = {};
+    // 旋轉 90°：焦點 (0.2,0.3) 順時針後應為 (1-0.3, 0.2)
+    state.colFocus[p.id] = { fx:0.2, fy:0.3 };
+    document.getElementById('btnRotR').onclick();
+    out.rot = state.colFocus[p.id];
+    document.getElementById('btnUndo').onclick();
+    // 裁切：取右下半，(0.75,0.75) → (0.5,0.5)
+    state.colFocus[p.id] = { fx:0.75, fy:0.75 };
+    state.crop = { x:0.5, y:0.5, w:0.5, h:0.5 };
+    document.getElementById('btnCropOk').onclick();
+    out.crop = state.colFocus[p.id];
+    document.getElementById('btnUndo').onclick();
+    // 拉平：轉一個角度，焦點應該跟著移動而不是原地不動
+    state.colFocus[p.id] = { fx:0.2, fy:0.2 };
+    state.mode = 'tilt'; state.tilt = 12;
+    document.getElementById('btnTiltOk').onclick();
+    out.tilt = state.colFocus[p.id];
+    document.getElementById('btnUndo').onclick();
+    return out;
+  });
+  ok('旋轉 90° 後焦點正確', g2.rot && near(g2.rot.fx, 0.7, 0.001) && near(g2.rot.fy, 0.2, 0.001), JSON.stringify(g2.rot));
+  ok('裁切後焦點正確', g2.crop && near(g2.crop.fx, 0.5, 0.001) && near(g2.crop.fy, 0.5, 0.001), JSON.stringify(g2.crop));
+  ok('拉平後焦點有跟著換算', g2.tilt && !(near(g2.tilt.fx, 0.2, 0.001) && near(g2.tilt.fy, 0.2, 0.001)), JSON.stringify(g2.tilt));
+
+  console.log('— 取點放大鏡（手機上手指會擋住） —');
+  await page.click('#btnTeeth');
+  await page.waitForSelector('#geoModal.on');
+  const magHidden = await page.evaluate(() => getComputedStyle(document.getElementById('pickMag')).display);
+  ok('平常不顯示', magHidden === 'none', magHidden);
+  const bb = await page.locator('#geoCvA').boundingBox();
+  await page.mouse.move(bb.x + bb.width*0.3, bb.y + bb.height*0.5);
+  await page.mouse.down();
+  const magOn = await page.evaluate(() => {
+    const el = document.getElementById('pickMag');
+    const c = document.getElementById('pickMagCv');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let ink = 0;
+    for(let i=0;i<d.length;i+=4) if(d[i]>40 || d[i+1]>40 || d[i+2]>40) ink++;
+    return { disp: getComputedStyle(el).display, ink: ink, box: el.getBoundingClientRect().width };
+  });
+  ok('按住時出現放大鏡', magOn.disp === 'block', magOn.disp);
+  ok('放大鏡有畫出內容（不是空白）', magOn.ink > 1000, magOn.ink + ' 個像素');
+  ok('放大鏡尺寸 132px', Math.round(magOn.box) === 132, magOn.box + '');
+  const notYet = await page.evaluate(() => geo2.a.length);
+  ok('按住還沒落點', notYet === 0, notYet + '');
+  // 拖曳微調後放開才落點
+  await page.mouse.move(bb.x + bb.width*0.25, bb.y + bb.height*0.5);
+  await page.mouse.up();
+  const picked = await page.evaluate(() => ({ n: geo2.a.length, nx: geo2.a[0] && geo2.a[0].nx,
+    disp: getComputedStyle(document.getElementById('pickMag')).display }));
+  ok('放開才落點', picked.n === 1, picked.n + '');
+  ok('落點取的是放開時的位置（拖曳有效）', near(picked.nx, 0.25, 0.02), picked.nx);
+  ok('放開後放大鏡收起來', picked.disp === 'none', picked.disp);
+  await page.click('#btnGeoNo');
+
   console.log('— 只有一張照片時擋下 —');
   const guarded = await page.evaluate(() => {
     const saved = state.photos.slice();
