@@ -2182,6 +2182,22 @@
             else if (opts.dpi) scale = opts.dpi / 72;
             else scale = opts.scale || 1;
 
+            /* 瀏覽器的 canvas 有上限（手機／iPad 更低），大尺寸的圖或高 DPI
+               會直接畫不出來。超過就等比縮小，寧可解析度低一點也不要整個失敗。 */
+            const MAX_SIDE = 8192;
+            const MAX_PIXELS = 25e6;
+            const w0 = unit.width * scale;
+            const h0 = unit.height * scale;
+            const cap = Math.min(
+                1,
+                MAX_SIDE / Math.max(w0, h0),
+                Math.sqrt(MAX_PIXELS / (w0 * h0))
+            );
+            if (cap < 1) {
+                console.warn(`第 ${pageNo} 頁超出 canvas 上限，解析度降為 ${(cap * 100).toFixed(0)}%`);
+                scale *= cap;
+            }
+
             const viewport = page.getViewport({ scale, rotation });
             const canvas = document.createElement('canvas');
             canvas.width = Math.max(1, Math.round(viewport.width));
@@ -2314,6 +2330,35 @@
             setupEditorGridEvents();
         }
 
+        /* 建一份乾淨的頁面清單。
+           順便問出每頁的原始尺寸——「橫向自動轉正」要靠它判斷，
+           所以呼叫端一定要 await 完才能操作。 */
+        async function buildPagesFromSource(pageCount, onProgress) {
+            const pages = [];
+            for (let i = 0; i < pageCount; i++) {
+                let baseW = 0, baseH = 0;
+                try {
+                    const pg = await editorPdfjs.getPage(i + 1);
+                    const vp = pg.getViewport({ scale: 1 });
+                    baseW = vp.width;
+                    baseH = vp.height;
+                } catch (err) {
+                    console.warn(`第 ${i + 1} 頁尺寸讀取失敗:`, err);
+                }
+                pages.push({
+                    uid: ++editorUidSeq,
+                    srcIndex: i,
+                    rotation: 0,
+                    redactions: [],
+                    selected: false,
+                    baseW,
+                    baseH,
+                });
+                if (onProgress && i % 25 === 24) onProgress((i / pageCount) * 100);
+            }
+            return pages;
+        }
+
         async function loadEditorPDF(file) {
             try {
                 if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -2347,23 +2392,9 @@
                     srcPageCount: pageCount,
                 };
 
-                // 先問出每頁的原始尺寸，「橫向自動轉正」要靠它判斷
-                editorPages = [];
                 editorUidSeq = 0;
-                for (let i = 0; i < pageCount; i++) {
-                    const pg = await editorPdfjs.getPage(i + 1);
-                    const vp = pg.getViewport({ scale: 1 });
-                    editorPages.push({
-                        uid: ++editorUidSeq,
-                        srcIndex: i,
-                        rotation: 0,
-                        redactions: [],
-                        selected: false,
-                        baseW: vp.width,
-                        baseH: vp.height,
-                    });
-                    if (i % 25 === 24) updateProgress((i / pageCount) * 100, 'editor');
-                }
+                editorPages = await buildPagesFromSource(pageCount, (pct) =>
+                    updateProgress(pct, 'editor'));
 
                 document.getElementById('editorFileName').textContent = file.name;
                 document.getElementById('editorFileInfo').textContent =
@@ -2641,35 +2672,14 @@
             deletePages(selectedUids());
         }
 
-        function editorResetAll() {
+        async function editorResetAll() {
             if (!editorFile) return;
             if (!confirm('確定要還原成剛載入的狀態嗎？所有旋轉、遮蔽、刪除與排序都會取消。')) return;
 
             clearThumbsFor('editor');
-            editorPages = [];
-            editorUidSeq = 0;
-            for (let i = 0; i < editorFile.srcPageCount; i++) {
-                editorPages.push({
-                    uid: ++editorUidSeq,
-                    srcIndex: i,
-                    rotation: 0,
-                    redactions: [],
-                    selected: false,
-                    baseW: 0,
-                    baseH: 0,
-                });
-            }
-            // 尺寸重新問一次（自動轉正需要）
-            (async () => {
-                for (const p of editorPages) {
-                    try {
-                        const pg = await editorPdfjs.getPage(p.srcIndex + 1);
-                        const vp = pg.getViewport({ scale: 1 });
-                        p.baseW = vp.width;
-                        p.baseH = vp.height;
-                    } catch (_) {}
-                }
-            })();
+            // 一定要等尺寸問完才畫，否則緊接著按「橫向頁自動轉正」時
+            // baseW/baseH 還是 0，會什麼都不做又不報錯
+            editorPages = await buildPagesFromSource(editorFile.srcPageCount);
 
             renderEditorGrid();
             showStatus('已還原成原始狀態', 'success', 'editor');

@@ -104,8 +104,10 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   **`pdf.js` 會把傳進去的 ArrayBuffer 轉移給 worker（detached）**，
   後面 pdf-lib 還要用同一份資料，所以 `openWithPdfjs()` 一定要傳 `arrayBuffer.slice(0)` 副本。
   vendor：pdf-lib 1.17.1、pdfjs-dist 3.11.174〔legacy build，pdf.min.js＋worker〕、fflate 0.8.2〔PDF 轉圖片打包 zip〕。
-  端到端測試在 `tests/pdf-toolbox.test.js`〔35 項〕，其中最關鍵的一項是把成品用
-  pdf.js 讀回來看文字圖層，確認被遮的字真的不見、沒遮的頁文字仍在。
+  端到端測試在 `tests/pdf-toolbox.test.js`〔44 項〕。最關鍵的兩項：把成品用
+  pdf.js 讀回來看文字圖層，確認被遮的字真的不見、沒遮的頁文字仍在；以及
+  「先遮蔽再旋轉」後取樣像素，確認黑塊落在旋轉後的正確位置、原位置沒殘留
+  （遮蔽框、渲染、輸出三邊的座標系必須一致）。
   **密碼加密沒做**——pdf-lib 沒有這個功能〔`setPassword`／`encryptWith` 都不存在〕，
   要做得換函式庫；OCR 也沒做〔tesseract.js 中文語言包 ~15MB，手機上太慢〕）。
 

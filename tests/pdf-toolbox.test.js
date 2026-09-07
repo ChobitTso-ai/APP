@@ -189,7 +189,62 @@ function ok(n, c, d) {
     all.includes('PUBLIC-TWO') && all.includes('PUBLIC-THREE'));
   ok('頁碼有寫進去', /1 \/ 4/.test(all), all.slice(0, 120));
 
+  console.log('— 🔄 先遮蔽再旋轉：遮蔽位置要跟著轉過去 —');
+  /* 這是最容易出錯的地方：遮蔽框存的是相對座標，頁面一轉，
+     框、渲染、輸出三邊的座標系必須一致，不然黑塊會跑到別的地方。 */
+  await loadIntoEditor();
+  const rotRedact = await page.evaluate(async () => {
+    // 先在第 1 頁「SECRET-ALPHA」的位置遮起來
+    editorPages[0].redactions = [{ x: 0.02, y: 0.04, w: 0.80, h: 0.18, mode: 'black' }];
+    // 再把這一頁右轉 90°
+    rotatePages([editorPages[0].uid], 90);
+
+    const bytes = await buildEditedPdf(editorPages, { compress: false, pageNumber: false });
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+
+    const pg1 = await doc.getPage(1);
+    const vp = pg1.getViewport({ scale: 1 });
+    const c = document.createElement('canvas');
+    c.width = Math.round(vp.width);
+    c.height = Math.round(vp.height);
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, c.width, c.height);
+    await pg1.render({ canvasContext: g, viewport: vp }).promise;
+
+    const at = (nx, ny) => {
+      const d = g.getImageData(Math.round(c.width * nx), Math.round(c.height * ny), 1, 1).data;
+      return [d[0], d[1], d[2]];
+    };
+    const text = (await pg1.getTextContent()).items.map(i => i.str).join('');
+    return {
+      landscape: c.width > c.height,          // 直式轉 90° 後應該變橫式
+      inNewSpot: at(0.87, 0.40),              // 轉過去之後黑塊該在的位置
+      inOldSpot: at(0.30, 0.12),              // 原本的位置現在應該是白的
+      text,
+    };
+  });
+  const isBlack = px => px.every(v => v < 40);
+  const isWhite = px => px.every(v => v > 215);
+  ok('轉 90° 後頁面變成橫式', rotRedact.landscape);
+  ok('黑塊出現在旋轉後的正確位置', isBlack(rotRedact.inNewSpot),
+    `RGB(${rotRedact.inNewSpot.join(',')})`);
+  ok('原本的位置沒有殘留黑塊', isWhite(rotRedact.inOldSpot),
+    `RGB(${rotRedact.inOldSpot.join(',')})`);
+  ok('旋轉＋遮蔽後文字一樣從檔案裡消失', !rotRedact.text.includes('SECRET-ALPHA'));
+
+  console.log('— 還原後可以立刻用自動轉正（尺寸要先問完）—');
+  await loadIntoEditor();
+  ok('還原完成後 baseW/baseH 已就緒', await page.evaluate(async () => {
+    await editorResetAll();
+    return editorPages.every(p => p.baseW > 0 && p.baseH > 0);
+  }));
+  await page.click('button:has-text("橫向頁自動轉正")');
+  ok('還原後緊接著自動轉正仍然有效',
+    await page.evaluate(() => editorPages[2].rotation) === 90);
+
   console.log('— 擷取成新檔 —');
+  await loadIntoEditor();
   const extractResult = await page.evaluate(async () => {
     const pick = [editorPages[1], editorPages[2]];
     const bytes = await buildEditedPdf(pick, { compress: false, pageNumber: false });
@@ -239,6 +294,50 @@ function ok(n, c, d) {
   const dlSize = fs.statSync(outPath).size;
   ok('匯出檔案下載成功', dl.suggestedFilename() === 'e2e_out.pdf' && dlSize > 500,
     `${dl.suggestedFilename()} ${dlSize} bytes`);
+
+  console.log('— 合併（既有功能，確認沒被改壞）—');
+  await page.click('.tab[data-tab="merge"]');
+  await page.evaluate(async () => {
+    // 兩份各 2 頁的小 PDF
+    const mk = async (label) => {
+      const doc = await PDFLib.PDFDocument.create();
+      const font = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+      for (let i = 1; i <= 2; i++) {
+        const p = doc.addPage([595, 842]);
+        p.drawText(`${label}-${i}`, { x: 60, y: 700, size: 24, font });
+      }
+      return await doc.save();
+    };
+    const a = await mk('DOCA');
+    const b = await mk('DOCB');
+    const dt = new DataTransfer();
+    dt.items.add(new File([a], 'a.pdf', { type: 'application/pdf' }));
+    dt.items.add(new File([b], 'b.pdf', { type: 'application/pdf' }));
+    const inp = document.getElementById('mergeFileInput');
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() => mergePdfFiles.length === 2, null, { timeout: 20000 });
+  ok('載入 2 個待合併檔案', await page.evaluate(() => mergePdfFiles.length) === 2);
+
+  const [dlM] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#mergeButton'),
+  ]);
+  const mergedPath = path.join(OUT, 'merged.pdf');
+  await dlM.saveAs(mergedPath);
+  const mergedInfo = await page.evaluate(async (arr) => {
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr) }).promise;
+    let text = '';
+    for (let i = 1; i <= doc.numPages; i++) {
+      const pg = await doc.getPage(i);
+      text += (await pg.getTextContent()).items.map(it => it.str).join('|');
+    }
+    return { numPages: doc.numPages, text };
+  }, Array.from(fs.readFileSync(mergedPath)));
+  ok('合併後是 4 頁', mergedInfo.numPages === 4, mergedInfo.text);
+  ok('兩份文件的內容都在，順序正確',
+    /DOCA-1.*DOCA-2.*DOCB-1.*DOCB-2/.test(mergedInfo.text), mergedInfo.text);
 
   console.log('— 分割分頁也要有真縮圖 —');
   await page.click('.tab[data-tab="split"]');
