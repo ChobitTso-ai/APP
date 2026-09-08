@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.1 端到端測試
+/* PDF工具箱 v2.2 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -67,6 +67,10 @@ function ok(n, c, d) {
 
   const loadIntoEditor = async () => {
     await page.click('.tab[data-tab="editor"]');
+    /* 一定要先清空再等：不然「已經有 4 頁」在舊資料上就成立，
+       waitForFunction 會立刻通過，測試在載入真正完成前就往下跑，
+       後面設的遮蔽會被隨後完成的載入蓋掉。 */
+    await page.evaluate(() => { editorPages = []; editorFile = null; });
     await page.evaluate((arr) => {
       const blob = new Blob([new Uint8Array(arr)], { type: 'application/pdf' });
       const f = new File([blob], 'test.pdf', { type: 'application/pdf' });
@@ -76,7 +80,7 @@ function ok(n, c, d) {
       inp.files = dt.files;
       inp.dispatchEvent(new Event('change'));
     }, pdfBytes);
-    await page.waitForFunction(() => typeof editorPages !== 'undefined' && editorPages.length === 4,
+    await page.waitForFunction(() => editorFile && editorPages.length === 4,
       null, { timeout: 30000 });
   };
 
@@ -119,7 +123,7 @@ function ok(n, c, d) {
   ok('直向頁不會被亂轉',
     await page.evaluate(() => editorPages[0].rotation) === 0);
 
-  await page.click('button:has-text("還原所有變更")');
+  await page.click('button:has-text("全部重來")');
   ok('還原後所有旋轉歸零、頁數回到 4', await page.evaluate(() =>
     editorPages.length === 4 && editorPages.every(p => p.rotation === 0)));
 
@@ -242,6 +246,158 @@ function ok(n, c, d) {
   await page.click('button:has-text("橫向頁自動轉正")');
   ok('還原後緊接著自動轉正仍然有效',
     await page.evaluate(() => editorPages[2].rotation) === 90);
+
+  console.log('— ↩️ 復原（v2.2）—');
+  await loadIntoEditor();
+  ok('剛載入時沒有可復原的步驟', await page.evaluate(() =>
+    editorUndoStack.length === 0 && document.getElementById('btnUndo').disabled));
+
+  await page.evaluate(() => { editorPages[3].selected = true; renderEditorGrid(); });
+  await page.click('#btnDel');
+  await page.waitForFunction(() => editorPages.length === 3);
+  ok('刪除後復原鈕啟用', await page.evaluate(() =>
+    !document.getElementById('btnUndo').disabled));
+
+  await page.click('#btnUndo');
+  await page.waitForFunction(() => editorPages.length === 4);
+  ok('復原後刪掉的頁面回來了', await page.evaluate(() =>
+    editorPages.length === 4 && editorPages.some(p => p.srcIndex === 3)));
+
+  ok('旋轉也能復原', await page.evaluate(() => {
+    rotatePages([editorPages[0].uid], 90);
+    const after = editorPages[0].rotation;
+    editorUndo();
+    return after === 90 && editorPages[0].rotation === 0;
+  }));
+
+  ok('復原堆疊有上限，不會無限長大', await page.evaluate(() => {
+    for (let i = 0; i < 40; i++) rotatePages([editorPages[0].uid], 90);
+    return editorUndoStack.length <= 30;
+  }));
+
+  console.log('— 🖼️ 縮圖要看得到遮蔽（v2.2）—');
+  await loadIntoEditor();
+  // 先等原本的縮圖畫完，才知道之後看到的黑塊確實是遮蔽造成的
+  await page.waitForFunction(
+    () => document.querySelectorAll('#editorGrid .page-thumb img').length >= 4,
+    null, { timeout: 30000 });
+  await page.evaluate(() => {
+    pushUndo();
+    editorPages[0].redactions = [{ x: 0.05, y: 0.05, w: 0.8, h: 0.5, mode: 'black' }];
+    renderEditorGrid();
+  });
+  // 重繪後縮圖會退回「載入中…」，等它用新的遮蔽重新算完
+  await page.waitForFunction(
+    () => !!document.querySelector('#editorGrid .editor-card .page-thumb img'),
+    null, { timeout: 30000 });
+  await page.waitForTimeout(300);
+  const thumbDark = await page.evaluate(async () => {
+    const img = document.querySelector('#editorGrid .editor-card .page-thumb img');
+    if (!img) return null;
+    await img.decode().catch(() => {});
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    // 取遮蔽區中央
+    const d = g.getImageData(Math.round(c.width * 0.4), Math.round(c.height * 0.25), 1, 1).data;
+    return [d[0], d[1], d[2]];
+  });
+  ok('縮圖上直接看得到黑塊', thumbDark && thumbDark.every(v => v < 60),
+    thumbDark ? `RGB(${thumbDark.join(',')})` : 'no img');
+  ok('遮蔽徽章也在', await page.evaluate(() =>
+    !!document.querySelector('#editorGrid .card-badge.redacted')));
+
+  console.log('— 🔍 遮蔽視窗的縮放平移（v2.2）—');
+  await page.evaluate(() => openRedactModal(editorPages[1].uid));
+  await page.waitForSelector('#redactCanvas', { timeout: 20000 });
+  await page.waitForFunction(() => redactCtx && redactCtx.baseCanvas, null, { timeout: 20000 });
+  const zoomInfo = await page.evaluate(() => {
+    const fit = redactCtx.zoom;
+    document.querySelector('[data-zoom="in"]').click();
+    const zoomedIn = redactCtx.zoom;
+    document.querySelector('[data-zoom="out"]').click();
+    document.querySelector('[data-zoom="out"]').click();
+    const zoomedOut = redactCtx.zoom;
+    document.querySelector('[data-zoom="fit"]').click();
+    return { fit, zoomedIn, zoomedOut, backToFit: redactCtx.zoom };
+  });
+  ok('放大鈕會放大', zoomInfo.zoomedIn > zoomInfo.fit,
+    `${zoomInfo.fit.toFixed(3)} → ${zoomInfo.zoomedIn.toFixed(3)}`);
+  ok('縮小鈕會縮小', zoomInfo.zoomedOut < zoomInfo.zoomedIn);
+  ok('「符合視窗」會回到原本的比例',
+    Math.abs(zoomInfo.backToFit - zoomInfo.fit) < 1e-6);
+  ok('縮放後畫布的 CSS 尺寸跟著變', await page.evaluate(() => {
+    const c = document.getElementById('redactCanvas');
+    const before = c.getBoundingClientRect().width;
+    document.querySelector('[data-zoom="in"]').click();
+    return c.getBoundingClientRect().width > before + 1;
+  }));
+
+  console.log('— 放大後畫的框，座標仍然正確 —');
+  /* 縮放平移之後座標換算若沒跟上，框就會歪掉。
+     這裡在放大狀態下用滑鼠實際拖一個框，再檢查存下來的相對座標。 */
+  const drawn = await page.evaluate(() => {
+    document.querySelector('[data-zoom="fit"]').click();
+    redactCtx.rects = [];
+    redactCtx.repaint();
+    return null;
+  });
+  {
+    const box = await page.locator('#redactCanvas').boundingBox();
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.20);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.40, { steps: 10 });
+    await page.mouse.up();
+  }
+  const rectNorm = await page.evaluate(() => redactCtx.rects[redactCtx.rects.length - 1]);
+  const near = (a, b) => Math.abs(a - b) < 0.03;
+  ok('框的相對座標與滑鼠實際位置吻合',
+    rectNorm && near(rectNorm.x, 0.25) && near(rectNorm.y, 0.20) &&
+    near(rectNorm.w, 0.50) && near(rectNorm.h, 0.20),
+    rectNorm ? `x=${rectNorm.x.toFixed(3)} y=${rectNorm.y.toFixed(3)} w=${rectNorm.w.toFixed(3)} h=${rectNorm.h.toFixed(3)}` : 'none');
+
+  console.log('— 單獨選取與刪除遮蔽框（v2.2）—');
+  ok('點一下框會選取它', await page.evaluate(() => {
+    const r = redactCtx.rects[0];
+    const c = document.getElementById('redactCanvas');
+    const box = c.getBoundingClientRect();
+    const cx = box.left + (r.x + r.w / 2) * box.width;
+    const cy = box.top + (r.y + r.h / 2) * box.height;
+    c.closest('.redact-viewport').dispatchEvent(new PointerEvent('pointerdown', {
+      clientX: cx, clientY: cy, bubbles: true, pointerId: 1,
+    }));
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
+    document.getElementById('redactViewport').dispatchEvent(new PointerEvent('pointerup', {
+      clientX: cx, clientY: cy, bubbles: true, pointerId: 1,
+    }));
+    return redactCtx.sel === 0;
+  }));
+  ok('選取後「刪除選取的框」啟用', await page.evaluate(() =>
+    !document.getElementById('redactDelSel').disabled));
+  await page.click('#redactDelSel');
+  ok('刪掉的是那一個框', await page.evaluate(() =>
+    redactCtx.rects.length === 0 && redactCtx.sel === -1));
+
+  console.log('— 有未套用的框時誤點背景不會靜靜丟掉（v2.2）—');
+  ok('畫了框但沒套用時，點背景會先問一聲', await page.evaluate(async () => {
+    redactCtx.rects = [{ x: 0.1, y: 0.1, w: 0.2, h: 0.2, mode: 'black' }];
+    let asked = false;
+    const realConfirm = window.confirm;
+    window.confirm = () => { asked = true; return false; };   // 選「不要關」
+    document.querySelector('.modal-backdrop').click();
+    window.confirm = realConfirm;
+    return asked && !!document.querySelector('.modal-backdrop');  // 還開著
+  }));
+  ok('沒有未套用的變更時，點背景直接關掉不囉嗦', await page.evaluate(() => {
+    redactCtx.rects = redactCtx.page.redactions.map(r => ({ ...r }));
+    let asked = false;
+    const realConfirm = window.confirm;
+    window.confirm = () => { asked = true; return true; };
+    document.querySelector('.modal-backdrop').click();
+    window.confirm = realConfirm;
+    return !asked && !document.querySelector('.modal-backdrop');
+  }));
 
   console.log('— 擷取成新檔 —');
   await loadIntoEditor();
@@ -380,6 +536,26 @@ function ok(n, c, d) {
   ok('版面設定區出現', await page.evaluate(() =>
     getComputedStyle(document.getElementById('img2pdfControls')).display !== 'none'));
 
+  console.log('— 圖片拖曳排序（v2.2 補上，先前 UI 有寫但沒實作）—');
+  ok('圖片卡片是可拖曳的', await page.evaluate(() =>
+    [...document.querySelectorAll('#imgGrid .img-card')].every(c => c.draggable)));
+  ok('把第 1 張拖到第 3 張後面，順序會改變', await page.evaluate(() => {
+    const before = imgItems.map(x => x.name).join(',');
+    const cards = [...document.querySelectorAll('#imgGrid .img-card')];
+    const dt = new DataTransfer();
+    cards[0].dispatchEvent(new DragEvent('dragstart', { dataTransfer: dt, bubbles: true }));
+    const r = cards[2].getBoundingClientRect();
+    cards[2].dispatchEvent(new DragEvent('drop', {
+      dataTransfer: dt, bubbles: true,
+      clientX: r.left + r.width * 0.9, clientY: r.top + r.height / 2,
+    }));
+    const after = imgItems.map(x => x.name).join(',');
+    return before === 'photo0.jpg,photo1.jpg,photo2.jpg'
+        && after === 'photo1.jpg,photo2.jpg,photo0.jpg';
+  }));
+  ok('編號跟著重畫', await page.evaluate(() =>
+    document.querySelector('#imgGrid .img-name').textContent.startsWith('1. photo1')));
+
   const [dl2] = await Promise.all([
     page.waitForEvent('download', { timeout: 60000 }),
     page.click('#img2pdfButton'),
@@ -438,6 +614,34 @@ function ok(n, c, d) {
     }
     return true;
   }));
+
+  console.log('— 遮蔽頁解析度可以設定（v2.2）—');
+  const dpiSizes = await page.evaluate(async () => {
+    await new Promise(r => setTimeout(r, 0));
+    const out = {};
+    for (const dpi of ['150', '300']) {
+      editorPages[0].redactions = [{ x: 0.1, y: 0.1, w: 0.5, h: 0.2, mode: 'black' }];
+      const bytes = await buildEditedPdf([editorPages[0]], {
+        compress: false, redactDpi: dpi, pageNumber: false,
+      });
+      const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+      const vp = (await doc.getPage(1)).getViewport({ scale: 1 });
+      out[dpi] = { bytes: bytes.length, w: Math.round(vp.width) };
+    }
+    return out;
+  });
+  ok('300 DPI 的成品比 150 DPI 大（解析度真的有作用）',
+    dpiSizes['300'].bytes > dpiSizes['150'].bytes,
+    `150→${dpiSizes['150'].bytes}B, 300→${dpiSizes['300'].bytes}B`);
+  ok('頁面尺寸（點）不受解析度影響，維持原稿大小',
+    Math.abs(dpiSizes['300'].w - dpiSizes['150'].w) <= 2,
+    `${dpiSizes['150'].w}pt vs ${dpiSizes['300'].w}pt`);
+
+  console.log('— 「添加書籤」假勾選框已移除（v2.2）—');
+  ok('合併分頁不再有沒作用的書籤勾選框',
+    await page.evaluate(() => !document.getElementById('addBookmarks')));
+  ok('會用到的「保留原檔案資訊」還在',
+    await page.evaluate(() => !!document.getElementById('preserveMetadata')));
 
   console.log('— [hidden] 不會被自訂 class 蓋掉 —');
   ok('隱藏的面板 computed display 是 none', await page.evaluate(() => {

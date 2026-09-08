@@ -805,27 +805,64 @@
             flex-wrap: wrap;
         }
 
-        .redact-stage {
+        /* 可縮放平移的取景框：canvas 用絕對定位擺在裡面，縮放就改它的 CSS 寬高。
+           座標換算一律走 getBoundingClientRect()，所以縮放平移不影響框選的準確度。 */
+        .redact-viewport {
             position: relative;
-            display: inline-block;
-            line-height: 0;
-            margin: 0 auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            overflow: hidden;
+            background: #dee2e6;
+            border-radius: 6px;
+            height: 58vh;
+            min-height: 280px;
             touch-action: none;
+            cursor: crosshair;
         }
 
-        /* 同時限寬與限高，直式整頁也能一眼看完不用捲動 */
-        .redact-stage canvas {
-            display: block;
-            max-width: 100%;
-            max-height: 62vh;
-            width: auto;
-            height: auto;
-            cursor: crosshair;
+        .redact-viewport.panning {
+            cursor: grab;
+        }
+
+        .redact-viewport.panning:active {
+            cursor: grabbing;
+        }
+
+        .redact-viewport canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            background: white;
         }
 
         .redact-wrap {
             text-align: center;
+        }
+
+        .redact-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .zoom-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .zoom-group .tool-button {
+            padding: 6px 12px;
+        }
+
+        .zoom-label {
+            font-size: 0.85rem;
+            color: #555;
+            min-width: 52px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
         }
 
         .mode-toggle {
@@ -903,6 +940,12 @@
             font-size: 0.9rem;
         }
 
+        .progress-note {
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+
         .hint-text {
             color: #868e96;
             font-size: 0.82rem;
@@ -933,6 +976,22 @@
             object-fit: contain;
             background: #f8f9fa;
             border-radius: 4px;
+        }
+
+        .img-card.dragging {
+            opacity: 0.4;
+        }
+
+        .img-card.drop-before {
+            border-left: 4px solid #11998e;
+        }
+
+        .img-card.drop-after {
+            border-right: 4px solid #11998e;
+        }
+
+        .img-card img {
+            cursor: grab;
         }
 
         .img-card .img-name {
@@ -1028,7 +1087,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉與轉換 v2.1 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉與轉換 v2.2 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1082,13 +1141,6 @@
                 </div>
 
                 <div class="control-row">
-                    <div class="control-group">
-                        <label>
-                            <input type="checkbox" id="addBookmarks" checked />
-                            添加書籤（每個檔案一個書籤）
-                        </label>
-                    </div>
-                    
                     <div class="control-group">
                         <label>
                             <input type="checkbox" id="preserveMetadata" checked />
@@ -1241,7 +1293,9 @@
                         <span class="toolbar-label">整份文件：</span>
                         <button class="tool-button" onclick="editorRotateAll(90)">↻ 全部右轉</button>
                         <button class="tool-button" onclick="editorAutoStraighten()">📐 橫向頁自動轉正</button>
-                        <button class="tool-button danger" onclick="editorResetAll()">↩️ 還原所有變更</button>
+                        <button class="tool-button" id="btnUndo" onclick="editorUndo()" disabled
+                                title="復原上一步（Ctrl+Z）">↩️ 復原</button>
+                        <button class="tool-button danger" onclick="editorResetAll()">🔄 全部重來</button>
                     </div>
                 </div>
 
@@ -1293,9 +1347,20 @@
                             </select>
                         </label>
                     </div>
+                    <div class="option-row" style="margin-top: 14px;">
+                        <label>
+                            遮蔽頁解析度
+                            <select id="optRedactDpi">
+                                <option value="150">150 DPI（檔案小）</option>
+                                <option value="200" selected>200 DPI（建議）</option>
+                                <option value="300">300 DPI（保留掃描細節）</option>
+                            </select>
+                        </label>
+                    </div>
                     <p class="hint-text">
                         壓縮對掃描檔特別有效（常能縮到原本的 1/5），但對純文字 PDF 反而可能變大，而且文字會變成影像、不能再選取搜尋。
-                        <strong>有遮蔽的頁面一定會轉成影像</strong>（這是遮蔽能真正生效的原因），其餘頁面維持原樣。
+                        <strong>有遮蔽的頁面一定會轉成影像</strong>（這是遮蔽能真正生效的原因），其餘頁面維持原樣；
+                        原稿是 300 DPI 的掃描件建議把「遮蔽頁解析度」也調到 300，才不會被降到 200。
                     </p>
                     <div class="option-row" style="margin-top: 14px;">
                         <div class="control-group" style="min-width: 240px;">
@@ -1312,6 +1377,7 @@
                 <div class="progress-bar" id="editorProgressBar">
                     <div class="progress-fill" id="editorProgressFill"></div>
                 </div>
+                    <div class="hint-text progress-note" id="editorProgressNote" hidden></div>
 
                 <div class="status-message" id="editorStatusMessage"></div>
             </div>
@@ -1394,6 +1460,7 @@
                     <div class="progress-bar" id="img2pdfProgressBar">
                         <div class="progress-fill" id="img2pdfProgressFill"></div>
                     </div>
+                        <div class="hint-text progress-note" id="img2pdfProgressNote" hidden></div>
 
                     <div class="status-message" id="img2pdfStatusMessage"></div>
                 </div>
@@ -1468,6 +1535,7 @@
                     <div class="progress-bar" id="pdf2imgProgressBar">
                         <div class="progress-fill" id="pdf2imgProgressFill"></div>
                     </div>
+                        <div class="hint-text progress-note" id="pdf2imgProgressNote" hidden></div>
 
                     <div class="status-message" id="pdf2imgStatusMessage"></div>
                 </div>
@@ -1475,7 +1543,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>PDF工具箱 v2.1</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.2</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -1728,9 +1796,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.1 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.1 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.1 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.2 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.2 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2066,8 +2134,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.1 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.1 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.2 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -2224,6 +2292,14 @@
             return src === 'editor' ? editorPdfjs : splitPdfjs;
         }
 
+        /* 遮蔽內容的指紋，只要框變了縮圖就會重畫 */
+        function redactSig(rects) {
+            if (!rects || !rects.length) return '0';
+            return rects.map(r =>
+                `${r.x.toFixed(3)},${r.y.toFixed(3)},${r.w.toFixed(3)},${r.h.toFixed(3)},${r.mode}`
+            ).join(';');
+        }
+
         function clearThumbsFor(src) {
             [...thumbCache.keys()]
                 .filter(k => k.startsWith(src + ':'))
@@ -2258,7 +2334,15 @@
                     const src = el.dataset.thumbSrc;
                     const pageNo = Number(el.dataset.thumbPage);
                     const rot = Number(el.dataset.thumbRot || 0);
-                    const key = `${src}:${pageNo}:${rot}`;
+
+                    /* 縮圖要把遮蔽也畫上去——這是隱私功能，匯出前一定要能
+                       一眼看到自己遮了哪裡，不能只掛一個數字徽章。
+                       遮蔽內容納入快取 key，改了才會重畫。 */
+                    const pageObj = (src === 'editor' && el.dataset.uid)
+                        ? editorPages.find(x => x.uid === Number(el.dataset.uid))
+                        : null;
+                    const rects = pageObj ? pageObj.redactions : [];
+                    const key = `${src}:${pageNo}:${rot}:${redactSig(rects)}`;
 
                     let url = thumbCache.get(key);
                     if (!url) {
@@ -2269,6 +2353,7 @@
                                 targetWidth: 200,
                                 extraRotation: rot,
                             });
+                            applyRedactions(canvas, rects);
                             url = canvas.toDataURL('image/jpeg', 0.72);
                             if (thumbCache.size > 500) thumbCache.clear();
                             thumbCache.set(key, url);
@@ -2299,6 +2384,47 @@
         let editorUidSeq = 0;
         let editorDragUid = null;
 
+        /* ---- 復原：每次動到頁面前先存一份快照 ----
+           以前只有「還原所有變更」，刪錯一頁就得把旋轉、遮蔽、排序全部重做。 */
+        let editorUndoStack = [];
+        const UNDO_LIMIT = 30;
+
+        function snapshotPages() {
+            return editorPages.map(p => ({
+                uid: p.uid,
+                srcIndex: p.srcIndex,
+                rotation: p.rotation,
+                redactions: p.redactions.map(r => ({ ...r })),
+                selected: p.selected,
+                baseW: p.baseW,
+                baseH: p.baseH,
+            }));
+        }
+
+        function pushUndo() {
+            editorUndoStack.push(snapshotPages());
+            if (editorUndoStack.length > UNDO_LIMIT) editorUndoStack.shift();
+        }
+
+        function editorUndo() {
+            if (!editorUndoStack.length) {
+                showStatus('沒有可以復原的步驟', 'error', 'editor');
+                return;
+            }
+            editorPages = editorUndoStack.pop();
+            renderEditorGrid();
+            showStatus('已復原上一步', 'success', 'editor');
+        }
+
+        function updateUndoButton() {
+            const b = document.getElementById('btnUndo');
+            if (!b) return;
+            b.disabled = editorUndoStack.length === 0;
+            b.textContent = editorUndoStack.length
+                ? `↩️ 復原（${editorUndoStack.length}）`
+                : '↩️ 復原';
+        }
+
         function setupEditorListeners() {
             const uploadArea = document.getElementById('editorUploadArea');
             const fileInput = document.getElementById('editorFileInput');
@@ -2328,6 +2454,17 @@
             });
 
             setupEditorGridEvents();
+
+            // Ctrl/⌘+Z 復原（遮蔽視窗開著時交給視窗自己處理，輸入框裡也不攔）
+            document.addEventListener('keydown', (e) => {
+                if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return;
+                if (currentTab !== 'editor') return;
+                if (document.querySelector('.modal-backdrop')) return;
+                const t = e.target;
+                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+                e.preventDefault();
+                editorUndo();
+            });
         }
 
         /* 建一份乾淨的頁面清單。
@@ -2393,6 +2530,7 @@
                 };
 
                 editorUidSeq = 0;
+                editorUndoStack = [];
                 editorPages = await buildPagesFromSource(pageCount, (pct) =>
                     updateProgress(pct, 'editor'));
 
@@ -2477,6 +2615,7 @@
             ['btnRotL', 'btnRotR', 'btnRot180', 'btnDel', 'btnExtract'].forEach(id => {
                 document.getElementById(id).disabled = (n === 0);
             });
+            updateUndoButton();
         }
 
         /* ---- 事件（用委派掛在網格上，拖曳中不重建 DOM）---- */
@@ -2554,6 +2693,7 @@
 
                 const from = editorPages.findIndex(p => p.uid === editorDragUid);
                 if (from < 0) return;
+                pushUndo();
                 const [moved] = editorPages.splice(from, 1);
 
                 let to = editorPages.findIndex(p => p.uid === targetUid);
@@ -2611,6 +2751,7 @@
         }
 
         function rotatePages(uids, delta) {
+            pushUndo();
             const set = new Set(uids);
             editorPages.forEach(p => {
                 if (!set.has(p.uid)) return;
@@ -2634,6 +2775,7 @@
         }
 
         function editorAutoStraighten() {
+            pushUndo();
             let changed = 0;
             editorPages.forEach(p => {
                 const swap = (p.rotation === 90 || p.rotation === 270);
@@ -2661,8 +2803,9 @@
                 showStatus('至少要保留一頁', 'error', 'editor');
                 return;
             }
-            if (!confirm(`確定要刪除 ${n} 頁嗎？（可用「還原所有變更」救回來）`)) return;
+            if (!confirm(`確定要刪除 ${n} 頁嗎？（可以用「↩️ 復原」救回來）`)) return;
 
+            pushUndo();
             editorPages = editorPages.filter(p => !set.has(p.uid));
             renderEditorGrid();
             showStatus(`已刪除 ${n} 頁，剩下 ${editorPages.length} 頁`, 'success', 'editor');
@@ -2676,6 +2819,7 @@
             if (!editorFile) return;
             if (!confirm('確定要還原成剛載入的狀態嗎？所有旋轉、遮蔽、刪除與排序都會取消。')) return;
 
+            pushUndo();
             clearThumbsFor('editor');
             // 一定要等尺寸問完才畫，否則緊接著按「橫向頁自動轉正」時
             // baseW/baseH 還是 0，會什麼都不做又不報錯
@@ -2695,6 +2839,7 @@
                 showProgress('editor');
                 const bytes = await buildEditedPdf(pages, {
                     compress: false,
+                    redactDpi: document.getElementById('optRedactDpi').value,
                     pageNumber: false,
                     onProgress: (pct) => updateProgress(pct, 'editor'),
                 });
@@ -2716,7 +2861,7 @@
            如果只是用 pdf-lib 畫一個黑色矩形蓋上去，底下的文字還原封不動留在檔案裡，
            收到檔案的人把矩形移掉、或直接複製文字就看得到，等於沒有遮。 */
 
-        let redactCtx = null;   // { page, baseCanvas, canvas, rects, mode, drawing, startX, startY }
+        let redactCtx = null;
 
         async function openRedactModal(uid) {
             const p = editorPages.find(x => x.uid === uid);
@@ -2733,26 +2878,43 @@
                     </div>
                     <div class="modal-body">
                         <div class="redact-warning">
-                            <strong>拖曳滑鼠框出要遮蔽的範圍。</strong>
+                            <strong>拖曳框出要遮蔽的範圍。</strong>
                             匯出時這一頁會轉成影像，框住的內容會從檔案裡真正消失——
                             不是蓋一塊黑色上去，所以無法被複製或還原。代價是這一頁的文字
-                            之後不能再選取或搜尋。
+                            之後不能再選取或搜尋。<br>
+                            點一下已經畫好的框可以選取它，選取後可以拖曳移動或刪除。
+                            滾輪縮放、雙指可縮放與平移。
                         </div>
+
+                        <div class="redact-bar">
+                            <div class="mode-toggle" id="redactDrawMode">
+                                <button type="button" data-draw="box" class="active">▭ 框選</button>
+                                <button type="button" data-draw="pan">✋ 移動</button>
+                            </div>
+                            <div class="mode-toggle" id="redactFillMode">
+                                <button type="button" data-mode="black" class="active">■ 塗黑</button>
+                                <button type="button" data-mode="mosaic">▩ 馬賽克</button>
+                            </div>
+                            <div class="zoom-group">
+                                <button class="tool-button" type="button" data-zoom="out" title="縮小">−</button>
+                                <span class="zoom-label" id="zoomLabel">100%</span>
+                                <button class="tool-button" type="button" data-zoom="in" title="放大">＋</button>
+                                <button class="tool-button" type="button" data-zoom="fit">符合視窗</button>
+                            </div>
+                        </div>
+
                         <div class="redact-wrap">
-                            <div class="redact-stage" id="redactStage">
+                            <div class="redact-viewport" id="redactViewport">
                                 <canvas id="redactCanvas"></canvas>
                             </div>
                             <p class="hint-text" id="redactCount">尚未框選任何範圍</p>
                         </div>
                     </div>
                     <div class="modal-foot">
-                        <div class="mode-toggle" style="margin-right: auto;">
-                            <button type="button" data-mode="black" class="active">■ 塗黑</button>
-                            <button type="button" data-mode="mosaic">▩ 馬賽克</button>
-                        </div>
+                        <button class="tool-button danger" type="button" id="redactDelSel" disabled>🗑️ 刪除選取的框</button>
                         <button class="tool-button" type="button" id="redactUndo">↩️ 復原上一個</button>
                         <button class="tool-button danger" type="button" id="redactClear">全部清除</button>
-                        <button class="tool-button" type="button" id="redactCancel">取消</button>
+                        <button class="tool-button" type="button" id="redactCancel" style="margin-left:auto;">取消</button>
                         <button class="action-button primary-button" type="button" id="redactApply"
                                 style="padding: 10px 24px;">✓ 套用</button>
                     </div>
@@ -2760,15 +2922,36 @@
             `;
             document.body.appendChild(backdrop);
 
-            const close = () => { backdrop.remove(); redactCtx = null; };
-            backdrop.querySelector('.modal-close').addEventListener('click', close);
-            backdrop.querySelector('#redactCancel').addEventListener('click', close);
-            backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
-
             const canvas = backdrop.querySelector('#redactCanvas');
+            const viewport = backdrop.querySelector('#redactViewport');
             const countEl = backdrop.querySelector('#redactCount');
+            const zoomLabel = backdrop.querySelector('#zoomLabel');
+            const delSelBtn = backdrop.querySelector('#redactDelSel');
 
-            // 先畫一張「載入中」，實際頁面算好再換上
+            const close = () => {
+                document.removeEventListener('keydown', onKey);
+                backdrop.remove();
+                redactCtx = null;
+            };
+
+            /* 框好的範圍還沒套用就關掉會整個消失。誤點暗色背景就白做一遍，
+               所以有未套用的變更時先問一聲。 */
+            const isDirty = () => {
+                if (!redactCtx) return false;
+                const norm = (rs) => JSON.stringify(rs.map(r =>
+                    [+r.x.toFixed(4), +r.y.toFixed(4), +r.w.toFixed(4), +r.h.toFixed(4), r.mode]));
+                return norm(redactCtx.rects) !== norm(p.redactions);
+            };
+            const safeClose = () => {
+                if (isDirty() && !confirm('框選的範圍還沒套用，關閉後就會消失。確定要關閉嗎？')) return;
+                close();
+            };
+
+            backdrop.querySelector('.modal-close').addEventListener('click', safeClose);
+            backdrop.querySelector('#redactCancel').addEventListener('click', safeClose);
+            backdrop.addEventListener('click', (e) => { if (e.target === backdrop) safeClose(); });
+
+            // 先擺一張「載入中」，實際頁面算好再換上
             canvas.width = 600;
             canvas.height = 400;
             const tmp = canvas.getContext('2d');
@@ -2782,7 +2965,7 @@
             let baseCanvas;
             try {
                 baseCanvas = await renderPdfPage(editorPdfjs, p.srcIndex + 1, {
-                    targetWidth: 1400,
+                    targetWidth: 1600,
                     extraRotation: p.rotation,
                 });
             } catch (err) {
@@ -2802,103 +2985,315 @@
                 canvas,
                 rects: p.redactions.map(r => ({ ...r })),
                 mode: 'black',
-                drawing: false,
-                startX: 0,
-                startY: 0,
+                drawMode: 'box',
+                sel: -1,          // 目前選取的框
+                zoom: 1,
+                panX: 0,
+                panY: 0,
+                action: null,     // 'draw' | 'move' | 'pan'
                 curr: null,
             };
+            const S = redactCtx;
+
+            /* ---- 縮放平移 ---- */
+
+            const applyTransform = () => {
+                canvas.style.width = (baseCanvas.width * S.zoom) + 'px';
+                canvas.style.height = (baseCanvas.height * S.zoom) + 'px';
+                canvas.style.left = S.panX + 'px';
+                canvas.style.top = S.panY + 'px';
+                zoomLabel.textContent = Math.round(S.zoom * 100) + '%';
+            };
+
+            const fitToViewport = () => {
+                const vw = viewport.clientWidth;
+                const vh = viewport.clientHeight;
+                S.zoom = Math.min(vw / baseCanvas.width, vh / baseCanvas.height);
+                S.panX = (vw - baseCanvas.width * S.zoom) / 2;
+                S.panY = (vh - baseCanvas.height * S.zoom) / 2;
+                applyTransform();
+            };
+
+            /* 以某個畫面座標為中心縮放：那個點底下的內容維持不動 */
+            const zoomAt = (clientX, clientY, factor) => {
+                const vr = viewport.getBoundingClientRect();
+                const vx = clientX - vr.left;
+                const vy = clientY - vr.top;
+                const next = Math.min(8, Math.max(0.05, S.zoom * factor));
+                const k = next / S.zoom;
+                S.panX = vx - (vx - S.panX) * k;
+                S.panY = vy - (vy - S.panY) * k;
+                S.zoom = next;
+                applyTransform();
+            };
+
+            const zoomCenter = (factor) => {
+                const vr = viewport.getBoundingClientRect();
+                zoomAt(vr.left + vr.width / 2, vr.top + vr.height / 2, factor);
+            };
+
+            /* ---- 畫面繪製 ---- */
 
             const repaint = () => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(baseCanvas, 0, 0);
-                applyRedactions(canvas, redactCtx.rects);
-                if (redactCtx.curr) {
-                    const r = redactCtx.curr;
+                applyRedactions(canvas, S.rects);
+
+                const lw = Math.max(2, baseCanvas.width / 400) / S.zoom;
+
+                // 選取中的框畫個外框，讓人知道現在動到的是哪一個
+                if (S.sel >= 0 && S.rects[S.sel]) {
+                    const r = S.rects[S.sel];
                     ctx.save();
                     ctx.strokeStyle = '#4facfe';
-                    ctx.lineWidth = Math.max(2, canvas.width / 400);
-                    ctx.setLineDash([8, 6]);
+                    ctx.lineWidth = lw * 1.5;
+                    ctx.setLineDash([]);
                     ctx.strokeRect(r.x * canvas.width, r.y * canvas.height,
                                    r.w * canvas.width, r.h * canvas.height);
                     ctx.restore();
                 }
-                countEl.textContent = redactCtx.rects.length
-                    ? `已框選 ${redactCtx.rects.length} 個範圍`
+
+                if (S.curr) {
+                    const r = S.curr;
+                    ctx.save();
+                    ctx.strokeStyle = '#4facfe';
+                    ctx.lineWidth = lw;
+                    ctx.setLineDash([8 / S.zoom, 6 / S.zoom]);
+                    ctx.strokeRect(r.x * canvas.width, r.y * canvas.height,
+                                   r.w * canvas.width, r.h * canvas.height);
+                    ctx.restore();
+                }
+
+                countEl.textContent = S.rects.length
+                    ? `已框選 ${S.rects.length} 個範圍` +
+                      (S.sel >= 0 ? `（選取第 ${S.sel + 1} 個）` : '（點一下框可以選取）')
                     : '尚未框選任何範圍';
+                delSelBtn.disabled = (S.sel < 0);
             };
-            redactCtx.repaint = repaint;
+            S.repaint = repaint;
+
+            fitToViewport();
             repaint();
 
-            /* 畫布會被 CSS 縮小顯示，滑鼠座標要換算回畫布的實際像素，
-               再存成 0~1 的相對值，這樣不管之後用多大的解析度輸出都對得上。 */
-            const toNorm = (ev) => {
+            /* ---- 指標事件 ---- */
+
+            /* 畫布被縮放平移後，滑鼠座標一律用 getBoundingClientRect 換算回
+               0~1 的相對值，所以不管縮到多大多小，框選的位置都是準的。 */
+            const toNorm = (clientX, clientY) => {
                 const rect = canvas.getBoundingClientRect();
                 return {
-                    x: Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width)),
-                    y: Math.min(1, Math.max(0, (ev.clientY - rect.top) / rect.height)),
+                    x: Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)),
+                    y: Math.min(1, Math.max(0, (clientY - rect.top) / rect.height)),
                 };
             };
 
-            canvas.addEventListener('pointerdown', (ev) => {
+            const hitTest = (pt) => {
+                for (let i = S.rects.length - 1; i >= 0; i--) {
+                    const r = S.rects[i];
+                    if (pt.x >= r.x && pt.x <= r.x + r.w &&
+                        pt.y >= r.y && pt.y <= r.y + r.h) return i;
+                }
+                return -1;
+            };
+
+            const pointers = new Map();
+            let pinch = null;
+
+            viewport.addEventListener('pointerdown', (ev) => {
                 ev.preventDefault();
-                canvas.setPointerCapture(ev.pointerId);
-                const pt = toNorm(ev);
-                redactCtx.drawing = true;
-                redactCtx.startX = pt.x;
-                redactCtx.startY = pt.y;
-                redactCtx.curr = { x: pt.x, y: pt.y, w: 0, h: 0, mode: redactCtx.mode };
-            });
+                viewport.setPointerCapture(ev.pointerId);
+                pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
 
-            canvas.addEventListener('pointermove', (ev) => {
-                if (!redactCtx || !redactCtx.drawing) return;
-                const pt = toNorm(ev);
-                redactCtx.curr = {
-                    x: Math.min(redactCtx.startX, pt.x),
-                    y: Math.min(redactCtx.startY, pt.y),
-                    w: Math.abs(pt.x - redactCtx.startX),
-                    h: Math.abs(pt.y - redactCtx.startY),
-                    mode: redactCtx.mode,
-                };
+                if (pointers.size === 2) {
+                    // 兩指：改成縮放＋平移，把進行中的框選取消掉
+                    const [a, b] = [...pointers.values()];
+                    pinch = {
+                        dist: Math.hypot(a.x - b.x, a.y - b.y),
+                        cx: (a.x + b.x) / 2,
+                        cy: (a.y + b.y) / 2,
+                    };
+                    S.action = null;
+                    S.curr = null;
+                    repaint();
+                    return;
+                }
+                if (pointers.size > 2) return;
+
+                const pt = toNorm(ev.clientX, ev.clientY);
+
+                if (S.drawMode === 'pan') {
+                    S.action = 'pan';
+                    S.dragFrom = { x: ev.clientX, y: ev.clientY, panX: S.panX, panY: S.panY };
+                    return;
+                }
+
+                const hit = hitTest(pt);
+                if (hit >= 0) {
+                    // 點到既有的框：選起來，接下來的拖曳是移動它
+                    S.sel = hit;
+                    S.action = 'move';
+                    S.moveFrom = { x: pt.x, y: pt.y, rect: { ...S.rects[hit] } };
+                    repaint();
+                    return;
+                }
+
+                S.sel = -1;
+                S.action = 'draw';
+                S.startX = pt.x;
+                S.startY = pt.y;
+                S.curr = { x: pt.x, y: pt.y, w: 0, h: 0, mode: S.mode };
                 repaint();
             });
 
-            const finish = () => {
-                if (!redactCtx || !redactCtx.drawing) return;
-                redactCtx.drawing = false;
-                const r = redactCtx.curr;
-                redactCtx.curr = null;
-                // 太小的框當成誤觸
-                if (r && r.w > 0.004 && r.h > 0.004) redactCtx.rects.push(r);
+            viewport.addEventListener('pointermove', (ev) => {
+                if (!redactCtx) return;
+                if (!pointers.has(ev.pointerId)) return;
+                pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+                if (pointers.size === 2 && pinch) {
+                    const [a, b] = [...pointers.values()];
+                    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+                    const cx = (a.x + b.x) / 2;
+                    const cy = (a.y + b.y) / 2;
+                    if (pinch.dist > 0) zoomAt(cx, cy, dist / pinch.dist);
+                    S.panX += cx - pinch.cx;
+                    S.panY += cy - pinch.cy;
+                    applyTransform();
+                    pinch = { dist, cx, cy };
+                    return;
+                }
+
+                if (S.action === 'pan') {
+                    S.panX = S.dragFrom.panX + (ev.clientX - S.dragFrom.x);
+                    S.panY = S.dragFrom.panY + (ev.clientY - S.dragFrom.y);
+                    applyTransform();
+                    return;
+                }
+
+                const pt = toNorm(ev.clientX, ev.clientY);
+
+                if (S.action === 'move' && S.sel >= 0) {
+                    const f = S.moveFrom;
+                    const nx = f.rect.x + (pt.x - f.x);
+                    const ny = f.rect.y + (pt.y - f.y);
+                    S.rects[S.sel] = {
+                        ...f.rect,
+                        x: Math.min(1 - f.rect.w, Math.max(0, nx)),
+                        y: Math.min(1 - f.rect.h, Math.max(0, ny)),
+                    };
+                    repaint();
+                    return;
+                }
+
+                if (S.action === 'draw') {
+                    S.curr = {
+                        x: Math.min(S.startX, pt.x),
+                        y: Math.min(S.startY, pt.y),
+                        w: Math.abs(pt.x - S.startX),
+                        h: Math.abs(pt.y - S.startY),
+                        mode: S.mode,
+                    };
+                    repaint();
+                }
+            });
+
+            const endPointer = (ev) => {
+                if (!redactCtx) return;
+                pointers.delete(ev.pointerId);
+                if (pointers.size < 2) pinch = null;
+
+                if (S.action === 'draw') {
+                    const r = S.curr;
+                    S.curr = null;
+                    // 太小的框當成誤觸（點一下想取消選取的情況）
+                    if (r && r.w > 0.004 && r.h > 0.004) {
+                        S.rects.push(r);
+                        S.sel = S.rects.length - 1;
+                    }
+                }
+                S.action = null;
                 repaint();
             };
-            canvas.addEventListener('pointerup', finish);
-            canvas.addEventListener('pointercancel', finish);
+            viewport.addEventListener('pointerup', endPointer);
+            viewport.addEventListener('pointercancel', endPointer);
 
-            backdrop.querySelectorAll('.mode-toggle button').forEach(btn => {
+            viewport.addEventListener('wheel', (ev) => {
+                ev.preventDefault();
+                zoomAt(ev.clientX, ev.clientY, ev.deltaY < 0 ? 1.15 : 1 / 1.15);
+            }, { passive: false });
+
+            /* ---- 工具列 ---- */
+
+            backdrop.querySelectorAll('#redactFillMode button').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    redactCtx.mode = btn.dataset.mode;
-                    backdrop.querySelectorAll('.mode-toggle button').forEach(b => {
+                    S.mode = btn.dataset.mode;
+                    backdrop.querySelectorAll('#redactFillMode button').forEach(b => {
                         b.classList.toggle('active', b === btn);
                     });
+                    // 有選取的框就順便改掉它的樣式
+                    if (S.sel >= 0 && S.rects[S.sel]) {
+                        S.rects[S.sel] = { ...S.rects[S.sel], mode: S.mode };
+                        repaint();
+                    }
                 });
             });
 
+            backdrop.querySelectorAll('#redactDrawMode button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    S.drawMode = btn.dataset.draw;
+                    backdrop.querySelectorAll('#redactDrawMode button').forEach(b => {
+                        b.classList.toggle('active', b === btn);
+                    });
+                    viewport.classList.toggle('panning', S.drawMode === 'pan');
+                });
+            });
+
+            backdrop.querySelectorAll('[data-zoom]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const k = btn.dataset.zoom;
+                    if (k === 'in') zoomCenter(1.25);
+                    else if (k === 'out') zoomCenter(1 / 1.25);
+                    else fitToViewport();
+                });
+            });
+
+            const deleteSelected = () => {
+                if (S.sel < 0) return;
+                S.rects.splice(S.sel, 1);
+                S.sel = -1;
+                repaint();
+            };
+            delSelBtn.addEventListener('click', deleteSelected);
+
             backdrop.querySelector('#redactUndo').addEventListener('click', () => {
-                redactCtx.rects.pop();
+                S.rects.pop();
+                S.sel = -1;
                 repaint();
             });
             backdrop.querySelector('#redactClear').addEventListener('click', () => {
-                redactCtx.rects = [];
+                S.rects = [];
+                S.sel = -1;
                 repaint();
             });
             backdrop.querySelector('#redactApply').addEventListener('click', () => {
-                p.redactions = redactCtx.rects.map(r => ({ ...r }));
+                pushUndo();
+                p.redactions = S.rects.map(r => ({ ...r }));
                 close();
                 renderEditorGrid();
                 showStatus(p.redactions.length
                     ? `第 ${idx + 1} 頁設定了 ${p.redactions.length} 個遮蔽範圍`
                     : `第 ${idx + 1} 頁已清除遮蔽`, 'success', 'editor');
             });
+
+            function onKey(ev) {
+                if (!redactCtx) return;
+                if (ev.key === 'Escape') { safeClose(); return; }
+                if ((ev.key === 'Delete' || ev.key === 'Backspace') && S.sel >= 0) {
+                    ev.preventDefault();
+                    deleteSelected();
+                }
+            }
+            document.addEventListener('keydown', onKey);
         }
 
         /* 把遮蔽範圍實際塗到 canvas 上（座標是 0~1 的相對值） */
@@ -2988,7 +3383,8 @@
             });
 
             const compress = !!opts.compress;
-            const dpi = compress ? Number(opts.dpi || 150) : 200;
+            // 壓縮走壓縮設定的 DPI；只是為了遮蔽才轉影像的頁面走遮蔽解析度設定
+            const dpi = compress ? Number(opts.dpi || 150) : Number(opts.redactDpi || 200);
             const quality = compress ? Number(opts.quality || 0.7) : 0.92;
 
             for (let i = 0; i < pages.length; i++) {
@@ -3017,6 +3413,9 @@
                 }
 
                 if (opts.onProgress) opts.onProgress(((i + 1) / pages.length) * 92);
+                if (opts.onNote && pages.length >= 10) {
+                    opts.onNote(`第 ${i + 1} / ${pages.length} 頁（${Math.round(((i + 1) / pages.length) * 100)}%）`);
+                }
             }
 
             if (opts.pageNumber) {
@@ -3043,8 +3442,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.1 by Tso KY');
-            out.setProducer('PDF工具箱 v2.1 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.2 by Tso KY');
+            out.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -3071,10 +3470,12 @@
                     compress,
                     dpi: document.getElementById('optCompressDpi').value,
                     quality: document.getElementById('optCompressQuality').value,
+                    redactDpi: document.getElementById('optRedactDpi').value,
                     pageNumber: document.getElementById('optPageNumber').checked,
                     pageNumberPos: document.getElementById('optPageNumberPos').value,
                     pageNumberFmt: document.getElementById('optPageNumberFmt').value,
                     onProgress: (pct) => updateProgress(pct, 'editor'),
+                    onNote: (t) => setProgressNote('editor', t),
                 });
 
                 updateProgress(100, 'editor');
@@ -3104,6 +3505,7 @@
 
         let imgItems = [];  // { id, file, name, url }
         let imgIdSeq = 0;
+        let imgDragId = null;
 
         function setupImg2PdfListeners() {
             const uploadArea = document.getElementById('imgUploadArea');
@@ -3130,7 +3532,9 @@
                 if (e.target.tagName !== 'BUTTON') fileInput.click();
             });
 
-            document.getElementById('imgGrid').addEventListener('click', (e) => {
+            const grid = document.getElementById('imgGrid');
+
+            grid.addEventListener('click', (e) => {
                 const btn = e.target.closest('.img-remove');
                 if (!btn) return;
                 const id = Number(btn.dataset.id);
@@ -3138,6 +3542,61 @@
                 if (item) URL.revokeObjectURL(item.url);
                 imgItems = imgItems.filter(x => x.id !== id);
                 renderImgGrid();
+            });
+
+            /* 拖曳調整順序（就是 PDF 的頁面順序）。
+               與編輯分頁同樣用委派，拖曳過程只加 class、不重建 DOM。 */
+            grid.addEventListener('dragstart', (e) => {
+                const card = e.target.closest('.img-card');
+                if (!card) return;
+                imgDragId = Number(card.dataset.id);
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/plain', card.dataset.id); } catch (_) {}
+            });
+
+            grid.addEventListener('dragend', () => {
+                imgDragId = null;
+                grid.querySelectorAll('.img-card').forEach(c => {
+                    c.classList.remove('dragging', 'drop-before', 'drop-after');
+                });
+            });
+
+            grid.addEventListener('dragover', (e) => {
+                if (imgDragId === null) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const card = e.target.closest('.img-card');
+                grid.querySelectorAll('.img-card').forEach(c => {
+                    c.classList.remove('drop-before', 'drop-after');
+                });
+                if (!card || Number(card.dataset.id) === imgDragId) return;
+                const rect = card.getBoundingClientRect();
+                const before = (e.clientX - rect.left) < rect.width / 2;
+                card.classList.add(before ? 'drop-before' : 'drop-after');
+            });
+
+            grid.addEventListener('drop', (e) => {
+                if (imgDragId === null) return;
+                e.preventDefault();
+                const card = e.target.closest('.img-card');
+                if (!card) return;
+                const targetId = Number(card.dataset.id);
+                if (targetId === imgDragId) return;
+
+                const rect = card.getBoundingClientRect();
+                const before = (e.clientX - rect.left) < rect.width / 2;
+
+                const from = imgItems.findIndex(x => x.id === imgDragId);
+                if (from < 0) return;
+                const [moved] = imgItems.splice(from, 1);
+                let to = imgItems.findIndex(x => x.id === targetId);
+                if (to < 0) to = imgItems.length;
+                imgItems.splice(before ? to : to + 1, 0, moved);
+
+                imgDragId = null;
+                renderImgGrid();
+                showStatus('圖片順序已更新', 'success', 'img2pdf');
             });
         }
 
@@ -3165,9 +3624,11 @@
             imgItems.forEach((item, i) => {
                 const card = document.createElement('div');
                 card.className = 'img-card';
+                card.draggable = true;
+                card.dataset.id = String(item.id);
                 card.innerHTML = `
                     <button class="img-remove" data-id="${item.id}" title="移除">✕</button>
-                    <img src="${item.url}" alt="">
+                    <img src="${item.url}" alt="" draggable="false">
                     <div class="img-name">${i + 1}. ${escapeHtmlText(item.name)}</div>
                 `;
                 grid.appendChild(card);
@@ -3255,6 +3716,10 @@
                     });
 
                     updateProgress(((i + 1) / imgItems.length) * 95, 'img2pdf');
+                    if (imgItems.length >= 10) {
+                        setProgressNote('img2pdf',
+                            `第 ${i + 1} / ${imgItems.length} 張（${Math.round(((i + 1) / imgItems.length) * 100)}%）`);
+                    }
                 }
 
                 if (out.getPageCount() === 0) {
@@ -3264,8 +3729,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.1 by Tso KY');
-                out.setProducer('PDF工具箱 v2.1 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.2 by Tso KY');
+                out.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -3384,13 +3849,24 @@
                 const base = p2iFile.name.replace(/\.pdf$/i, '');
                 const files = {};
 
+                // 頁數多或解析度高就會跑一陣子，要讓人看得到進度
+                const heavy = pageNos.length >= 10 || dpi >= 200;
+                let totalBytes = 0;
+
                 for (let i = 0; i < pageNos.length; i++) {
                     const n = pageNos[i];
                     btn.textContent = `處理中... (${i + 1}/${pageNos.length})`;
                     const canvas = await renderPdfPage(p2iPdfjs, n, { dpi });
                     const bytes = await canvasToBytes(canvas, mime, 0.9);
                     files[`${base}_p${String(n).padStart(3, '0')}.${ext}`] = bytes;
+                    totalBytes += bytes.length;
+
+                    const pct = Math.round(((i + 1) / pageNos.length) * 100);
                     updateProgress(((i + 1) / pageNos.length) * 90, 'pdf2img');
+                    if (heavy) {
+                        setProgressNote('pdf2img',
+                            `第 ${i + 1} / ${pageNos.length} 張（${pct}%）· 已產生 ${formatFileSize(totalBytes)}`);
+                    }
                 }
 
                 if (pageNos.length === 1) {
@@ -3398,6 +3874,7 @@
                     downloadBytes(files[only], only, mime);
                 } else {
                     btn.textContent = '打包中...';
+                    setProgressNote('pdf2img', `打包 ${pageNos.length} 張圖片中…（約 ${formatFileSize(totalBytes)}）`);
                     const lib = await loadFflate();
                     // 圖片本身已經壓縮過了，zip 再壓一次沒意義，用 store 最快
                     const zipped = lib.zipSync(files, { level: 0 });
@@ -3517,6 +3994,16 @@
             if (progressBar) {
                 progressBar.style.display = 'none';
             }
+            setProgressNote(type, '');
+        }
+
+        /* 逐步進度說明。跑很久的工作（大量頁面、高解析度）光看進度條不夠，
+           要看得到「第幾張／百分之幾／已經產生多少容量」才知道還要等多久。 */
+        function setProgressNote(type, text) {
+            const el = document.getElementById(`${type}ProgressNote`);
+            if (!el) return;
+            el.textContent = text;
+            el.hidden = !text;
         }
 
         function updateProgress(percent, type) {
@@ -3566,7 +4053,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.1 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.2 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
