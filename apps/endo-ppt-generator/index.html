@@ -75,6 +75,23 @@
   .warn{color:#ffcf6b;font-size:.82rem}
   .empty{color:var(--muted);font-size:.85rem}
 
+  /* 編號對照表 */
+  .tabwrap{overflow-x:auto;margin:2px 0 14px}
+  .numtab{border-collapse:collapse;font-size:.88rem;min-width:100%}
+  .numtab th,.numtab td{border:1px solid var(--line);padding:7px 12px;text-align:left;vertical-align:middle}
+  .numtab th{background:rgba(43,86,224,.18);color:#cfe0ff;font-weight:700;white-space:nowrap}
+  .numtab td:first-child{white-space:nowrap}
+  .numtab td:last-child{overflow-wrap:anywhere}   /* 長英文名可斷行，手機才不會被切掉 */
+  @media(max-width:520px){
+    .numtab{font-size:.82rem}
+    .numtab th,.numtab td{padding:6px 8px}
+  }
+  .numtab code{background:rgba(255,255,255,.1);border:1px solid var(--line);border-radius:5px;
+    padding:1px 7px;color:#ffe08a;font-size:.86rem}
+  .notebox{border-left:3px solid var(--gold);background:rgba(244,197,24,.07);
+    border-radius:0 9px 9px 0;padding:10px 14px;margin-bottom:14px}
+  .notebox code{background:rgba(255,255,255,.1);border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;color:#ffe08a}
   .btn{border:0;border-radius:11px;padding:12px 22px;font-size:.96rem;font-weight:700;cursor:pointer}
   .btn.primary{background:linear-gradient(135deg,var(--blue2),#5b8bff);color:#fff;box-shadow:0 8px 22px rgba(42,86,224,.5)}
   .btn.primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
@@ -149,9 +166,31 @@
     <div class="panel">
       <h3>② 上傳照片</h3>
       <div class="hint">
-        一個資料夾＝一個病例，資料夾內用編號命名影像（可 .jpg／.png／.tiff）：<br>
-        <b>1x</b>＝Initial · <b>2x</b>＝Working Length · <b>3x</b>＝Clinical/Microscopic · <b>4x</b>＝Main Cone · <b>5x</b>＝RCF · <b>6x</b>＝Follow；
-        同階段多張就用 10、11、12…依序。<b>90</b>＝術前(左)、<b>91</b>＝術後(右)。7x／8x 目前保留不使用。<br>
+        <b>一個資料夾 ＝ 一個病例。</b>資料夾內的影像用數字命名（.jpg／.png／.tiff 皆可）：<br>
+        <b>開頭第一個數字 ＝ 拍攝階段</b>，<b>後面的數字 ＝ 同階段的排序</b>（數字小的排前面）。
+      </div>
+      <div class="tabwrap">
+        <table class="numtab">
+          <thead><tr><th>檔名</th><th>會放到哪一頁</th></tr></thead>
+          <tbody>
+            <tr><td><code>10</code>、<code>11</code>、<code>12</code>…</td><td>初診根尖X光片（Initial）</td></tr>
+            <tr><td><code>20</code>、<code>21</code>…</td><td>量測工作長度（Working Length）</td></tr>
+            <tr><td><code>30</code>、<code>31</code>…</td><td>臨床／顯微鏡影像（Clinical/Microscopic）</td></tr>
+            <tr><td><code>40</code>、<code>41</code>…</td><td>主針試戴（Main Cone）</td></tr>
+            <tr><td><code>50</code>、<code>51</code>…</td><td>根管封填（RCF）</td></tr>
+            <tr><td><code>60</code>、<code>61</code>…</td><td>術後追蹤（Follow）</td></tr>
+            <tr><td><code>90</code></td><td>最後比較頁 · <b>左邊</b>（術前）</td></tr>
+            <tr><td><code>91</code></td><td>最後比較頁 · <b>右邊</b>（術後）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="hint notebox">
+        ⚠️ <b>請至少用兩位數</b>：單獨的 <code>1</code>、<code>2</code>、<code>3</code> 會被當成<b>不同階段</b>，
+        而不是同一階段的第 1、2、3 張。<br>
+        同一階段超過 10 張時，可以接著用 <code>100</code>、<code>101</code>、<code>102</code>…（一樣照數字大小排序）。
+        <code>70</code>～<code>89</code> 目前保留未使用。
+      </div>
+      <div class="hint">
         影像攝取時間會<b>自動帶入</b>（讀照片 EXIF／X 光 TIFF 日期，沒有就退用檔案修改日期）；讀不到的會標「無日期」，可在 PowerPoint 內手動補。
       </div>
       <div class="seg" id="modeSeg" style="margin-bottom:14px">
@@ -193,7 +232,7 @@
   </section>
 
   <div class="foot">
-    牙髓病科專科 PPT 製作器<span class="ver">v1.1</span><br>
+    牙髓病科專科 PPT 製作器<span class="ver">v1.2</span><br>
     範本版面與字型沿用中華民國牙髓病學會範本 · NCKUH ENDO
   </div>
 </div>
@@ -202,7 +241,7 @@
 <script src="vendor/fflate.min.js"></script>
 <script>
 /* =======================================================================
-   牙髓病科專科 PPT 製作器 v1.1
+   牙髓病科專科 PPT 製作器 v1.2
    作法：把學會範本 .pptx 當底稿，複製對應投影片、清除白線/箭頭/標註，
    把使用者照片依編號套進影像版面配置區。全程瀏覽器內處理。
    ======================================================================= */
@@ -243,7 +282,7 @@ var CMP_DATE_RIGHT='Text Box 12';                // 比較頁：術後(右)日�
 
 /* ---------- 階段定義與中英標題 ---------- */
 var STAGES=['initial','wl','clinical','maincone','rcf','follow'];
-var STAGE_LABEL={initial:'Initial (1x)',wl:'Working Length (2x)',clinical:'Clinical/Microscopic (3x)',maincone:'Main Cone (4x)',rcf:'RCF (5x)',follow:'Follow (6x)'};
+var STAGE_LABEL={initial:'初診 Initial（1 開頭）',wl:'工作長度 Working Length（2 開頭）',clinical:'臨床／顯微鏡 Clinical（3 開頭）',maincone:'主針試戴 Main Cone（4 開頭）',rcf:'根管封填 RCF（5 開頭）',follow:'術後追蹤 Follow（6 開頭）'};
 var TITLES={
   en:{initial:'Initial Radiograph',wl:'Working Length',clinical:'Clinical/Microscopic Photo',maincone:'Main Cone',rcf:'RCF',follow:'Follow-up'},
   zh:{initial:'初診根尖X光片',wl:'量測工作長度',clinical:'臨床或顯微鏡影像',maincone:'主針試戴',rcf:'根管封填',follow:'術後追蹤'}
@@ -747,7 +786,7 @@ function renderReview(cases){
         c[st].map(function(im){return '<span class="chip">'+esc(im.name)+dateTag(im)+'</span>';}).join('')+'</div></div>';
     });
     if(c.cmpLeft||c.cmpRight){
-      rows+='<div class="stg"><div class="lab">術前/術後比較 (90/91)</div><div class="files">'+
+      rows+='<div class="stg"><div class="lab">術前／術後比較（90、91）</div><div class="files">'+
         (c.cmpLeft?'<span class="chip L">術前 '+esc(c.cmpLeft.name)+dateTag(c.cmpLeft)+'</span>':'')+
         (c.cmpRight?'<span class="chip R">術後 '+esc(c.cmpRight.name)+dateTag(c.cmpRight)+'</span>':'')+'</div></div>';
     }
