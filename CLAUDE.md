@@ -16,7 +16,7 @@ assets/         LOGO（TS 標誌）、favicon、PWA 圖示
 manifest.webmanifest / sw.js   首頁 PWA（可加入主畫面、離線開得起來）
 apps/<slug>/    各個 App，一個資料夾一個 App，入口一律 index.html
   vendor/       該 App 用到的第三方函式庫（本地檔案，不用 CDN）
-tests/          案例標記工具端到端測試（`./tests/run.sh` 一次跑完）
+tests/          端到端測試（`./tests/run.sh` 一次跑完；首頁徽章在 home-badges）
 docs/ADDING_APPS.md           App 上架規則（檢查清單版）
 docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/stats-backend.gs
 .github/workflows/pages.yml   合併到 main 自動部署 GitHub Pages
@@ -25,6 +25,10 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
 - 首頁卡片由 `app.js` 最上方的 `APPS` 陣列產生。佔位卡片是 `{ ...wipSlot }`
   （🚧 施工中）；真正的 App 卡片格式：
   `{ name:'工具名', desc:'一句話說明', icon:'📷', url:'apps/<slug>/index.html', added:'YYYY-MM-DD', updated:'YYYY-MM-DD' }`
+  （**App 不一定要住在 `apps/` 底下**：`url` 可以是完整外部網址，此時必須另外
+  加 `slug:'代號'`——`slugOf()` 先看 `slug` 欄位、沒有才從路徑推導；漏填會讓
+  瀏覽次數不計、🆕 判斷不到。外部 App 需與本站同 origin 才共用得到登入狀態。
+  首頁徽章與代號的測試在 `tests/home-badges.test.js`）
   （`added` 是**首次**上架日，最新的自動掛 🆕〔60 天內〕，**改版時不要動它**；
   `updated` 是最後改版日，改版時填今天，自動掛 🔄〔14 天內〕，🆕 優先於 🔄；
   瀏覽次數最高的自動掛 🔥）

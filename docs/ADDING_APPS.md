@@ -63,7 +63,13 @@ apps/
 ```
 
 - `icon`：一個 emoji。
-- `url`：一律用相對路徑，直接指到 `apps/<代號>/index.html`。不要寫絕對網址。
+- `url`：住在這個 repo 的 App 用相對路徑 `apps/<代號>/index.html`。
+- **外部 App（不住在 `apps/` 底下）**：`url` 填完整網址，並**一定要加 `slug` 欄位**
+  指定代號，例如
+  `{ name:'DentFigure', url:'https://chobittso-ai.github.io/dentfigure/', slug:'dentfigure', ... }`。
+  沒填 `slug` 的話代號是空的，**瀏覽次數不會計、🆕 也判斷不到**。
+  另外外部 App 必須與 App 中心同一個 origin（都在 `chobittso-ai.github.io`），
+  登入狀態存在 `localStorage` 才共用得到。
 - 佔位格不夠用就直接在陣列尾端加新物件；佔位格太多可以刪。
 - 換掉佔位格（沒有 `wip` 旗標）後，卡片自動出現「開啟／分享」按鈕。
 - `added`：**首次**上架日期（第一次進 App 中心的那天）。最新上架的 App 會自動掛
