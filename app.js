@@ -16,7 +16,10 @@ const VISITOR_KEY = 'nckuh_endo_vid';
    name  : App 名稱
    desc  : 一句話說明
    icon  : emoji 圖示
-   url   : 點「開啟」後前往的網址（先用 # 佔位）
+   url   : 點「開啟」後前往的網址（先用 # 佔位）。可以是 apps/<slug>/index.html，
+           也可以是完整外部網址（同一個 origin 才共用得到登入狀態）
+   slug  : App 代號，統計用。放在 apps/ 底下可不填（會從 url 推導）；
+           **外部網址的 App 一定要填**，否則瀏覽次數不會計、🆕 也判斷不到
    added : 首次上架日期 YYYY-MM-DD——**改版時不要動它**（最新上架的掛 🆕）
    updated : 最後改版日期 YYYY-MM-DD——App 出新版時改成當天（近期改版的掛 🔄）
    group : 'mobile' = 手機可加入主畫面（該 App 本身是 PWA）；'desktop' = 電腦操作
@@ -283,8 +286,10 @@ function statsCall(params) {
   });
 }
 
-/* 由 App 的 url（apps/<slug>/index.html）取出代號 */
+/* App 代號：優先用卡片上顯式的 slug 欄位（放在 apps/ 外面的 App 必填），
+   沒填才從 url（apps/<slug>/index.html）推導 */
 function slugOf(app) {
+  if (app.slug) return app.slug;
   const m = /^apps\/([^/]+)\//.exec(app.url || '');
   return m ? m[1] : '';
 }
