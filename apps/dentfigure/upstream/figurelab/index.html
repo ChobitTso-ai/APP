@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FigureLab — Publication figures, assembled in the browser</title>
+  <meta name="description" content="FigureLab is a single HTML file for assembling publication-quality microscopy figures. No installation, no server, and your images never leave your machine.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:        #15130f;
+      --ink-soft:   #44403a;
+      --ink-muted:  #7a7570;
+      --rule:       #e5e0d8;
+      --rule-soft:  #f0ebe4;
+      --bg:         #faf8f5;
+      --bg-warm:    #f3ede5;
+      --bg-dark:    #181510;
+      --accent:     #1f5c8b;
+      --accent-h:   #164878;
+      --accent-lt:  #e8f0f8;
+      /* Darkened from #b07c30, which was 3.43:1 on --bg and 3.13:1 on --bg-warm —
+         below WCAG AA's 4.5:1 for normal text, and it is used for body-sized text
+         (section labels, the changelog link, the bug-report card). Now 5.30:1 and
+         4.83:1. Decorative uses (the hero dot, the blockquote rule) only need 3:1. */
+      --gold:       #8a5f1f;
+      --gold-lt:    #fdf3e3;
+      --green:      #2a7a54;
+      --green-lt:   #e6f4ee;
+      --serif:      'Lora', Georgia, serif;
+      --sans:       'Inter', system-ui, sans-serif;
+      --mono:       'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NAV ────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(250,248,245,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--rule);
+      padding: 0 24px;
+    }
+    .nav-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .nav-logo .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-link {
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+      padding: 6px 12px;
+      border-radius: 4px;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-link:hover { background: var(--bg-warm); color: var(--ink); }
+    .nav-cta {
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+      padding: 7px 16px;
+      border-radius: 4px;
+      transition: background 0.12s;
+    }
+    .nav-cta:hover { background: var(--accent-h); }
+
+    /* ── HERO ───────────────────────────────────────────── */
+    .hero {
+      background: var(--bg-dark);
+      color: #fff;
+      padding: 96px 24px 88px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 30% 60%, rgba(31,92,139,0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 75% 35%, rgba(176,124,48,0.15) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      color: #c8c0b0;
+      margin-bottom: 28px;
+    }
+    .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 600;
+      line-height: 1.15;
+      max-width: 680px;
+      margin: 0 auto 20px;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 em { font-style: italic; color: #c8b890; }
+    .hero-sub {
+      font-size: clamp(0.95rem, 2vw, 1.1rem);
+      color: #a8a098;
+      max-width: 500px;
+      margin: 0 auto 40px;
+      line-height: 1.65;
+    }
+    .hero-btns {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 13px 26px;
+      border-radius: 5px;
+      transition: opacity 0.12s, transform 0.1s;
+    }
+    .btn-hero:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-hero-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: transparent;
+      color: #c8c0b0;
+      font-weight: 500;
+      font-size: 0.88rem;
+      padding: 12px 22px;
+      border-radius: 5px;
+      border: 1px solid rgba(255,255,255,0.15);
+      transition: border-color 0.12s, color 0.12s;
+    }
+    .btn-hero-ghost:hover { border-color: rgba(255,255,255,0.35); color: #fff; }
+    .hero-facts {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .hero-fact {
+      font-size: 0.78rem;
+      color: #706860;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hero-fact svg { opacity: 0.7; }
+
+    /* ── SECTION WRAPPER ────────────────────────────────── */
+    .section { padding: 88px 24px; }
+    .section-inner { max-width: 1080px; margin: 0 auto; }
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+    .section-body {
+      font-size: 1rem;
+      color: var(--ink-soft);
+      line-height: 1.75;
+      max-width: 560px;
+    }
+
+    /* ── FEATURES ───────────────────────────────────────── */
+    .features-section { background: var(--bg); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+    .features-header { text-align: center; margin-bottom: 56px; }
+    .features-header .section-body { margin: 0 auto; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 2px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .feature-card {
+      background: var(--bg);
+      padding: 28px 28px 30px;
+      transition: background 0.12s;
+    }
+    .feature-card:hover { background: var(--bg-warm); }
+    .feature-icon {
+      font-size: 1.4rem;
+      margin-bottom: 14px;
+      display: block;
+    }
+    .feature-card h3 {
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 0.83rem;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+
+    /* ── QUICK FACTS STRIP ──────────────────────────────── */
+    .facts-strip {
+      background: var(--accent);
+      padding: 0 24px;
+    }
+    .facts-strip-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0;
+    }
+    .fact-item {
+      padding: 28px 40px;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.12);
+      flex: 1;
+      min-width: 180px;
+    }
+    .fact-item:last-child { border-right: none; }
+    .fact-num {
+      font-family: var(--mono);
+      font-size: 1.6rem;
+      font-weight: 500;
+      color: #fff;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .fact-desc {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.02em;
+    }
+
+    /* ── STORY (BLOG POST) ──────────────────────────────── */
+    .story-section { background: var(--bg-warm); border-top: 1px solid var(--rule); }
+    .story-layout {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 56px;
+      align-items: start;
+    }
+    .story-nav {
+      position: sticky;
+      top: 76px;
+    }
+    .story-nav-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      margin-bottom: 14px;
+    }
+    .story-nav a {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--ink-muted);
+      padding: 5px 0;
+      border-left: 2px solid transparent;
+      padding-left: 10px;
+      transition: color 0.12s, border-color 0.12s;
+      line-height: 1.4;
+      margin-bottom: 2px;
+    }
+    .story-nav a:hover { color: var(--ink); border-color: var(--accent); }
+    .story-body { max-width: 640px; }
+    .story-body h2 {
+      font-family: var(--serif);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 2.6em 0 0.8em;
+      scroll-margin-top: 76px;
+    }
+    .story-body h2:first-child { margin-top: 0; }
+    .story-body p {
+      font-family: var(--serif);
+      font-size: 1rem;
+      color: var(--ink-soft);
+      line-height: 1.8;
+      margin-bottom: 1.25em;
+    }
+    .story-body blockquote {
+      border-left: 3px solid var(--gold);
+      padding: 6px 0 6px 22px;
+      margin: 1.8em 0;
+    }
+    .story-body blockquote p {
+      font-style: italic;
+      color: var(--ink);
+      font-size: 1.05rem;
+      margin: 0;
+    }
+    .story-body strong { color: var(--ink); font-weight: 600; }
+
+    /* ── HOW TO USE ─────────────────────────────────────── */
+    .how-section { border-top: 1px solid var(--rule); }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 32px;
+      margin-top: 48px;
+    }
+    .step { display: flex; flex-direction: column; gap: 12px; }
+    .step-num {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+    .step h3 {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .step p {
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+    .step code {
+      font-family: var(--mono);
+      font-size: 0.78em;
+      background: var(--bg-warm);
+      border: 1px solid var(--rule);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    /* ── FINAL CTA ──────────────────────────────────────── */
+    .cta-section {
+      background: var(--bg-dark);
+      padding: 96px 24px;
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-family: var(--serif);
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      color: #fff;
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+    .cta-section p {
+      color: #a8a098;
+      font-size: 0.95rem;
+      margin-bottom: 36px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.65;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    footer {
+      background: var(--bg-dark);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 28px 24px;
+    }
+    .footer-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    footer p {
+      font-size: 0.75rem;
+      color: #504840;
+    }
+    footer a { color: #706860; text-decoration: underline; text-underline-offset: 2px; }
+    footer a:hover { color: #a09080; }
+
+    /* ── RESPONSIVE ─────────────────────────────────────── */
+    @media (max-width: 720px) {
+      /* The header nav is a single flex row of six anchors plus the CTA: 525px
+         wide, which forced the whole page to scroll sideways on any phone
+         (documentElement.scrollWidth 657 at a 390px viewport). The sections are
+         all on this page and reachable by scrolling, so the anchors drop out
+         below 720px and the primary action stays visible - the same treatment
+         .story-nav already gets. */
+      .nav-links .nav-link { display: none; }
+      .nav-links { gap: 0; }
+      .story-layout { grid-template-columns: 1fr; }
+      .story-nav { display: none; }
+      .fact-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.12); }
+      .fact-item:last-child { border-bottom: none; }
+    }
+    @media (max-width: 480px) {
+      .hero { padding: 72px 20px 64px; }
+      .section { padding: 64px 20px; }
+    }
+
+    /* Keyboard access. There was no :focus rule anywhere in this file, so keyboard
+       users got the browser default and nothing else — and the three GitHub cards
+       took their lift from onmouseover/onmouseout only, with no focus equivalent. */
+    a:focus-visible, button:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+    .card-link:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+    }
+    /* Skip link: visually hidden until focused, then the first thing Tab reaches. */
+    .skip-link {
+      position: absolute;
+      left: 12px;
+      top: -60px;
+      z-index: 100;
+      background: var(--bg);
+      color: var(--accent);
+      border: 2px solid var(--accent);
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: top 0.15s;
+    }
+    .skip-link:focus { top: 12px; }
+  </style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ── NAV ──────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <span class="dot"></span>
+      FigureLab
+    </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#story" class="nav-link">The story</a>
+      <a href="#how-to-use" class="nav-link">How to use</a>
+      <a href="#whats-new" class="nav-link">What's new</a>
+      <a href="#request" class="nav-link">Request a feature</a>
+      <a href="https://github.com/mbaffour/FigureLab" class="nav-link">GitHub</a>
+      <a href="figure_lab.html" class="nav-cta">Open FigureLab →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────── -->
+<section class="hero" id="main" tabindex="-1">
+  <div class="hero-badge"><span class="dot"></span> v3.16.0 — free &amp; open source</div>
+  <h1>Publication figures,<br><em>assembled in the browser</em></h1>
+  <p class="hero-sub">Drop in your images. Crop, adjust, annotate, generate AI diagrams, and arrange everything freely — like PowerPoint, but built for science. Export at 600 DPI. Your images never leave your machine — the only thing that ever travels is a prompt, if you choose to use the optional AI generator.</p>
+  <div class="hero-btns">
+    <a href="figure_lab.html" class="btn-hero">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1v13M1 7.5h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Open FigureLab
+    </a>
+    <a href="https://github.com/mbaffour/FigureLab" class="btn-hero-ghost">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/></svg>
+      Source on GitHub
+    </a>
+  </div>
+  <div class="hero-facts">
+    <span class="hero-fact">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Single HTML file
+    </span>
+    <span class="hero-fact">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Your images never leave your machine
+    </span>
+    <span class="hero-fact">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Works offline
+    </span>
+    <span class="hero-fact">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Exports at 300/600 DPI
+    </span>
+  </div>
+</section>
+
+<!-- ── FACTS STRIP ───────────────────────────────────────── -->
+<div class="facts-strip">
+  <div class="facts-strip-inner">
+    <div class="fact-item">
+      <span class="fact-num">7</span>
+      <span class="fact-desc">export formats incl. multi-page PDF</span>
+    </div>
+    <div class="fact-item">
+      <span class="fact-num">350+</span>
+      <span class="fact-desc">automated tests run on every change</span>
+    </div>
+    <div class="fact-item">
+      <span class="fact-num">25+</span>
+      <span class="fact-desc">AI scientific subjects to generate</span>
+    </div>
+    <div class="fact-item">
+      <span class="fact-num">0</span>
+      <span class="fact-desc">dependencies to install</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── FEATURES ─────────────────────────────────────────── -->
+<section class="section features-section" id="features">
+  <div class="section-inner">
+    <div class="features-header">
+      <p class="section-label">What it does</p>
+      <h2 class="section-title">Everything the standard workflow gets wrong — fixed</h2>
+      <p class="section-body">FigureLab is built around the specific tasks that break down when you chain Fiji, Inkscape, and PowerPoint together.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">✦</span>
+        <h3>Freeform canvas — like PowerPoint, built for science</h3>
+        <p>Switch from grid to freeform mode and place anything anywhere: images, shapes, text, AI-generated diagrams. Snap to grid, align edges, distribute evenly — then export the whole canvas at publication DPI.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">✂️</span>
+        <h3>Cropping, including at an angle</h3>
+        <p>Crop one panel, batch-crop a whole set to the same window, or cut several named regions out of one image and get a panel from each. Crops are non-destructive and re-editable. A crop can also be <strong>tilted</strong> — specimens rarely sit square to the camera, so turn the region and the panel still comes out upright — or straightened for you: click two points along an edge, or let the editor find the angle. Lock a ratio, or type the crop in pixels.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🤖</span>
+        <h3>AI diagram &amp; icon generation</h3>
+        <p>Type a prompt — "phage injecting DNA into bacteria" — and generate a BioRender-style scientific cartoon via Gemini or a local Stable Diffusion instance. Remove the white background automatically and place it directly into your figure.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📐</span>
+        <h3>Scale bars that stay correct after cropping</h3>
+        <p>Pixel math is recalculated from the cropped region, not the original image. Auto-detect embedded scale bars in microscope images. Zeiss LSM calibration populates automatically from the VoxelSizeX tag.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔍</span>
+        <h3>Deep figure audit</h3>
+        <p>Runs 6+ consistency checks: LUT mismatches across panels, inconsistent brightness scaling, missing calibrated scale bars, font size too small for print, and unequal panel sizes in freeform mode.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Exposure analysis per panel</h3>
+        <p>Detects overexposed panels (mean &gt;210/255), saturated pixels (&gt;5% clipped to white), underexposure, and low contrast — before you export and before a reviewer notices.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <h3>Real ROI quantification</h3>
+        <p>Draw a region of interest and get mean intensity, integrated density, min/max, area in px² and µm² (if calibrated), and a line-profile fluorescence plot. Export all measurements as CSV.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔢</span>
+        <h3>Threshold-based cell counting</h3>
+        <p>Draw an ROI, set a threshold, and count connected objects using flood-fill. Reports object count, foreground area, and µm² when calibrated. No ImageJ required.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎨</span>
+        <h3>Per-panel adjustments &amp; one-click standardize</h3>
+        <p>Brightness, contrast, gamma, LUTs, black/white point — all per panel. "Match all to this panel" copies every setting to the rest in one click. Histogram normalization auto-stretches or matches to a reference panel.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🗂️</span>
+        <h3>Layout templates</h3>
+        <p>Eight built-in presets for Nature 2×2, Science single-column, Cell 2×3, poster, supplementary 3×3, and more. Save your own templates and share them as JSON files.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📋</span>
+        <h3>Reproducibility log embedded in every PNG</h3>
+        <p>Every PNG export carries tEXt metadata chunks listing every adjustment made — brightness, LUT, crop, normalization, measurements — readable in FIJI, ImageJ, or any EXIF viewer.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">✏️</span>
+        <h3>Annotations as a real vector layer</h3>
+        <p>Arrows, rulers, insets, text boxes, ellipses, counters — export as native SVG elements. Edit in Illustrator or Inkscape after export. Crop-to-shape masking with rectangle, ellipse, or circle clip paths.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📄</span>
+        <h3>Multi-page PDF export</h3>
+        <p>Split any grid figure into a multi-page PDF — choose how many rows per page and FigureLab renders each page independently, then assembles a single PDF. Perfect for supplementary figure sets.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📎</span>
+        <h3>TIFF &amp; LSM metadata reader</h3>
+        <p>Reads µm/px calibration directly from TIFF XResolution tags and Zeiss LSM VoxelSizeX blocks. Drop an LSM and your scale bars are calibrated automatically — no manual entry.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔗</span>
+        <h3>Share settings via link</h3>
+        <p>Encode your entire layout, style, labels, and annotations into a shareable URL. The recipient opens it, drops their own images, and everything is pre-configured. No server. No account. No image data leaves your machine.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⧉</span>
+        <h3>Panel comparison view</h3>
+        <p>Side-by-side comparison of any two panels with synchronized zoom, a live pixel inspector (R/G/B values on hover), per-panel intensity stats, and a difference overlay that quantifies pixel-level variation between channels or conditions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STORY ─────────────────────────────────────────────── -->
+<section class="section story-section" id="story">
+  <div class="section-inner">
+    <div style="margin-bottom:52px">
+      <p class="section-label">Why this exists</p>
+      <h2 class="section-title">The story behind FigureLab</h2>
+    </div>
+    <div class="story-layout">
+      <aside class="story-nav">
+        <p class="story-nav-label">In this post</p>
+        <a href="#s-piglet">The predicament</a>
+        <a href="#s-problem">The actual problem</a>
+        <a href="#s-failures">Specific failures</a>
+        <a href="#s-built">What I built</a>
+        <a href="#s-building">On building tools</a>
+        <a href="#s-how">Built with Claude</a>
+      </aside>
+      <div class="story-body">
+
+        <p id="s-piglet">There is a Ghanaian adage about a piglet quizzing their mother about why she has such a big snout, only for the mother to respond that it was a matter of time before the piglet would grow to experience such a predicament.</p>
+
+        <p>I first encountered this particular predicament at a Texas ASM Branch meeting. I was sitting behind someone working on their laptop, wrestling with ImageJ, Inkscape, and PowerPoint. Cropping a microscopy panel. Dragging it into Inkscape. Trying to align a set of figures. I watched for a few minutes before quietly looking away — privately glad it wasn't me, and privately filing it away as something deeply familiar.</p>
+
+        <p>Then it was me.</p>
+
+        <p>I had a set of N4 phage infection time-course images that needed to become an eight-panel figure for a manuscript. Calibrated scale bars, annotations to add, brightness adjustments to make. I know Fiji well. I know Inkscape well. I have done this before. And yet two hours in, I was exporting the same TIFF for the fifth time because the panel labels kept rendering at the wrong size, the scale bar math was off when I cropped the image, and the SVG I had painstakingly annotated had lost half its arrows when I reopened it. To add salt to injury, I could not seem to align everything perfectly.</p>
+
+        <blockquote><p>I ended up with a figure I did not like, assembled through a process I hated, using tools I respect but that were simply not designed for this job.</p></blockquote>
+
+        <p>So I did what I sometimes do when I hit a wall in this age of AI: I remembered that you can just build things.</p>
+
+        <h2 id="s-problem">The actual problem with figure assembly</h2>
+
+        <p>To be clear, Fiji is excellent software. ImageJ has been the backbone of biological image analysis for decades, and the community that built and maintains it deserves enormous credit. Inkscape is a genuinely powerful vector editor. The problem is not that these tools are bad. The problem is that making a publication figure involves a very specific workflow — arrange panels in a grid, apply uniform brightness adjustments, add calibrated scale bars, annotate with arrows and labels, export at 300 or 600 DPI — and none of the tools in the standard academic stack were designed specifically for that workflow. You are constantly leaving one application and entering another, re-importing files, re-doing work.</p>
+
+        <p>The hidden cost is not the time per se. It is the fragmentation. Your figure exists simultaneously as a Fiji macro, a set of exported TIFFs, an Inkscape SVG, and a mental model of how they all relate. When something changes — a reviewer wants panel C cropped differently or the scale bar moved — you go back to the beginning of the chain.</p>
+
+        <h2 id="s-failures">The specific failures I kept hitting</h2>
+
+        <p>Scale bar pixel math that ignored my crop region, giving me a bar that was visually correct but numerically wrong. SVG exports from Fiji that silently dropped my annotations when reopened. PNG files that looked fine on screen but were flagged as 72 DPI by the journal submission portal. A session file that crashed when I had more than four large TIFF files loaded.</p>
+
+        <p>These are not exotic edge cases. These are the normal workflow for any microscopy-heavy biology paper.</p>
+
+        <h2 id="s-built">What I built — and what it became</h2>
+
+        <p>FigureLab started as a single HTML file with a grid, a crop editor, and a scale bar. You open it in your browser. You drag in your images. You build your figure. You export it. No installation, no account, no server, no data leaving your machine. I deliberately kept it as a single file because the last thing a stressed PhD student needs is a dependency to manage.</p>
+
+        <p>The core loop was simple: drop images into a panel grid, adjust each one independently, annotate directly on the canvas, apply a journal preset, and export. But the tool kept growing — not because I set out to build something big, but because every workflow it touched surfaced another problem worth solving.</p>
+
+        <p>Version 3.1 adds things I did not plan but probably should have from the start. A <strong>freeform canvas mode</strong> — so figures that do not fit a grid (posters, graphical abstracts, multi-part schematics) have a home. A <strong>pre-use crop editor</strong> that intercepts every image before it enters the canvas, so you are never cropping the same thing twice in two different tools. A <strong>real quantification engine</strong>: ROI intensity, integrated density, line profiles, cell counting by threshold. A <strong>reproducibility log</strong> baked into every PNG export as metadata. And <strong>AI-generated scientific diagrams</strong> — type a prompt, get a BioRender-style cartoon, place it directly into your figure, background removed.</p>
+
+        <p>The ambition changed a little. It is not just a microscopy figure tool anymore. It is closer to what you would get if PowerPoint, ImageJ, and BioRender had a single-file offspring that cared about publication correctness.</p>
+
+        <h2 id="s-building">On building tools as a scientist</h2>
+
+        <p>There is a version of scientific training that treats tool-building as a distraction from real science. Get the data, analyze it, write it up, move on. And there is real wisdom in that: time spent building infrastructure is time not spent at the bench.</p>
+
+        <p>But there is another version — one I have come to believe more fully as my PhD has progressed — the act of building a tool forces you to understand a problem at a depth that using tools never does. When I wrote the scale bar rendering code, I had to think carefully about what "calibrated" actually means when you have cropped an image. The source pixel width after cropping is not the same as the original image width, and getting that wrong produces a scale bar that looks right but lies.</p>
+
+        <blockquote><p>The act of building a tool forces you to understand a problem at a depth that using tools never does.</p></blockquote>
+
+        <p>I am not claiming FigureLab is finished. It has gaps I know about and probably gaps I do not. But it is real, it runs, and it has already saved me more time than it took to build. That seems like the right bar for whether something was worth doing.</p>
+
+        <h2 id="s-how">A note on how it was built</h2>
+
+        <p>FigureLab was built collaboratively with <a href="https://claude.ai" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">Claude</a> (Anthropic's AI). The ideas, the workflow design, the frustration that motivated it, the decisions about what to build — those are mine. Claude was the implementation partner: writing and debugging the canvas rendering code, the TIFF export logic, the annotation system, the scale bar math. Working this way let me turn a specific scientific frustration into a working tool faster than I could have alone, and I think it is worth being transparent about that.</p>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW TO USE ─────────────────────────────────────────── -->
+<section class="section how-section" id="how-to-use">
+  <div class="section-inner">
+    <p class="section-label">Getting started</p>
+    <h2 class="section-title">Open it and start building</h2>
+    <p class="section-body">The interface should be self-explanatory. If it is not, that is a bug. Press <strong>?</strong> for the full keyboard shortcut reference.</p>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <h3>Open in your browser</h3>
+        <p>Click the link above. No download, no account, no sign-up. Chrome recommended. Works entirely offline once loaded.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <h3>Crop when you want to</h3>
+        <p>Images go straight into the figure. Crop them afterwards from <strong>Crop &amp; Scale</strong> — non-destructively, so you can re-open and change any crop later, tilt it, or reset it. Prefer the old flow? Turn on "crop images as I import them".</p>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <h3>Choose grid or freeform</h3>
+        <p>Grid mode for standard panel figures. Freeform mode for posters, graphical abstracts, or anything that needs custom placement. Switch any time.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">04</span>
+        <h3>Adjust, annotate, generate</h3>
+        <p>Per-panel brightness, contrast, gamma, LUTs. Draw arrows, rulers, insets, text boxes. Or generate a scientific diagram with AI and place it alongside your data.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">05</span>
+        <h3>Run the audit</h3>
+        <p>Deep Figure Audit checks LUT consistency, exposure, missing scale bars, and font size. Exposure Analysis flags overexposed or clipped panels before a reviewer does.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">06</span>
+        <h3>Export with everything embedded</h3>
+        <p>PNG, TIFF, SVG, PDF, JPEG, or WebP at your target DPI. Every PNG carries a full reproducibility log as tEXt metadata — readable in FIJI and ImageJ.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WHAT'S NEW ─────────────────────────────────────────── -->
+<section class="section" id="whats-new" style="background:var(--bg-warm);border-top:1px solid var(--rule)">
+  <div class="section-inner">
+    <p class="section-label">Changelog</p>
+    <h2 class="section-title">What's new in v3.16.0</h2>
+    <p class="section-body"><strong>Updated 15 September 2026.</strong> v3.16.0 is about finding things, and about the interface telling the truth. Turn a photo by clicking it and dragging the grip above it, at any angle, or turn every photo at once from the toolbar. Spacing responds again: a divider drag that ended off-canvas used to run away on hover, the &minus;/+ chips were unclickable at any normal gap, a single per-gutter override silently outranked every uniform gap, and the freeform editor gained the spacing control it never had. The command palette now answers the words you actually type &mdash; typing <em>undo</em> used to run <em>Reset all crops</em> &mdash; and can take you to a setting rather than only running an action. Plus the Save dialog no longer overstates the file size by 2.03&times;, and the compliance report names the journal preset you applied. 466 tests.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;margin-top:40px">
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🧹</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Quieter first run, fewer walls of buttons</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Measured with a scripted audit rather than guessed: an empty figure no longer shows inert panel tools, the icon browser shows a few per group with a “show all”, the command palette box is the width it was meant to be, and 40 inputs a screen reader announced as unlabelled now have names.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🧬</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">The duplication screen journals run — run first</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Beyond whole panels: a lane cloned inside a blot, a region of one micrograph reappearing in another — shifted, rotated or mirrored — is found by content-anchored patch matching and shown boxed, side by side. Flat background is excluded and the report says so. It finds candidates; it does not judge them.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🎨</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Generate figures with your Gemini account</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Write a prompt and FigureLab copies it and opens gemini.google.com — you generate there, free on your own account, and paste the image back as a tagged AI schematic. FigureLab transmits nothing: there is no in-app Google login because none exists that would not risk your account, and the release notes explain exactly why.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">✨</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">AI edits schematics — never your data</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">AI-generated and hand-drawn objects can be edited, varied and style-matched. Imported experimental images and data panels are refused, loudly: journals treat AI alteration of research images as misconduct. A test asserts refused paths make zero network requests. Exporting AI content under a Nature, Science or Cell preset stops and writes the disclosure the journal requires.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🧬</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">169 icons, none of them owed anything</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">The library doubled with artwork imported from Bioicons under CC0 and MIT only — no attribution line, no publication licence, no watermark, no per-figure fee. Share-alike and software logos were excluded on purpose, every icon carries its licence record, and ⚖ Credits writes the attribution paragraph for anything that ever needs one.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">⚖</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Figures that look authored, not assembled</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Homogenize collapses every drifted font, text size, stroke width and line colour to one value in a single undo step. Linked insets stay bound to their parent panel by id, so an adjusted parent updates its magnified inset instead of silently diverging. The submission package now carries a per-panel processing history, honest about being unsigned.</p>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">⟲</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Tilted crops</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Specimens rarely sit square to the camera. Drag the grip above the crop box to turn it, or type an angle — the region tilts and the panel comes out <em>upright</em>, instead of forcing a choice between a skewed panel and background wedges in the corners. It says plainly that a tilt resamples the display, and measurements still read the original samples, mapped back through the rotation.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">⊞</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Multi-crop, with editable regions</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Cut several regions from one image, name each as you go, and get a named panel from each — six plates × three phage regions is eighteen panels that need no decoding afterwards. Every region shares one size so the panels stay uniform, while each keeps its own tilt. Click any banked region to reopen, move, tilt or rename it.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">👁</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Show a subset of your panels</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Hide panels instead of deleting them: they leave the figure and the grid closes up, but stay in the panel list, the session file, and every adjustment you made. Lettering runs over visible panels only, so a subset reads A, B, C, D with no gaps. Deleting is a separate, explicit action.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">⌐</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Group bands &amp; brackets</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">The outer level of labelling a dose series needs — "No ATC" and "+5 µM ATC" spanning three rows each, with a bracket. Build them by range, in repeating blocks of N, or from the panels' own group tags; they run down rows or across columns, and the bracket can be a solid bar, a square bracket, or nothing.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">⇲</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">No wasted white space</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">A square grid cell holding a 4:3 photo wastes about a quarter of itself to letterboxing. <strong>Fit panels to images</strong> reshapes the cell to the content, holding the figure's overall width — the number a journal specifies — fixed. <strong>Tighten spacing</strong> closes gutters and margins in one action, and row/column headers can now sit right against the figure.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🧭</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">A sidebar organised by what you're doing</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Images → Arrange → Crop &amp; Scale → Annotate &amp; Draw → Look → Measure → Check → Export. The old Simple/Advanced switch is gone: it hid about thirty-five controls, including whole tools like Batch Crop, which made them impossible to discover. Nothing is hidden now, and tools that can't work in your current layout mode say why.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🔬</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Measurements read the real samples</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">16-bit and floating-point TIFF imports keep their native samples, so intensity is reported at the acquisition bit depth rather than the 8-bit display — and every result says which pixels produced it, including when it has to fall back. Saturation is reported at the sensor, not inferred from the screen.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🔤</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">PDFs carry real text</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Panel letters, axis labels, titles and scale-bar text are laid down as genuine PDF text operators over the image — selectable, searchable, and sharp at any zoom — instead of being baked into the raster. Anything the base-14 fonts can't represent stays in the raster rather than being mangled.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🧬</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Gene maps &amp; genetic circuits</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Base-pair-scaled maps in SBOL Visual notation, linear or circular, built from a pasted table, drawn from scratch, or imported from GenBank/FASTA. Features scale to real coordinates, so the drawing matches the sequence.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🧾</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Printed size, not just pixels</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Set the width your figure will be printed at — single column, 1.5 column, double — and see the physical size and the true DPI you'll get before exporting, rather than discovering it at submission.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">🧬</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Duplicate-panel check</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Compares the pixels of every pair of panels, including rotated and mirrored reuse, and flags near-identical ones — before a journal's screening software does.</p>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:22px">
+        <div style="font-size:1.4rem;margin-bottom:10px">📖</div>
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:6px">Citable, with a DOI</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Every release is archived on Zenodo with its own version DOI, and the repository ships a <code>CITATION.cff</code> so GitHub's "Cite this repository" button gives ready-made APA and BibTeX. The concept DOI always resolves to the latest version.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── REQUEST A FEATURE ──────────────────────────────────── -->
+<section class="section" id="request" style="border-top:1px solid var(--rule)">
+  <div class="section-inner" style="max-width:700px">
+    <p class="section-label">Community</p>
+    <h2 class="section-title">Request a feature — or ask anything</h2>
+    <p class="section-body">FigureLab is built from real workflow frustrations. If there's something you keep wishing it could do, or something that doesn't work the way you expect, I want to know. This is a one-person project built in public — your input shapes what gets built next.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:40px">
+      <a href="https://github.com/mbaffour/FigureLab/issues/new?labels=feature+request&template=feature_request.md&title=%5BFeature%5D+" target="_blank" class="card-link" style="display:block;text-decoration:none;background:var(--accent-lt);border:1.5px solid var(--accent);border-radius:10px;padding:24px;transition:transform 0.15s,box-shadow 0.15s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(31,92,139,0.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:1.5rem;margin-bottom:10px">✨</div>
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--accent);margin-bottom:8px">Request a feature</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Open a GitHub issue with your idea. Describe the workflow problem you're hitting — not just the feature — and I'll figure out the best way to solve it.</p>
+        <p style="font-size:0.78rem;color:var(--accent);margin-top:12px;font-weight:500">Open on GitHub →</p>
+      </a>
+
+      <a href="https://github.com/mbaffour/FigureLab/issues/new?labels=bug&template=bug_report.md&title=%5BBug%5D+" target="_blank" class="card-link" style="display:block;text-decoration:none;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:10px;padding:24px;transition:transform 0.15s,box-shadow 0.15s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(176,124,48,0.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:1.5rem;margin-bottom:10px">🐛</div>
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--gold);margin-bottom:8px">Report a bug</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Something broke or behaved unexpectedly? File a bug report with what you did and what happened. Include your browser and OS if you can.</p>
+        <p style="font-size:0.78rem;color:var(--gold);margin-top:12px;font-weight:500">Open on GitHub →</p>
+      </a>
+
+      <a href="https://github.com/mbaffour/FigureLab/discussions" target="_blank" class="card-link" style="display:block;text-decoration:none;background:var(--green-lt);border:1.5px solid var(--green);border-radius:10px;padding:24px;transition:transform 0.15s,box-shadow 0.15s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(42,122,84,0.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:1.5rem;margin-bottom:10px">💬</div>
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--green);margin-bottom:8px">Ask a question</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Not sure how something works? Can't find a feature? Ask in GitHub Discussions — questions are welcome, and the answer might become a tooltip or a doc page.</p>
+        <p style="font-size:0.78rem;color:var(--green);margin-top:12px;font-weight:500">Open Discussions →</p>
+      </a>
+
+      <a href="https://github.com/mbaffour/FigureLab/discussions" target="_blank" style="display:block;text-decoration:none;background:var(--rule-soft);border:1.5px solid var(--rule);border-radius:10px;padding:24px;transition:transform 0.15s,box-shadow 0.15s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:1.5rem;margin-bottom:10px">🗳️</div>
+        <h3 style="font-size:0.95rem;font-weight:600;margin-bottom:8px">What's on the roadmap?</h3>
+        <p style="font-size:0.82rem;color:var(--ink-soft);line-height:1.6">Recent releases shipped drag-to-space spacing, on-image text, true high-resolution export, and universal undo. Vote for what comes next in GitHub Discussions.</p>
+        <p style="font-size:0.78rem;color:var(--ink-muted);margin-top:12px;font-weight:500">Open Discussions →</p>
+      </a>
+    </div>
+
+    <div style="margin-top:40px;padding:24px;background:var(--bg-warm);border-radius:10px;border:1px solid var(--rule)">
+      <p style="font-size:0.88rem;color:var(--ink-soft);line-height:1.7"><strong style="color:var(--ink)">A note on what gets built:</strong> Features that solve a workflow problem real scientists hit — and that fit the "single HTML file, no server, no account" constraint — are most likely to land. Features that require a backend, a database, or user accounts are off the table by design. The constraint is a feature, not a limitation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── FINAL CTA ─────────────────────────────────────────── -->
+<section class="cta-section">
+  <p style="font-family:'Lora',serif;font-style:italic;font-size:0.95rem;color:#706860;margin-bottom:20px">Built with passion for science and discovery. You can just build things.</p>
+  <h2>Ready to build your figure?</h2>
+  <p>Free, open-source, and it runs entirely in your browser. Nothing to install.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="figure_lab.html" class="btn-hero">Open FigureLab →</a>
+    <a href="https://github.com/mbaffour/FigureLab" class="btn-hero-ghost">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/></svg>
+      GitHub
+    </a>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <p>FigureLab v3.16.0 · © 2026 Michael Baffour Awuah · MIT License</p>
+    <p><em style="font-family:var(--serif);font-style:italic;color:#706860">Built with passion for science and discovery. You can just build things.</em></p>
+    <p style="margin-top:6px">Built with <a href="https://claude.ai">Claude</a> · <a href="https://github.com/mbaffour/FigureLab">github.com/mbaffour/FigureLab</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

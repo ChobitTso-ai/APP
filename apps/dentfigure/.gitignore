@@ -1,0 +1,13 @@
+# Test-run artefacts from the pinned upstream suite.
+#
+# Deliberately placed here rather than inside upstream/figurelab/, so that the
+# snapshot directory stays byte-identical to the pinned upstream revision — adding
+# a file to it, even a .gitignore, would defeat the point of having a snapshot.
+# No trailing slashes: during local test runs node_modules is often a SYMLINK to a
+# shared install, and a trailing-slash pattern matches directories only — it would
+# let the symlink itself be committed.
+upstream/figurelab/tests/node_modules
+upstream/figurelab/tests/test-results
+upstream/figurelab/tests/playwright-report
+upstream/figurelab/tests/.pdfout
+upstream/figurelab/tests/.cache

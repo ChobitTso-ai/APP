@@ -1,0 +1,112 @@
+cff-version: 1.2.0
+title: "FigureLab: a browser-based tool for assembling publication-quality scientific figures"
+message: "If you use FigureLab in your research, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: "Awuah"
+    given-names: "Michael Baffour"
+    affiliation: "Ramsey Lab, Department of Biology, Texas A&M University"
+    orcid: "https://orcid.org/0009-0007-9036-413X"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.21269456"
+    description: "Concept DOI — always resolves to the latest version"
+  - type: doi
+    value: "10.5281/zenodo.21269457"
+    description: "Version 3.5"
+  - type: doi
+    value: "10.5281/zenodo.21305029"
+    description: "Version 3.6"
+  - type: doi
+    value: "10.5281/zenodo.21305142"
+    description: "Version 3.6.1"
+  - type: doi
+    value: "10.5281/zenodo.21466208"
+    description: "Version 3.7.0"
+  - type: doi
+    value: "10.5281/zenodo.21478410"
+    description: "Version 3.8.0"
+  - type: doi
+    value: "10.5281/zenodo.21536219"
+    description: "Version 3.9.0"
+  - type: doi
+    value: "10.5281/zenodo.21731452"
+    description: "Version 3.9.1"
+  - type: doi
+    value: "10.5281/zenodo.21732089"
+    description: "Version 3.9.2"
+  - type: doi
+    value: "10.5281/zenodo.21737534"
+    description: "Version 3.9.3"
+  - type: doi
+    value: "10.5281/zenodo.21778169"
+    description: "Version 3.9.4"
+  - type: doi
+    value: "10.5281/zenodo.21893449"
+    description: "Version 3.9.5"
+  - type: doi
+    value: "10.5281/zenodo.21959558"
+    description: "Version 3.10.0"
+  - type: doi
+    value: "10.5281/zenodo.21959759"
+    description: "Version 3.11.0"
+  - type: doi
+    value: "10.5281/zenodo.21970519"
+    description: "Version 3.12.0"
+  - type: doi
+    value: "10.5281/zenodo.22084181"
+    description: "Version 3.13.0"
+  - type: doi
+    value: "10.5281/zenodo.22742412"
+    description: "Version 3.14.0"
+  - type: doi
+    value: "10.5281/zenodo.22761241"
+    description: "Version 3.15.0"
+  - type: doi
+    value: "10.5281/zenodo.22779380"
+    description: "Version 3.16.0"
+doi: "10.5281/zenodo.21269456"
+repository-code: "https://github.com/mbaffour/FigureLab"
+url: "https://mbaffour.github.io/FigureLab/"
+abstract: >-
+  FigureLab is a single-file, browser-based application for assembling
+  publication-quality scientific figures from image data (microscopy, western
+  blots, histology, gels, and clinical or specimen photographs). It runs
+  entirely client-side with no installation, server, or internet connection
+  required, so no image data ever leaves the user's computer. Features include
+  grid layout with drag-to-space gutters, per-panel image adjustments
+  (brightness, contrast, gamma, levels, fluorescence LUTs, and multi-channel
+  composites), two-point scale-bar calibration, an annotation system with
+  undo/redo, and export to PNG, JPEG, WebP, TIFF, PDF, and SVG at
+  publication DPI (up to 1200 dpi for line art). A freeform editor adds
+  vector data charts (bar, line, scatter, box, violin, beeswarm, heatmap, and
+  Kaplan-Meier survival curves) drawn from pasted or CSV data, flowcharts with
+  anchored connectors including PRISMA/CONSORT/fishbone templates,
+  base-pair-scaled gene maps and genetic circuits in SBOL Visual notation
+  (linear or circular, with GenBank/FASTA import), and a recolourable
+  scientific-icon library. Measurements read the retained native samples of
+  16-bit and floating-point TIFF imports, reporting absolute intensity at the
+  acquisition bit depth rather than the 8-bit display, and disclose per result
+  when they fall back to the display. Scientific-integrity safeguards are built
+  in: no p-value or statistical inference is ever computed, pixel edits are
+  non-destructive overlays, and AI-generated content is disclosed. It also
+  exports reproducibility scripts (R/Python, including chart code),
+  CSV panel metadata, and journal-style captions.
+keywords:
+  - "scientific figures"
+  - "microscopy"
+  - "image analysis"
+  - "publication"
+  - "reproducibility"
+  - "western blot"
+  - "scale bar"
+  - "open science"
+  - "bioimaging"
+  - "data visualization"
+  - "flowchart"
+  - "synthetic biology"
+  - "SBOL"
+  - "plasmid map"
+license: MIT
+version: "3.16.0"
+date-released: "2026-09-15"

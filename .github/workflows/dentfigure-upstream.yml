@@ -1,0 +1,62 @@
+# DentFigure — upstream FigureLab regression baseline.
+#
+# Runs the pinned upstream test suite unmodified. This workflow adds no runtime
+# behaviour to any app — nothing here is loaded by a page — so it satisfies the
+# "no functional changes" rule of the DentFigure baseline milestone.
+#
+# Scoped with `paths:` so it does NOT run on ordinary App hub changes: the suite
+# takes ~3.4 minutes and has nothing to say about the homepage or the other tools.
+# It is also separate from pages.yml, so a failure here cannot block deployment.
+#
+# Baseline at upstream e30779666948db7026706d10dd8ae3ae868f9fa0 (v3.16.0+2):
+#   469 passed, 0 failed, 0 skipped.
+# If this job reports a different number, THIS number is authoritative: the local
+# baseline ran on Chromium build 1194 via an override config, because the dev
+# container lacked the build Playwright 1.60 expects. See apps/dentfigure/UPSTREAM.md.
+name: DentFigure upstream regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/dentfigure/**'
+      - '.github/workflows/dentfigure-upstream.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/dentfigure/**'
+      - '.github/workflows/dentfigure-upstream.yml'
+  workflow_dispatch:
+
+jobs:
+  upstream-e2e:
+    name: FigureLab Playwright suite (pinned snapshot)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/dentfigure/upstream/figurelab/tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/dentfigure/upstream/figurelab/tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run upstream suite
+        run: npm test
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dentfigure-upstream-playwright-report
+          path: apps/dentfigure/upstream/figurelab/tests/playwright-report/
+          retention-days: 7
