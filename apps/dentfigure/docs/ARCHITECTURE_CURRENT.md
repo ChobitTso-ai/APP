@@ -30,7 +30,7 @@ Everything in the script block shares **one global scope**:
 | Top-level `function` declarations | **651** |
 | `id="…"` attributes in markup | 372 |
 | …of which read back as state via `gv`/`gi`/`gc` | **91** |
-| Inline `onclick=` handlers in markup | **257** |
+| Inline `onclick=` handlers in markup | **259** |
 
 There are no modules, no classes for the domain model, no build step and no imports.
 Functions call each other directly by global name; the markup calls them through
@@ -459,7 +459,7 @@ Ordered by risk to DentFigure.
 | 6 | **No source hashing** | only a settings hash, 18303 | Cannot prove a panel came from a given file. |
 | 7 | **Filenames (PHI) are serialised** | `name:im.name`, 11775 | Direct leak path into saved and shared files. |
 | 7b | **All three persistence layers store image pixels by default** | autosave `write(true)` 17597; named sessions `serializeSession(true)` 17671, 17682 (hard-coded); `saveJSON` bundles unless told otherwise 11822 | On a shared clinic machine, `localStorage` survives browser close and reboot, and `checkAutosave()` (17618) offers the next user a **Restore** button that reinstates the previous patient's images. Not a network leak — a device-residency and multi-user exposure. Only the download path has a lightweight option at all; the two on-device layers have none. |
-| 8 | **One 16,653-line global scope** | 98 globals, 651 functions, 257 inline `onclick` | No seam; every change is global-blast-radius. |
+| 8 | **One 16,653-line global scope** | 98 globals, 651 functions, 259 inline `onclick` | No seam; every change is global-blast-radius. |
 | 9 | **Undo cost is O(state)** | `snapshotState` 8475, cap 80 | Will not survive volumetric data. |
 | 10 | **Hand-rolled TIFF/PDF/SVG writers** | `exportTIFF` 11149, PDF ~10800 | High-value, high-risk, well-tested. Do not touch casually. |
 | 11 | **Manual cache invalidation** | `_adjKey`/`_cropKey` at ~6 sites | Stale-render bugs on any new transform. |

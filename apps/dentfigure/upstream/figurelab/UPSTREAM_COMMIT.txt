@@ -11,9 +11,10 @@ licence      MIT — Copyright (c) 2026 Michael Baffour Awuah
 concept DOI  10.5281/zenodo.21269456
 v3.16.0 DOI  10.5281/zenodo.22779380
 
-Baseline test run against this exact tree:
-  469 passed, 0 failed, 0 skipped, 0 flaky   (3.4 min, exit 0)
+Baseline test run against this exact tree, from this directory:
+  469 passed, 0 failed, 0 skipped, 0 flaky   (3.6 min, exit 0)
   @playwright/test 1.60.0 · Node v22.22.2 · Chromium build 1194
+  JSON reporter: every test recorded status "expected"
 
 This directory exists so that "did we break it, or was it always like that?"
 is answerable by diff. See ../../UPSTREAM.md.

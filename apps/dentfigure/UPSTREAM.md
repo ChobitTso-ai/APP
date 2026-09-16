@@ -49,7 +49,7 @@ Run against the pinned commit, with no modification to any upstream file:
 | --- | --- |
 | Result | **469 passed, 0 failed, 0 skipped, 0 flaky** |
 | Total tests | 469 across 33 `*.spec.js` files |
-| Wall time | 3.4 minutes |
+| Wall time | 3.6 minutes |
 | Exit code | 0 |
 | Runner | `@playwright/test` **1.60.0** (resolved from upstream's `^1.49.0`) |
 | Node | v22.22.2 |
