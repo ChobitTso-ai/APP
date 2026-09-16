@@ -1,0 +1,19 @@
+Pinned upstream snapshot — DO NOT EDIT ANY FILE IN THIS DIRECTORY.
+
+repository   https://github.com/mbaffour/FigureLab
+branch       master
+commit       e30779666948db7026706d10dd8ae3ae868f9fa0
+subject      Splitting a merge produces the row it promises, and the merge control is reachable
+date         2026-09-15 17:58:48 -0500
+app version  3.16.0   (APP_VERSION, figure_lab.html:2437)
+tag          v3.16.0 = 639c20a876c834ce24388a838c28471a7d7ee909  (this commit is 2 ahead)
+licence      MIT — Copyright (c) 2026 Michael Baffour Awuah
+concept DOI  10.5281/zenodo.21269456
+v3.16.0 DOI  10.5281/zenodo.22779380
+
+Baseline test run against this exact tree:
+  469 passed, 0 failed, 0 skipped, 0 flaky   (3.4 min, exit 0)
+  @playwright/test 1.60.0 · Node v22.22.2 · Chromium build 1194
+
+This directory exists so that "did we break it, or was it always like that?"
+is answerable by diff. See ../../UPSTREAM.md.
