@@ -81,6 +81,14 @@ browser before treating the 469 as a cross-environment golden number.**
 1. `upstream/figurelab/` holds an **untouched** snapshot of the pinned revision. Do
    not edit anything in it. It exists so that "did we break it, or was it always like
    that?" is answerable by diff.
+   **The snapshot must stay complete enough to run its own suite.** The first attempt
+   copied only `figure_lab.html`, `LICENSE`, `figurelab-sw.js`, `CITATION.cff` and
+   `tests/`, and the run silently dropped to **460 passed** — `encoding.spec.js` reads
+   `README.md`, `index.html` and `.zenodo.json` as raw bytes, and skips the checks for
+   files it cannot find. Nine tests disappeared without a single failure, which is
+   exactly how a baseline quietly stops meaning anything. After adding those three
+   files the count is 469 again. When updating the pin, re-check the total, not just
+   that nothing failed.
 2. **Do not add an upstream git remote.** DentFigure lives inside the App hub
    repository (`apps/dentfigure/`), whose history has nothing in common with
    FigureLab's — a remote would only invite a merge that cannot work. Sync by cloning
