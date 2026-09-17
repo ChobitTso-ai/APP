@@ -32,6 +32,7 @@ module.exports = {
   BASE,
   URL: BASE + "/apps/case-marker/index.html",
   PDFBOX: BASE + "/apps/pdf-toolbox/index.html",
+  DENTFIG: BASE + "/apps/dentfigure/index.html",
   LOGIN: BASE + "/index.html",
   chromePath,
   OUT

@@ -2,15 +2,20 @@
 
 臨床／牙科影像的期刊圖組版工具,衍生自 [FigureLab](https://github.com/mbaffour/FigureLab)(MIT)。
 
-> **這支 App 尚未上架。** 目前只有基線(Assignment 001):釘選的上游快照與盤點文件。
-> 這個資料夾**刻意還沒有 `index.html`**,因為建立它需要加入登入守衛與中文化,
-> 兩者都是功能性改動,不屬於本階段。`app.js` 的 `APPS` 也還沒有對應卡片。
-> 上架是 M2 的工作,見 `docs/MIGRATION_PLAN.md`。
+> **這支 App 還沒登記到首頁。** `index.html` 已經可以開了,但 `app.js` 的 `APPS`
+> 還沒有對應卡片 —— 現階段是給人直接用網址測試用的。正式上架是 M2 的工作,
+> 見 `docs/MIGRATION_PLAN.md`。
+
+測試網址(合併到 main 之後):
+`https://chobittso-ai.github.io/APP/apps/dentfigure/index.html`
 
 ## 這裡有什麼
 
 | 路徑 | 內容 |
 |---|---|
+| `index.html` | **App 本體。由 `make-index.py` 從快照產生,不要手改** |
+| `i18n-zh-TW.js` | 繁體中文字典與翻譯層 |
+| `make-index.py` | 從快照產生 `index.html`(四個轉換) |
 | `LICENSE` | MIT(僅適用本資料夾),並保留上游的著作權聲明 |
 | `NOTICE.md` | 上游署名、引用方式、DentFigure 的署名慣例 |
 | `THIRD_PARTY_LICENSES.md` | 第三方授權盤點 —— **含 41 個需署名的圖示** |
@@ -18,6 +23,45 @@
 | `docs/ARCHITECTURE_CURRENT.md` | 上游 11 個子系統拆解、風險登記、「不要動」清單 |
 | `docs/MIGRATION_PLAN.md` | 範圍決定與 M0–M3 計畫 |
 | `upstream/figurelab/` | **釘選快照,一個字元都不要改** |
+
+## 中文化怎麼運作
+
+上游 33 個 spec 檔中有 **27 個斷言英文 UI 字串**,就地翻譯 `figure_lab.html`
+會打爛那 469 筆回歸測試 —— 那是這個專案唯一的安全網。
+
+所以 `index.html` 是「快照 + 四個明確轉換」,中文是執行時由 `i18n-zh-TW.js`
+以**完整字串精確比對**替換上去的。與上游的差異只有四行:
+
+```
+$ diff upstream/figurelab/figure_lab.html index.html
+> <script>if(localStorage.getItem('nckuh_endo_authed')!=='1')location.replace('../../');</script>
+< <title>FigureLab</title>
+> <title>DentFigure — 臨床影像組版</title>
+< if('serviceWorker' in navigator) navigator.serviceWorker.register('figurelab-sw.js')…
+> /* DentFigure: service worker 註冊已停用 */
+> <script src="i18n-zh-TW.js"></script>
+```
+
+改字典之後不必重跑 `make-index.py`;只有換上游版本才需要:
+
+```bash
+# 1. 把新版上游檔案放進 upstream/figurelab/  2. 更新 UPSTREAM.md 的 SHA
+python3 apps/dentfigure/make-index.py
+./tests/run.sh dentfigure
+```
+
+### 翻譯的兩條鐵則
+
+**一、只做完整字串精確比對。** 改成子字串替換,使用者輸入的檔名、面板標號、
+病例代號會被一起改掉 —— 那是無聲的資料損壞。`tests/dentfigure-i18n.test.js`
+有兩項專門驗證這件事。
+
+**二、品牌名與使用者輸入在結構上受保護。** `.logo` 子樹一律不翻。這是踩過的:
+字典收了 `'Lab' → '實驗室'`(佈景名稱),結果 logo 變成「Figure實驗室」。
+只把字刪掉不夠,下次有人加一個同樣泛用的短字就又中招。
+
+**刻意不翻**:字型名、檔案格式(PNG/TIFF/PDF)、期刊名、色盤名、產品名,
+以及上游頁尾的署名與引用連結(見 `NOTICE.md`)。
 
 ## 範圍
 
