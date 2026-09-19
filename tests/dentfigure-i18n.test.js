@@ -41,6 +41,43 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   await page.waitForTimeout(400);
   ok('已登入可正常開啟', /apps\/dentfigure/.test(page.url()));
 
+  console.log('\n— 首頁卡片(上架)—');
+  // CLAUDE.md 上架流程第 5 步:登入 → 點卡片 → 確認新分頁開到工具頁、標題正確
+  await page.goto(LOGIN);
+  await page.evaluate(() => localStorage.setItem('nckuh_endo_authed', '1'));
+  await page.reload();
+  await page.waitForSelector('.app-card');
+  const card = await page.evaluate(() => {
+    const c = [...document.querySelectorAll('.app-card')]
+      .find(e => /DentFigure/i.test(e.textContent));
+    if (!c) return null;
+    const app = APPS.find(a => /dentfigure/i.test(a.url || ''));
+    return { name: c.querySelector('.app-name')?.textContent.trim(), url: app && app.url,
+             slug: app && slugOf(app), group: app && app.group, wip: !!(app && app.wip) };
+  });
+  ok('首頁出現 DentFigure 卡片', !!card, card ? card.name : '找不到');
+  ok('卡片不是施工中佔位', card && !card.wip);
+  ok('放在「電腦操作」區', card && card.group === 'desktop', card && card.group);
+  // 住在 apps/ 底下,slugOf 的正則才比得中 —— 這是瀏覽次數與 🆕 徽章的前提
+  ok('統計代號抓得到', card && card.slug === 'dentfigure', card && card.slug);
+
+  const cardEl = await page.$('.app-card:has-text("DentFigure")');
+  const [popup] = await Promise.all([
+    ctx.waitForEvent('page'),
+    cardEl.click({ force: true }),   // 卡片有覆蓋層會攔截 pointer events
+  ]);
+  await popup.waitForLoadState('domcontentloaded');
+  await popup.waitForFunction(() => typeof render === 'function');
+  await popup.waitForTimeout(400);
+  const popTitle = await popup.title();
+  ok('點卡片會開新分頁到工具頁', /apps\/dentfigure/.test(popup.url()), popup.url().replace(/^.*\/APP/, ''));
+  ok('新分頁標題正確', /臨床影像組版/.test(popTitle), popTitle);
+  await popup.close();
+
+  await page.goto(DENTFIG);
+  await page.waitForFunction(() => typeof render === 'function' && typeof _commitImage === 'function');
+  await page.waitForTimeout(400);
+
   console.log('\n— 翻譯層 —');
   const t = await page.evaluate(() => ({
     title: document.title,
