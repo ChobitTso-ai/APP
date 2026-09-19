@@ -41,6 +41,43 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   await page.waitForTimeout(400);
   ok('已登入可正常開啟', /apps\/dentfigure/.test(page.url()));
 
+  console.log('\n— 首頁卡片(上架)—');
+  // CLAUDE.md 上架流程第 5 步:登入 → 點卡片 → 確認新分頁開到工具頁、標題正確
+  await page.goto(LOGIN);
+  await page.evaluate(() => localStorage.setItem('nckuh_endo_authed', '1'));
+  await page.reload();
+  await page.waitForSelector('.app-card');
+  const card = await page.evaluate(() => {
+    const c = [...document.querySelectorAll('.app-card')]
+      .find(e => /DentFigure/i.test(e.textContent));
+    if (!c) return null;
+    const app = APPS.find(a => /dentfigure/i.test(a.url || ''));
+    return { name: c.querySelector('.app-name')?.textContent.trim(), url: app && app.url,
+             slug: app && slugOf(app), group: app && app.group, wip: !!(app && app.wip) };
+  });
+  ok('首頁出現 DentFigure 卡片', !!card, card ? card.name : '找不到');
+  ok('卡片不是施工中佔位', card && !card.wip);
+  ok('放在「電腦操作」區', card && card.group === 'desktop', card && card.group);
+  // 住在 apps/ 底下,slugOf 的正則才比得中 —— 這是瀏覽次數與 🆕 徽章的前提
+  ok('統計代號抓得到', card && card.slug === 'dentfigure', card && card.slug);
+
+  const cardEl = await page.$('.app-card:has-text("DentFigure")');
+  const [popup] = await Promise.all([
+    ctx.waitForEvent('page'),
+    cardEl.click({ force: true }),   // 卡片有覆蓋層會攔截 pointer events
+  ]);
+  await popup.waitForLoadState('domcontentloaded');
+  await popup.waitForFunction(() => typeof render === 'function');
+  await popup.waitForTimeout(400);
+  const popTitle = await popup.title();
+  ok('點卡片會開新分頁到工具頁', /apps\/dentfigure/.test(popup.url()), popup.url().replace(/^.*\/APP/, ''));
+  ok('新分頁標題正確', /臨床影像組版/.test(popTitle), popTitle);
+  await popup.close();
+
+  await page.goto(DENTFIG);
+  await page.waitForFunction(() => typeof render === 'function' && typeof _commitImage === 'function');
+  await page.waitForTimeout(400);
+
   console.log('\n— 翻譯層 —');
   const t = await page.evaluate(() => ({
     title: document.title,
@@ -117,15 +154,50 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   });
   ok('.logo 子樹在結構上受保護', guarded === '__BRANDTEST__', guarded);
 
+  console.log('\n— 拖放檔案:放在哪裡都要能匯入 —');
+  // 使用者回報:把圖片拖到網頁上沒有匯入,整頁變成那張圖,編輯中的版面消失。
+  // 原因是上游只在 #drop-zone 掛 dragover/drop 並 preventDefault,document
+  // 層級沒有攔截,所以放在別處瀏覽器就導航到那個檔案。fixes.js 補了一層。
+  const dropAt = (sel, name) => page.evaluate(async ([sel, name]) => {
+    const el = document.querySelector(sel);
+    if (!el) return { err: '找不到 ' + sel };
+    const dt = new DataTransfer();
+    const c = document.createElement('canvas'); c.width = 60; c.height = 40;
+    c.getContext('2d').fillRect(0, 0, 60, 40);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    dt.items.add(new File([blob], name + '.png', { type: 'image/png' }));
+    el.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    const ev = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt });
+    el.dispatchEvent(ev);
+    await new Promise(r => setTimeout(r, 900));
+    return { prevented: ev.defaultPrevented, names: images.filter(Boolean).map(i => i.name) };
+  }, [sel, name]);
+
+  await page.evaluate(() => { images.length = 0; renderImgList(); });
+  for (const [sel, name, label] of [
+    ['#drop-zone', 'z', '虛線小方框'],
+    ['#ann-canvas', 'c', '圖的畫布'],
+    ['body', 'b', '頁面空白處'],
+  ]) {
+    const r = await dropAt(sel, name);
+    ok(`拖到${label}不會被瀏覽器開走`, r.prevented === true);
+    ok(`拖到${label}真的匯入了`, (r.names || []).includes(name + '.png'), (r.names || []).join(','));
+  }
+  const after = await page.evaluate(() => images.filter(Boolean).map(i => i.name));
+  const dup = after.filter((n, i) => after.indexOf(n) !== i);
+  // #drop-zone 有自己的處理器,document 層那條若沒判斷 defaultPrevented 就會加兩次
+  ok('同一個檔案不會被加入兩次', dup.length === 0, dup.join(',') || '無重複');
+
   console.log('\n— 上游快照必須維持原封不動 —');
   const snap = path.join(__dirname, '..', 'apps', 'dentfigure', 'upstream', 'figurelab', 'figure_lab.html');
   const snapSrc = fs.readFileSync(snap, 'utf8');
   ok('快照沒有被掛上翻譯層', !snapSrc.includes('i18n-zh-TW.js'));
   ok('快照沒有被加上登入守衛', !snapSrc.includes('nckuh_endo_authed'));
   ok('快照標題仍是上游原文', snapSrc.includes('<title>FigureLab</title>'));
+  ok('快照沒有被掛上行為修正層', !snapSrc.includes('fixes.js'));
   const appSrc = fs.readFileSync(path.join(__dirname,'..','apps','dentfigure','index.html'), 'utf8');
   const dl = appSrc.split('\n').length - snapSrc.split('\n').length;
-  ok('index.html 與快照只差掛載用的那幾行', dl >= 1 && dl <= 4, `多 ${dl} 行`);
+  ok('index.html 與快照只差掛載用的那幾行', dl >= 1 && dl <= 5, `多 ${dl} 行`);
 
   console.log('\n— 編碼(中文化最容易踩的坑)—');
   const i18nBuf = fs.readFileSync(path.join(__dirname,'..','apps','dentfigure','i18n-zh-TW.js'));

@@ -64,9 +64,10 @@ apps/<代號>/          各個 App（每個一資料夾）
   pdf-toolbox/        PDF工具箱（合併、分割、遮蔽個資、旋轉、頁面編輯與圖片轉檔）
   endo-ppt-generator/ 牙髓病科專科 PPT 製作器（照片 ZIP 依學會範本套版產 PPT）
   live-poll/          即時投票（主持端建題開房，觀眾掃 QR 用手機作答）
-  dentfigure/         DentFigure（臨床／牙科期刊圖組版，衍生自 FigureLab）
-                      **開發中，尚未上架**：目前只有釘選的上游快照與盤點文件，
-                      還沒有 index.html，`APPS` 也還沒有卡片。詳見該資料夾 README。
+  dentfigure/         DentFigure 臨床組圖（X 光片與臨床照排成期刊組圖，
+                      衍生自 FigureLab，MIT。index.html 由 make-index.py
+                      從 upstream/ 的釘選快照產生，中文化在 i18n-zh-TW.js、
+                      行為修正在 fixes.js。詳見該資料夾 README）
 manifest.webmanifest  PWA 設定（可加入主畫面）
 sw.js                 Service Worker（首頁殼層離線快取）
 docs/ADDING_APPS.md   App 上架規則

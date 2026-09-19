@@ -2,12 +2,8 @@
 
 臨床／牙科影像的期刊圖組版工具,衍生自 [FigureLab](https://github.com/mbaffour/FigureLab)(MIT)。
 
-> **這支 App 還沒登記到首頁。** `index.html` 已經可以開了,但 `app.js` 的 `APPS`
-> 還沒有對應卡片 —— 現階段是給人直接用網址測試用的。正式上架是 M2 的工作,
-> 見 `docs/MIGRATION_PLAN.md`。
-
-測試網址(合併到 main 之後):
-`https://chobittso-ai.github.io/APP/apps/dentfigure/index.html`
+**已上架**,在 App 中心「💻 電腦操作」區。
+網址:`https://chobittso-ai.github.io/APP/apps/dentfigure/index.html`
 
 ## 這裡有什麼
 

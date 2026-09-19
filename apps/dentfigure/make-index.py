@@ -51,9 +51,12 @@ def transform(src: str) -> str:
     assert src.count(sw_old) == 1, '找不到上游的 service worker 註冊'
     src = src.replace(sw_old, sw_new, 1)
 
-    # 4) 掛上中文化層。放在 app 的 script 之後,DOM 與所有函式都已就緒。
+    # 4) 掛上行為修正層與中文化層。放在 app 的 script 之後,DOM 與所有函式
+    #    都已就緒;fixes.js 先載入,因為它要呼叫 app 的 addFiles()。
     assert src.count('</body>') == 1, '找不到唯一的 </body>'
-    src = src.replace('</body>', '<script src="i18n-zh-TW.js"></script>\n</body>', 1)
+    src = src.replace('</body>',
+                      '<script src="fixes.js"></script>\n'
+                      '<script src="i18n-zh-TW.js"></script>\n</body>', 1)
 
     return src
 

@@ -92,9 +92,9 @@
     'blank cells': '空白格',
     'duplicate row / column': '複製列／欄',
     'Freeform mode': '自由排版模式',
-    '⇱ Pop out to free layout': '⇱ 切換到自由排版',
-    'Pop out to free layout': '切換到自由排版',
-    '✦ Freeform': '✦ 自由排版',
+    '⇱ Pop out to free layout': '⇱ 把面板轉成可自由拖曳',
+    'Pop out to free layout': '把面板轉成可自由拖曳',
+    '✦ Freeform': '✦ 自由排版(從空白開始)',
     '⊞ Grid': '⊞ 格狀',
     'Grid': '格狀',
     'grid': '格狀',
@@ -807,6 +807,9 @@
   // 屬性文字(tooltip / 佔位提示)
   const ATTR_DICT = {
     'Search icons — cell, arrow, mouse…': '搜尋圖示 —— 細胞、箭頭、滑鼠…',
+    'Pop the panels out into a freely-movable (freeform) layout so you can drag and arrange them by hand':
+      '把目前格狀版面裡的面板,轉成可以用滑鼠自由拖曳、縮放、旋轉的物件。'
+      + '(注意:用上方下拉選單切到「自由排版」是開一張空白畫布,不會把面板帶過去)',
     'Type a command… (export, render, theme, preset, help)': '輸入指令…(匯出、產生、佈景、預設、說明)',
     'Type text, Enter to place…': '輸入文字,按 Enter 放置…',
     'Type text… (Enter saves · Shift+Enter = new line · Esc cancels)': '輸入文字…(Enter 儲存 · Shift+Enter 換行 · Esc 取消)',
