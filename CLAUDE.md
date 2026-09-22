@@ -32,9 +32,10 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   （`added` 是**首次**上架日，最新的自動掛 🆕〔60 天內〕，**改版時不要動它**；
   `updated` 是最後改版日，改版時填今天，自動掛 🔄〔14 天內〕，🆕 優先於 🔄；
   瀏覽次數最高的自動掛 🔥）
-- **卡片分兩區**（`GROUPS`）：`group:'mobile'` 是「📱 手機也能用」——只放
-  自己做成 PWA 的 App；`group:'desktop'` 是「💻 電腦操作」（預設）。
-  每區用施工中佔位補滿 4 張，桌機剛好一排。
+- **卡片分兩區**（`GROUPS`）：`group:'mobile'` 是「📱 手機也能用」——在手機上
+  順手好用的工具（PWA 一定放這區，非 PWA 但主要用手機操作的也放，例如即時投票；
+  區塊說明寫「有些還能加入主畫面」故不需全為 PWA）；`group:'desktop'` 是
+  「💻 電腦操作」（預設）。每區用施工中佔位補滿 4 張，桌機剛好一排。
 - **登入狀態存 `localStorage`（key：`nckuh_endo_authed`，值 `'1'`）——
   不能改用 `sessionStorage`：首頁以 `noopener` 新分頁開 App，
   `sessionStorage` 帶不過去，會把登入過的人誤擋。**

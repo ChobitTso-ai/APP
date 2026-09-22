@@ -8,7 +8,8 @@ let pass = 0, fail = 0;
 function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} else {fail++;console.log('  ✗ FAIL:',n+(d?'  → '+d:''));} }
 
 const today = new Date().toISOString().slice(0, 10);
-const EXTERNAL = 'https://chobittso-ai.github.io/dentfigure/';
+/* 刻意用不可能與真實 App 撞名的代號——先前用 dentfigure，DentFigure 真的上架後就撞了 */
+const EXTERNAL = 'https://chobittso-ai.github.io/zz-external-fixture/';
 
 /* 統計端點在測試環境連不到 Google：一律攔下來，順便記錄送出的事件 */
 async function stubStats(ctx, seen){
@@ -17,7 +18,7 @@ async function stubStats(ctx, seen){
     seen.push(Object.fromEntries(u.searchParams));
     const cb = u.searchParams.get('callback');
     await route.fulfill({ status: 200, contentType: 'text/javascript',
-      body: `${cb}({"visits":10,"uniques":5,"logins":5,"apps":{"case-marker":7,"dentfigure":3}});` });
+      body: `${cb}({"visits":10,"uniques":5,"logins":5,"apps":{"case-marker":7,"zz-external-fixture":3}});` });
   });
 }
 
@@ -32,7 +33,7 @@ async function injectExternalCard(ctx, { withSlug }){
   await ctx.route('**/app.js', async route => {
     const res = await route.fetch();
     let body = await res.text();
-    const slugField = withSlug ? ` slug: 'dentfigure',` : '';
+    const slugField = withSlug ? ` slug: 'zz-external-fixture',` : '';
     body = body.replace('const APPS = [', `const APPS = [
       { name: '測試外部工具', desc: '外部網址測試用。', icon: '🧪', url: '${EXTERNAL}',${slugField} added: '${today}', group: 'desktop' },`);
     await route.fulfill({ status: 200, contentType: 'text/javascript', body });
@@ -69,7 +70,7 @@ const cardInfo = (page) => page.$$eval('.app-card:not(.wip)', els => els.map(e =
     const slugs = await page.evaluate(() =>
       APPS.filter(a => !a.wip).map(a => ({ name: a.name, slug: slugOf(a), url: a.url })));
     slugs.forEach(s => console.log(`    ${s.slug.padEnd(20)} ← ${s.url}`));
-    const expect = ['case-marker', 'pdf-toolbox', 'endo-ppt-generator', 'live-poll'];
+    const expect = ['case-marker', 'pdf-toolbox', 'endo-ppt-generator', 'live-poll', 'dentfigure'];
     expect.forEach(s => ok(`代號 ${s} 仍存在且未變`, slugs.some(x => x.slug === s)));
     ok('沒有任何正式 App 的代號是空字串', slugs.every(s => s.slug !== ''),
        slugs.filter(s => !s.slug).map(s => s.name).join(',') || '全部有代號');
@@ -104,19 +105,19 @@ const cardInfo = (page) => page.$$eval('.app-card:not(.wip)', els => els.map(e =
       const a = APPS.find(x => x.name === '測試外部工具');
       return { slug: slugOf(a), url: a.url };
     });
-    ok('slugOf() 取得 dentfigure（路徑比不中時改用 slug 欄位）', ext.slug === 'dentfigure', ext.slug || '(空)');
+    ok('slugOf() 取得 zz-external-fixture（路徑比不中時改用 slug 欄位）', ext.slug === 'zz-external-fixture', ext.slug || '(空)');
     ok('網址確實是外部完整網址', /^https:\/\//.test(ext.url), ext.url);
 
     console.log('— 它是最新上架 → 🆕 掛在它身上 —');
     const cards = await cardInfo(page);
     const withNew = cards.filter(c => c.badge === 'new');
-    ok('NEWEST_SLUG 指向外部 App', await page.evaluate(() => NEWEST_SLUG) === 'dentfigure');
+    ok('NEWEST_SLUG 指向外部 App', await page.evaluate(() => NEWEST_SLUG) === 'zz-external-fixture');
     ok('恰好一張卡片有 🆕', withNew.length === 1, cards.map(c => `${c.name}:${c.badge || '—'}`).join(' | '));
     ok('🆕 在「測試外部工具」上', withNew[0] && withNew[0].name === '測試外部工具');
-    ok('外部卡片的 data-slug 是 dentfigure',
-       cards.find(c => c.name === '測試外部工具').slug === 'dentfigure');
+    ok('外部卡片的 data-slug 是 zz-external-fixture',
+       cards.find(c => c.name === '測試外部工具').slug === 'zz-external-fixture');
     ok('既有 App 的代號不受影響',
-       ['case-marker','pdf-toolbox','endo-ppt-generator','live-poll'].every(s => cards.some(c => c.slug === s)));
+       ['case-marker','pdf-toolbox','endo-ppt-generator','live-poll','dentfigure'].every(s => cards.some(c => c.slug === s)));
 
     console.log('— 瀏覽次數：開啟外部 App 會送出代號 —');
     const before = seen.filter(s => s.event === 'open').length;
@@ -132,11 +133,11 @@ const cardInfo = (page) => page.$$eval('.app-card:not(.wip)', els => els.map(e =
     await page.waitForTimeout(600);
     const opens = seen.filter(s => s.event === 'open');
     ok('有送出 open 事件（先前因代號為空會整個跳過）', opens.length === before + 1, JSON.stringify(opens));
-    ok('送出的 app 參數是 dentfigure', opens.some(o => o.app === 'dentfigure'));
+    ok('送出的 app 參數是 zz-external-fixture', opens.some(o => o.app === 'zz-external-fixture'));
 
     console.log('— 顯示端：統計回來的次數對得上外部 App —');
     ok('外部卡片顯示「瀏覽 3 次」',
-       /瀏覽\s*3\s*次/.test(await page.$eval('.app-hits[data-slug=dentfigure]', e => e.textContent)));
+       /瀏覽\s*3\s*次/.test(await page.$eval('.app-hits[data-slug=zz-external-fixture]', e => e.textContent)));
     await ctx.close();
   }
 
@@ -155,8 +156,8 @@ const cardInfo = (page) => page.$$eval('.app-card:not(.wip)', els => els.map(e =
     const cards = await cardInfo(page);
     ok('它自己拿不到代號（所以 slug 欄位是必填）',
        cards.find(c => c.name === '測試外部工具').slug === '');
-    ok('自家四支 App 的代號仍然正確',
-       ['case-marker','pdf-toolbox','endo-ppt-generator','live-poll'].every(s => cards.some(c => c.slug === s)));
+    ok('自家五支 App 的代號仍然正確',
+       ['case-marker','pdf-toolbox','endo-ppt-generator','live-poll','dentfigure'].every(s => cards.some(c => c.slug === s)));
     ok('不會有多張卡片同時掛 🆕', cards.filter(c => c.badge === 'new').length <= 1,
        cards.map(c => `${c.name}:${c.badge || '—'}`).join(' | '));
     await ctx.close();

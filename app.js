@@ -22,22 +22,22 @@ const VISITOR_KEY = 'nckuh_endo_vid';
            **外部網址的 App 一定要填**，否則瀏覽次數不會計、🆕 也判斷不到
    added : 首次上架日期 YYYY-MM-DD——**改版時不要動它**（最新上架的掛 🆕）
    updated : 最後改版日期 YYYY-MM-DD——App 出新版時改成當天（近期改版的掛 🔄）
-   group : 'mobile' = 手機可加入主畫面（該 App 本身是 PWA）；'desktop' = 電腦操作
+   group : 'mobile' = 手機上就順手好用（做成 PWA 的一定放這區）；'desktop' = 電腦操作
    wip   : true = 施工中佔位卡片（不顯示開啟/分享按鈕）
 */
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
-  // 手機也能用（App 本身是 PWA，可加入主畫面）
+  // 手機也能用
   { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-08-22', group: 'mobile' },
-  { ...wipSlot, group: 'mobile' },
+  { name: '即時投票', desc: '事先設定好題目，現場掃 QR 用手機作答，即時看結果。', icon: '🗳️', url: 'apps/live-poll/index.html', added: '2026-08-16', updated: '2026-08-18', group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
 
   // 電腦操作
   { name: 'PDF工具箱', desc: '合併、分割、遮蔽個資、旋轉與圖片轉檔，全程本機處理。', icon: '🛠️', url: 'apps/pdf-toolbox/index.html', added: '2026-07-13', updated: '2026-09-07', group: 'desktop' },
   { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24', updated: '2026-09-10', group: 'desktop' },
-  { name: '即時投票', desc: '事先設定好題目，現場掃 QR 用手機作答，即時看結果。', icon: '🗳️', url: 'apps/live-poll/index.html', added: '2026-08-16', updated: '2026-08-18', group: 'desktop' },
   { name: 'DentFigure 臨床組圖', desc: '把 X 光片與臨床照排成期刊等級的組圖，可標號、比例尺與遮蔽個資。', icon: '🖼️', url: 'apps/dentfigure/index.html', added: '2026-09-19', updated: '2026-09-19', group: 'desktop' },
+  { ...wipSlot, group: 'desktop' },
 ];
 
 /* ---- 分區（依 group 分成兩排，每排標題與說明）---- */
@@ -45,7 +45,7 @@ const GROUPS = [
   {
     id: 'mobile',
     title: '📱 手機也能用',
-    desc: '用手機開啟後可以「加入主畫面」，像一般 App 一樣點開就用，離線也打得開。（App 中心本身也可以加入主畫面）',
+    desc: '在手機上就順手好用的工具；有些還能「加入主畫面」，像一般 App 一樣點開就用、離線也打得開。（App 中心本身也可以加入主畫面）',
   },
   {
     id: 'desktop',
