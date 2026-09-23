@@ -153,11 +153,11 @@ const PERMANENT_DX = [
   evidence:{ g:true, e:'E3', certainty:{ zh:'低', en:'Low' } }
 },
 
-/* ---------- 4. 牙冠斷裂（露髓） ---------- */
+/* ---------- 4. 複雜性牙冠斷裂（露髓） ---------- */
 {
   id:'p-complicated-crown-fracture', dentition:'permanent', group:'fracture',
   img:'dx/fx-complicated-crown.svg', source:'IADT-1 Table 4',
-  name:{ zh:'牙冠斷裂（露髓）', en:'Complicated crown fracture' },
+  name:{ zh:'複雜性牙冠斷裂（露髓）', en:'Complicated crown fracture' },
   short:{ zh:'牙釉質與牙本質斷裂並露髓', en:'Enamel-dentin fracture with pulp exposure' },
   pub:{
     what:{ zh:'斷面中央看得到紅色或會出血的組織，那是牙髓。這不等於一定要抽神經——尤其年輕恆牙，保住活的牙髓對牙根繼續發育非常重要。', en:'Red or bleeding tissue is visible at the centre of the fracture — that is the pulp. This does not automatically mean root canal treatment; in young permanent teeth, keeping the pulp alive is important for the root to finish developing.' },
@@ -176,15 +176,15 @@ const PERMANENT_DX = [
       { zh:'斷片下落不明且軟組織有傷口時照唇頰軟組織片', en:'Radiograph the lip and cheek if the fragment is missing and soft tissue is injured' }
     ],
     treatment:[
-      { zh:'未成熟、根尖未閉鎖的牙齒，保住牙髓最重要：建議部分冠髓切除術或蓋髓術，讓牙根繼續發育', en:'In immature teeth with open apices, preserving the pulp is paramount: partial pulpotomy or pulp capping is recommended to allow continued root development' },
-      { zh:'牙根發育完成的成熟牙，同樣以保守的活髓治療（例如部分冠髓切除術）為優先', en:'Conservative pulp treatment such as partial pulpotomy is also the preferred approach in teeth with complete root formation' },
+      { zh:'未成熟、根尖未閉鎖的牙齒，保住牙髓最重要：建議局部斷髓術或牙髓覆蓋，讓牙根繼續發育', en:'In immature teeth with open apices, preserving the pulp is paramount: partial pulpotomy or pulp capping is recommended to allow continued root development' },
+      { zh:'牙根發育完成的成熟牙，同樣以保守的活髓治療（例如局部斷髓術）為優先', en:'Conservative pulp treatment such as partial pulpotomy is also the preferred approach in teeth with complete root formation' },
       { zh:'牙髓傷口上放非硬化型氫氧化鈣，或不染色的矽酸鈣類材料', en:'Place non-setting calcium hydroxide or a non-staining calcium silicate cement on the pulp wound' },
       { zh:'成熟牙若修復上必須做柱心，根管治療才成為首選', en:'If a post is required for crown retention in a mature tooth, root canal treatment becomes the preferred option' },
       { zh:'有斷片時，可在牙髓處理完成後水化黏回；沒有斷片則以玻璃離子體或黏著劑加複合樹脂覆蓋牙本質', en:'If the fragment is available, rehydrate and bond it back after the pulp has been treated; otherwise cover the dentin with glass-ionomer or bonding agent and composite resin' }
     ],
     splint:null,
     pulp:[
-      { zh:'單純外傷性露髓，部分冠髓切除術比直接根管治療更符合組織保存原則', en:'For a purely traumatic exposure, partial pulpotomy is more consistent with tissue preservation than proceeding directly to root canal treatment' },
+      { zh:'單純外傷性露髓，局部斷髓術比直接根管治療更符合組織保存原則', en:'For a purely traumatic exposure, partial pulpotomy is more consistent with tissue preservation than proceeding directly to root canal treatment' },
       { zh:'成功指標：無症狀、功能正常、敏感性測試有反應或牙根持續發育、無根尖病灶', en:'Success indicators: asymptomatic, normal function, response to sensibility testing or continued root development, no apical pathosis' }
     ],
     good:[
@@ -206,11 +206,11 @@ const PERMANENT_DX = [
   evidence:{ g:true, e:'E3', certainty:{ zh:'低', en:'Low' } }
 },
 
-/* ---------- 5. 牙冠牙根斷裂（未露髓） ---------- */
+/* ---------- 5. 單純性牙冠牙根斷裂（未露髓） ---------- */
 {
   id:'p-crown-root-fracture-uncomp', dentition:'permanent', group:'fracture',
   img:'dx/fx-crown-root-uncomp.svg', source:'IADT-1 Table 5',
-  name:{ zh:'牙冠牙根斷裂（未露髓）', en:'Uncomplicated crown-root fracture' },
+  name:{ zh:'單純性牙冠牙根斷裂（未露髓）', en:'Uncomplicated crown-root fracture' },
   short:{ zh:'斷裂延伸至齦下牙根，未露髓', en:'Fracture extending below the gingival margin into the root, without pulp exposure' },
   pub:{
     what:{ zh:'裂線從牙冠斜斜延伸到牙齦下方，鬆動的那一片常會晃、咬東西會痛。', en:'The fracture line runs obliquely from the crown to below the gum line; the loose piece often wobbles and biting hurts.' },
@@ -256,11 +256,11 @@ const PERMANENT_DX = [
   evidence:{ g:true, e:'E3/E4', certainty:{ zh:'低', en:'Low' } }
 },
 
-/* ---------- 6. 牙冠牙根斷裂（露髓） ---------- */
+/* ---------- 6. 複雜性牙冠牙根斷裂（露髓） ---------- */
 {
   id:'p-crown-root-fracture-comp', dentition:'permanent', group:'fracture',
   img:'dx/fx-crown-root-comp.svg', source:'IADT-1 Table 6',
-  name:{ zh:'牙冠牙根斷裂（露髓）', en:'Complicated crown-root fracture' },
+  name:{ zh:'複雜性牙冠牙根斷裂（露髓）', en:'Complicated crown-root fracture' },
   short:{ zh:'斷裂延伸至齦下牙根並通過牙髓', en:'Fracture extending below the gingival margin into the root, with pulp exposure' },
   pub:{
     what:{ zh:'裂線從牙冠延伸到牙齦下方，而且穿過了牙髓，所以看得到紅色或出血的組織。', en:'The fracture runs from the crown to below the gum line and passes through the pulp, so red or bleeding tissue is visible.' },
@@ -279,7 +279,7 @@ const PERMANENT_DX = [
     ],
     treatment:[
       { zh:'治療計畫定案前，先把鬆動斷片暫時固定到鄰牙或不動的斷片上', en:'Until the treatment plan is finalized, temporarily stabilize the loose fragment to adjacent teeth or to the immobile fragment' },
-      { zh:'未成熟、牙根未發育完成的牙齒，以部分冠髓切除術保住牙髓為佳；橡皮障隔離雖困難仍應嘗試', en:'In immature teeth with incomplete root formation it is advantageous to preserve the pulp with a partial pulpotomy; rubber dam isolation is challenging but should be attempted' },
+      { zh:'未成熟、牙根未發育完成的牙齒，以局部斷髓術保住牙髓為佳；橡皮障隔離雖困難仍應嘗試', en:'In immature teeth with incomplete root formation it is advantageous to preserve the pulp with a partial pulpotomy; rubber dam isolation is challenging but should be attempted' },
       { zh:'牙髓傷口上放非硬化型氫氧化鈣或不染色的矽酸鈣類材料', en:'Place non-setting calcium hydroxide or a non-staining calcium silicate cement on the pulp wound' },
       { zh:'牙根發育完成的成熟牙，通常需要摘除牙髓', en:'In mature teeth with complete root formation, removal of the pulp is usually indicated' },
       { zh:'後續選項與未露髓型相同：完成根管治療與修復、矯正性或手術性牙根突出術、牙根埋入、蓄意再植術、拔除、自體移植', en:'Later options as for the uncomplicated type: completing root canal treatment and restoration, orthodontic or surgical extrusion, root submergence, intentional replantation, extraction, autotransplantation' }
@@ -362,11 +362,11 @@ const PERMANENT_DX = [
   evidence:{ g:true, e:'E2', certainty:{ zh:'低至中', en:'Low to moderate' } }
 },
 
-/* ---------- 8. 齒槽骨斷裂 ---------- */
+/* ---------- 8. 齒槽骨骨折 ---------- */
 {
   id:'p-alveolar-fracture', dentition:'permanent', group:'fracture',
   img:'dx/fx-alveolar.svg', source:'IADT-1 Table 8',
-  name:{ zh:'齒槽骨斷裂', en:'Alveolar fracture' },
+  name:{ zh:'齒槽骨骨折', en:'Alveolar fracture' },
   short:{ zh:'多顆牙連同一段齒槽骨整段移動', en:'Several teeth move together with a segment of alveolar bone' },
   pub:{
     what:{ zh:'不只一顆牙受傷，而是好幾顆牙連同下面的一塊骨頭一起移位，所以咬合會對不起來。', en:'More than one tooth is involved — several teeth have moved together with the bone beneath them, so the bite no longer fits.' },
@@ -376,7 +376,7 @@ const PERMANENT_DX = [
   },
   clin:{
     criteria:[
-      { zh:'斷裂涉及齒槽骨，可延伸至鄰近骨', en:'Fracture involving the alveolar bone, which may extend to adjacent bone' },
+      { zh:'骨折涉及齒槽骨，可延伸至鄰近骨', en:'Fracture involving the alveolar bone, which may extend to adjacent bone' },
       { zh:'整段骨與其上的牙齒一起移動（en bloc）', en:'The segment moves as a block together with the teeth it carries' },
       { zh:'常伴隨咬合錯亂', en:'Occlusal disturbance is common' }
     ],
@@ -400,7 +400,7 @@ const PERMANENT_DX = [
     ],
     bad:[
       { zh:'個別牙齒牙髓壞死與感染', en:'Pulp necrosis and infection in individual teeth' },
-      { zh:'邊緣骨喪失、牙齒吸收、咬合持續異常', en:'Marginal bone loss, root resorption, persistent occlusal disturbance' }
+      { zh:'邊緣齒槽骨流失、牙齒吸收、咬合持續異常', en:'Marginal bone loss, root resorption, persistent occlusal disturbance' }
     ]
   },
   followUp:[
@@ -540,8 +540,8 @@ const PERMANENT_DX = [
     ],
     bad:[
       { zh:'牙髓壞死與感染、根尖周圍炎', en:'Pulp necrosis and infection, apical periodontitis' },
-      { zh:'發炎性吸收、取代性吸收與沾黏', en:'Inflammatory resorption; replacement resorption with ankylosis' },
-      { zh:'邊緣骨喪失', en:'Marginal bone loss' }
+      { zh:'發炎性吸收、取代性吸收與齒沾黏', en:'Inflammatory resorption; replacement resorption with ankylosis' },
+      { zh:'邊緣齒槽骨流失', en:'Marginal bone loss' }
     ]
   },
   followUp:[
@@ -594,8 +594,8 @@ const PERMANENT_DX = [
     ],
     bad:[
       { zh:'牙髓壞死與感染、根尖周圍炎', en:'Pulp necrosis and infection, apical periodontitis' },
-      { zh:'發炎性吸收、沾黏與取代性吸收', en:'Inflammatory resorption; ankylosis with replacement resorption' },
-      { zh:'牙齒卡住不動、叩診有沾黏音', en:'Tooth locked in place with an ankylotic percussion tone' }
+      { zh:'發炎性吸收、齒沾黏與取代性吸收', en:'Inflammatory resorption; ankylosis with replacement resorption' },
+      { zh:'牙齒卡住不動、叩診有齒沾黏音', en:'Tooth locked in place with an ankylotic percussion tone' }
     ]
   },
   followUp:[
@@ -626,7 +626,7 @@ const PERMANENT_DX = [
     criteria:[
       { zh:'牙齒沿長軸被壓入齒槽骨', en:'The tooth is displaced axially into the alveolar bone' },
       { zh:'牙齒不動', en:'The tooth is immobile' },
-      { zh:'叩診出現高音調的金屬（沾黏）聲', en:'Percussion gives a high metallic (ankylotic) sound' },
+      { zh:'叩診出現高音調的金屬（齒沾黏）聲', en:'Percussion gives a high metallic (ankylotic) sound' },
       { zh:'敏感性測試多半沒有反應', en:'Likely to have no response to sensibility tests' },
       { zh:'牙周韌帶腔可能全部或部分（尤其根尖處）看不到', en:'The periodontal ligament space may not be visible for all or part of the root, especially apically' },
       { zh:'牙釉質牙骨質交界的位置比鄰近未受傷牙齒更靠根尖側', en:'The cemento-enamel junction sits more apically than in adjacent uninjured teeth' }
@@ -635,7 +635,7 @@ const PERMANENT_DX = [
     treatment:[
       { zh:'牙根未發育完成（未成熟牙）：不論撞入深度，先讓牙齒自行再萌出，不介入', en:'Incomplete root formation (immature teeth): allow spontaneous re-eruption without intervention, regardless of the degree of intrusion' },
       { zh:'未成熟牙若 4 週內沒有再萌出，開始矯正復位', en:'In immature teeth, if there is no re-eruption within 4 weeks, initiate orthodontic repositioning' },
-      { zh:'牙根發育完成（成熟牙）且撞入 <3 mm：先等待自行再萌出；8 週內沒有再萌出就手術復位並以被動柔性固定裝置固定 4 週，或在沾黏形成前改採矯正復位', en:'Complete root formation (mature teeth) intruded less than 3 mm: allow re-eruption; if none within 8 weeks, reposition surgically and splint for 4 weeks with a passive flexible splint, or reposition orthodontically before ankylosis develops' },
+      { zh:'牙根發育完成（成熟牙）且撞入 <3 mm：先等待自行再萌出；8 週內沒有再萌出就手術復位並以被動柔性固定裝置固定 4 週，或在齒沾黏形成前改採矯正復位', en:'Complete root formation (mature teeth) intruded less than 3 mm: allow re-eruption; if none within 8 weeks, reposition surgically and splint for 4 weeks with a passive flexible splint, or reposition orthodontically before ankylosis develops' },
       { zh:'成熟牙撞入 3–7 mm：手術復位（首選）或矯正復位', en:'Mature teeth intruded 3–7 mm: reposition surgically (preferably) or orthodontically' },
       { zh:'成熟牙撞入 >7 mm：手術復位', en:'Mature teeth intruded beyond 7 mm: reposition surgically' }
     ],
@@ -650,9 +650,9 @@ const PERMANENT_DX = [
       { zh:'未成熟牙持續進行牙根發育', en:'Continued root development in immature teeth' }
     ],
     bad:[
-      { zh:'牙齒卡住不動、叩診有沾黏音', en:'Tooth locked in place with an ankylotic percussion tone' },
+      { zh:'牙齒卡住不動、叩診有齒沾黏音', en:'Tooth locked in place with an ankylotic percussion tone' },
       { zh:'牙髓壞死與感染、根尖周圍炎', en:'Pulp necrosis and infection, apical periodontitis' },
-      { zh:'沾黏與取代性吸收', en:'Ankylosis and external replacement resorption' },
+      { zh:'齒沾黏與取代性吸收', en:'Ankylosis and external replacement resorption' },
       { zh:'發炎性外吸收——一旦出現就應立即開始根管治療，以氫氧化鈣作為根管內藥劑', en:'External inflammatory resorption — start root canal treatment immediately with calcium hydroxide as the intracanal medicament' }
     ]
   },
@@ -660,9 +660,9 @@ const PERMANENT_DX = [
     { d:14,  label:{ zh:'2 週', en:'2 wk' }, purpose:{ zh:'成熟牙於此時開始根管治療；再萌出進度', en:'Start root canal treatment in mature teeth; assess re-eruption' } },
     { d:28,  label:{ zh:'4 週', en:'4 wk' }, off:true, purpose:{ zh:'手術復位者拆除固定裝置；未成熟牙若無再萌出則開始矯正復位', en:'Splint removal after surgical repositioning; in immature teeth start orthodontic repositioning if no re-eruption' } },
     { d:56,  label:{ zh:'8 週', en:'8 wk' }, purpose:{ zh:'成熟牙 <3 mm 若仍無再萌出，此時決定手術或矯正復位', en:'For mature teeth intruded <3 mm with no re-eruption, decide on surgical or orthodontic repositioning' } },
-    { d:84,  label:{ zh:'12 週', en:'12 wk' }, purpose:{ zh:'沾黏、取代性吸收、牙髓狀態', en:'Ankylosis, replacement resorption, pulp status' } },
+    { d:84,  label:{ zh:'12 週', en:'12 wk' }, purpose:{ zh:'齒沾黏、取代性吸收、牙髓狀態', en:'Ankylosis, replacement resorption, pulp status' } },
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'同上；邊緣骨高度', en:'As above; marginal bone level' } },
-    { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'整體評估；兒童注意低咬合', en:'Overall review; watch for infraocclusion in growing patients' } }
+    { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'整體評估；兒童注意咬合過低', en:'Overall review; watch for infraocclusion in growing patients' } }
   ],
   yearlyTo:5,
   evidence:{ g:true, e:'E2', certainty:{ zh:'預後證據中等；復位方式的比較證據低', en:'Moderate for prognosis; low for comparing repositioning methods' } }
@@ -709,17 +709,17 @@ const PERMANENT_DX = [
     ],
     bad:[
       { zh:'發炎性（感染相關）吸收——牙根圓周任何位置出現牙根或骨的吸收都要當作發炎性吸收', en:'Infection-related (inflammatory) resorption — any root or bone resorption anywhere around the circumference of the root should be read as inflammatory resorption' },
-      { zh:'沾黏與取代性吸收——影像上牙周韌帶腔消失、牙根被骨取代，加上叩診金屬聲', en:'Ankylosis-related (replacement) resorption — loss of the periodontal ligament space, replacement of root structure by bone, with a metallic percussion sound' },
+      { zh:'齒沾黏與取代性吸收——影像上牙周韌帶腔消失、牙根被骨取代，加上叩診金屬聲', en:'Ankylosis-related (replacement) resorption — loss of the periodontal ligament space, replacement of root structure by bone, with a metallic percussion sound' },
       { zh:'兩種吸收可能同時存在', en:'The two types of resorption may occur together' },
-      { zh:'生長中的兒童出現進行性低咬合，可能需要考慮去冠術、自體移植等多科策略', en:'Progressive infraocclusion in a growing child may call for multidisciplinary strategies such as decoronation or autotransplantation' }
+      { zh:'生長中的兒童出現進行性咬合過低，可能需要考慮去冠術、自體移植等多科策略', en:'Progressive infraocclusion in a growing child may call for multidisciplinary strategies such as decoronation or autotransplantation' }
     ]
   },
   followUp:[
     { d:14,  label:{ zh:'2 週', en:'2 wk' }, off:true, purpose:{ zh:'拆除固定裝置；成熟牙根管治療應已開始', en:'Splint removal; root canal treatment should already have been started in mature teeth' } },
     { d:28,  label:{ zh:'4 週', en:'4 wk' }, purpose:{ zh:'發炎性吸收、牙周癒合', en:'Inflammatory resorption, periodontal healing' } },
-    { d:90,  label:{ zh:'3 個月', en:'3 mo' }, purpose:{ zh:'吸收與沾黏', en:'Resorption and ankylosis' } },
+    { d:90,  label:{ zh:'3 個月', en:'3 mo' }, purpose:{ zh:'吸收與齒沾黏', en:'Resorption and ankylosis' } },
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'同上', en:'As above' } },
-    { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'吸收、沾黏、低咬合', en:'Resorption, ankylosis, infraocclusion' } }
+    { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'吸收、齒沾黏、咬合過低', en:'Resorption, ankylosis, infraocclusion' } }
   ],
   // 根尖開放者因發炎性吸收進展快，IADT 要求更密集的追蹤
   followUpOpenApex:[

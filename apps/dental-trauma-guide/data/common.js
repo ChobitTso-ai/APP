@@ -149,7 +149,7 @@ const AVULSION_TIME = [
     label:{ zh:'口外乾燥時間 >60 分鐘（不論有沒有放保存液）', en:'Extra-oral dry time longer than 60 minutes, with or without a storage medium' } }
 ];
 const PDL_NOTE = {
-  zh: '口外乾燥 30 分鐘後，多數牙周韌帶細胞已無存活能力。乾燥時間超過 60 分鐘時，牙周韌帶再生預後很差，沾黏與取代性吸收是可預期的結果；但對仍在生長的兒童，再植仍可暫時維持齒槽骨輪廓與外觀。',
+  zh: '口外乾燥 30 分鐘後，多數牙周韌帶細胞已無存活能力。乾燥時間超過 60 分鐘時，牙周韌帶再生預後很差，齒沾黏與取代性吸收是可預期的結果；但對仍在生長的兒童，再植仍可暫時維持齒槽骨輪廓與外觀。',
   en: 'After 30 minutes of extra-oral dry time most PDL cells are non-viable. Beyond 60 minutes of dry time, PDL regeneration is unlikely and ankylosis with replacement resorption is an expected outcome; in a growing child, replantation may still preserve alveolar contour and appearance.'
 };
 

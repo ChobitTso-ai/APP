@@ -73,12 +73,27 @@ IADT 的數字**。兩者若有出入，以 IADT 為準並在該處註明。
 | enamel | **牙釉質** | 琺瑯質 |
 | avulsion | **脫落** | 完全脫位、撕脫 |
 | subluxation | **半脫位** | 亞脫位 |
-| extrusive luxation | **外突性脫位** | 擠出性脫位 |
+| extrusive luxation | **外突性脫位** | 擠出性脫位、凸出性脫槽 |
 | intrusive luxation | **內縮性脫位** | 侵入性脫位 |
 | concussion | **震盪** | 震盪傷 |
 | infraction | **裂紋** | 隱裂、紋裂 |
 | splint | **固定裝置** | 夾板 |
-| fracture | **斷裂** | 骨折、折斷 |
+| fracture | **斷裂** | 折斷 |
+| partial / Cvek pulpotomy | **局部斷髓術** | 部分冠髓切除術 |
+
+### 《辭彙》本身的一處矛盾
+
+`extrusive luxation` 在《辭彙》裡出現兩次，譯法不同：`e` 開頭那條是
+「凸出性脫槽」，`l` 開頭那條是「外突性脫位」。**本 App 採用「外突性脫位」**
+（Dr.Tso 裁決：統一用「脫位」），理由是 `luxation` 系列——脫位、內縮性脫位、
+側向脫位、半脫位——內部一致，「脫槽」是唯一的例外。
+
+### 兩處刻意不照《辭彙》字面
+
+| English | 本 App | 《辭彙》 | 理由 |
+|---|---|---|---|
+| composite | **複合樹脂** | 複合材 | 《辭彙》該條偏材料學用語；處置段落寫給臨床看，用通行說法 |
+| alveolar fracture | **齒槽骨骨折** | （未收錄；`fracture`＝斷裂） | 骨的破損在中文講「骨折」，硬套「斷裂」不自然。牙齒本身仍一律用「斷裂」 |
 
 照用的其他《辭彙》詞：牙本質、牙骨質、牙周韌帶、齒槽骨板（lamina dura）、
 發炎性吸收、取代性吸收、表面吸收、外吸收、內吸收、齒頸部吸收、血管再生、
@@ -87,21 +102,41 @@ IADT 的數字**。兩者若有出入，以 IADT 為準並在該處註明。
 溫度牙髓測試、電髓試驗、竇管、搖動度、叩診、牙髓壞死、外傷性牙髓暴露、
 症狀型／無症狀型根尖周圍炎、慢性／急性根尖膿腫。
 
-### 《辭彙》未收錄、由本 App 自訂的詞
+### 《辭彙》未收錄，由 Dr.Tso 裁定的詞（2026-09-23）
 
-這幾個牙外傷必用但《辭彙》沒有，訂法如下，**日後《辭彙》若收錄就以《辭彙》為準**：
+這些牙外傷必用但《辭彙》沒有收錄，用詞由 Dr.Tso 決定：
 
-| English | 本 App 採用 | 理由 |
-|---|---|---|
-| ankylosis | 沾黏 | 配合《辭彙》的「取代性吸收」一起使用 |
-| partial pulpotomy | 部分冠髓切除術 | 由《辭彙》的「冠髓切除術」衍生 |
-| pulp capping | 蓋髓術 | 通行譯法 |
-| alveolar bone | 齒槽骨 | 與《辭彙》的「齒槽骨板」一致 |
-| discoloration | 變色 | — |
-| storage medium | 保存液 | 家屬看得懂 |
-| extra-oral dry time | 口外乾燥時間 | — |
-| crown-root fracture | 牙冠牙根斷裂 | 依《辭彙》fracture＝斷裂 |
-| complicated / uncomplicated | 露髓型／未露髓型 | 直譯「複雜性」會讓人以為是難度 |
+| English | 本 App 採用 |
+|---|---|
+| ankylosis | **齒沾黏** |
+| pulp capping | **牙髓覆蓋** |
+| infraocclusion | **咬合過低** |
+| marginal bone loss | **邊緣齒槽骨流失** |
+| calcium hydroxide | 氫氧化鈣 |
+| cone beam CT | 錐狀射束電腦斷層（內文用 **CBCT**） |
+| cemento-enamel junction | 牙釉質牙骨質交界（內文用 **CEJ**） |
+| storage medium | 保存液 |
+| extra-oral dry time | 口外乾燥時間 |
+| alveolar bone | 齒槽骨 |
+| discoloration | 變色 |
+
+### 診斷名的組法
+
+由《辭彙》的字組成，不是《辭彙》原文：
+
+| English | 本 App |
+|---|---|
+| crown fracture | 牙冠斷裂 |
+| crown-root fracture | 牙冠牙根斷裂 |
+| enamel-dentin fracture | 牙釉質牙本質斷裂 |
+| alveolar fracture | 齒槽骨骨折 |
+| uncomplicated / complicated | **單純性（未露髓）／複雜性（露髓）** |
+| orthodontic / surgical extrusion | 矯正性／手術性牙根突出術（《辭彙》`extrusion, root`＝牙根突出術） |
+
+「單純性／複雜性」只加在 IADT 以 uncomplicated／complicated 作為鑑別點的
+三個診斷上——複雜性牙冠斷裂（露髓）、單純性牙冠牙根斷裂（未露髓）、
+複雜性牙冠牙根斷裂（露髓）。牙釉質斷裂與牙釉質牙本質斷裂本身就不涉及牙髓，
+用解剖名即可，不再冠「單純性」。
 
 ### 一個已知的取捨
 
