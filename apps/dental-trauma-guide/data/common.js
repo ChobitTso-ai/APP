@@ -165,6 +165,75 @@ const ANTIBIOTIC_NOTE = {
   en: 'For uncomplicated permanent luxations, root fractures and primary tooth luxations there is insufficient evidence for routine systemic antibiotics; decide case by case based on soft tissue contamination, surgical intervention and the patient\'s medical status. Permanent tooth avulsion is the exception: the IADT recommends systemic antibiotics while stating in the same guideline that "the value of systemic administration of antibiotics is highly questionable". Amoxicillin or penicillin are first choices, dosed by age and weight, with alternatives for penicillin allergy. Specific drugs, age cut-offs and doses are deliberately not listed here — antimicrobial stewardship guidance changes.'
 };
 
+/* ---- 乳牙共用（Day et al. 2020 在每張表重複出現的三段）---- */
+
+// 每一張乳牙表都附的家長衛教
+const PRIMARY_PARENT_CARE = {
+  zh: [
+    '進食小心，不要再傷到受傷的牙齒，但仍鼓勵儘快恢復正常進食功能。',
+    '為促進牙齦癒合並避免牙菌斑堆積，家長用軟毛牙刷或棉棒，沾不含酒精的 0.1%–0.2% chlorhexidine gluconate 漱口水局部塗抹，一天兩次，持續一週。'
+  ],
+  en: [
+    'Take care when eating so as not to traumatize the injured tooth further, while encouraging a return to normal function as soon as possible.',
+    'To encourage gingival healing and prevent plaque accumulation, parents should clean the affected area with a soft brush or cotton swab combined with an alcohol-free 0.1%–0.2% chlorhexidine gluconate mouth rinse applied topically twice a day for one week.'
+  ]
+};
+
+// 乳牙處置的總原則：能轉介就先不要在急診動手
+const PRIMARY_REFERRAL_NOTE = {
+  zh: '乳牙外傷的處置要同時考量孩子的成熟度與配合度。每一種介入都有侵入性，而且可能造成長期的看牙焦慮，因此要把包含拔除在內的選項跟家長討論。**在急診當下「先不處理」往往是最合適的選擇**——前提是幾天內能轉介到有兒童牙科經驗的團隊。',
+  en: 'Management of primary tooth injuries must weigh the child’s maturity and ability to cooperate. Every option is invasive and can cause long-term dental anxiety, so discuss the alternatives — including extraction — with the parents. **No treatment at the emergency visit is often the most appropriate option**, provided there is the potential for rapid referral, within several days, to a child-oriented team experienced in paediatric dental injuries.'
+};
+
+// 乳牙的影像原則：不是每個診斷都要照，追蹤更不是例行照
+const PRIMARY_IMAGING_NOTE = {
+  zh: '乳牙的影像追蹤**不是例行的**：只有在臨床發現暗示病變（也就是出現不良結果）時才加照。例外是斷髓術或根管治療後的 1 年追蹤，以及齒槽骨骨折的 4 週與 1 年。',
+  en: 'Radiographic follow-up in the primary dentition is **not routine**: take further films only when clinical findings suggest pathosis (that is, an unfavorable outcome). The exceptions are the one-year review after a pulpotomy or root canal treatment, and the 4-week and 1-year films after an alveolar fracture.'
+};
+
+// 乳牙的不良結果在每張表幾乎相同，抽出共用
+const PRIMARY_BAD_OUTCOMES = {
+  zh: [
+    '有症狀',
+    '牙髓壞死與感染的徵象：竇管、牙齦腫脹、膿腫，或搖動度增加',
+    '持續的深灰色變色，加上一項以上根管感染的徵象',
+    '影像上的牙髓壞死與感染徵象',
+    '未成熟牙的牙根停止繼續發育',
+    '對恆牙繼承牙的發育或萌出造成負面影響'
+  ],
+  en: [
+    'Symptomatic',
+    'Signs of pulp necrosis and infection: sinus tract, gingival swelling, abscess, or increased mobility',
+    'Persistent dark grey discoloration plus one or more signs of root canal infection',
+    'Radiographic signs of pulp necrosis and infection',
+    'No further root development in immature teeth',
+    'Negative impact on the development or eruption of the permanent successor'
+  ]
+};
+
+const PRIMARY_GOOD_OUTCOMES = {
+  zh: [
+    '無症狀',
+    '牙髓癒合：牙冠顏色正常，或出現暫時性的紅／灰／黃變色與根管鈣化堵塞',
+    '沒有牙髓壞死與感染的徵象',
+    '未成熟牙持續進行牙根發育',
+    '恆牙繼承牙的發育與萌出未受干擾'
+  ],
+  en: [
+    'Asymptomatic',
+    'Pulp healing: normal crown colour, or transient red/grey/yellow discoloration with pulp canal obliteration',
+    'No signs of pulp necrosis and infection',
+    'Continued root development in immature teeth',
+    'No disturbance to the development or eruption of the permanent successor'
+  ]
+};
+
+// 乳牙的抗生素立場（Day et al. 2020）
+const PRIMARY_ANTIBIOTIC_NOTE = {
+  zh: '乳牙外傷不常規使用全身性抗生素。合併軟組織或其他傷害、需要較大的手術介入，或孩子本身的全身狀況需要時，由醫師個別判斷。',
+  en: 'Systemic antibiotics are not routine for primary tooth injuries. Their use remains at the clinician’s discretion when the injury is accompanied by soft tissue or other associated injuries, when significant surgical intervention is required, or when the child’s medical status warrants cover.'
+};
+
 const TETANUS_NOTE = {
   zh: '污染性、穿刺性或開放性外傷要記錄疫苗接種史，轉介醫師評估是否需要破傷風追加劑。使用抗生素不能取代破傷風預防。',
   en: 'For contaminated, penetrating or open wounds, record the immunization history and refer to a physician to assess the need for a tetanus booster. Antibiotics are not a substitute for tetanus prophylaxis.'
