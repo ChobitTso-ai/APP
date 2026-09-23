@@ -12,9 +12,16 @@ ALL_DX.forEach(d => { DX_BY_ID[d.id] = d; });
 
 const LANG_KEY = 'dtg_lang';
 const AUD_KEY  = 'dtg_aud';
+const MODE_KEY = 'dtg_mode';
 
 let lang = localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'zh';
 let aud  = localStorage.getItem(AUD_KEY)  === 'public' ? 'public' : 'clinical';
+/* 決策樹的兩種模式
+     guided  完整流程，紅旗獨立一題，影像節點全部顯示
+     fast    紅旗改成第一題上方的提示條，影像的「提醒頁」整頁跳過
+   快速模式**不會**跳掉「影像所見」那一題——跳了就分不出半脫位與牙根斷裂。
+   跳掉的影像提醒內容也沒有消失，診斷頁本來就有「建議影像」那一段。 */
+let treeMode = localStorage.getItem(MODE_KEY) === 'fast' ? 'fast' : 'guided';
 let curDx = null;        // 目前開啟的診斷
 let curSchedule = null;  // 目前採用的追蹤時程（可能是替代版本）
 let treePath = [];       // 決策樹走過的節點與選項
@@ -106,6 +113,8 @@ function applyUiText(){
   $('txtAppTagline').textContent = L(UI.appTagline);
   $('txtModeAsk').textContent        = L(UI.modeAsk);
   $('txtModeAskDesc').textContent    = L(UI.modeAskDesc);
+  $('txtModeFast').textContent       = L(UI.modeFast);
+  $('txtModeFastDesc').textContent   = L(UI.modeFastDesc);
   $('txtModeBrowse').textContent     = L(UI.modeBrowse);
   $('txtModeBrowseDesc').textContent = L(UI.modeBrowseDesc);
   $('dxSearch').placeholder = L(UI.search);
@@ -191,17 +200,38 @@ function renderHome(){
 
 /* ---------- 決策樹 ---------- */
 
-function startTree(){
+function startTree(mode){
+  if (mode){
+    treeMode = mode;
+    localStorage.setItem(MODE_KEY, treeMode);
+  }
   treePath = [];
-  goNode(TREE.start);
+  // 快速模式不問紅旗，改成第一題上方的提示條，省一次點擊但不失去這道保險
+  goNode(treeMode === 'fast' ? 'dentition' : TREE.start);
 }
 
-/* 三種節點型態共用的入口：question / imaging / result */
+function setTreeMode(mode){
+  if (mode === treeMode) return;
+  treeMode = mode;
+  localStorage.setItem(MODE_KEY, treeMode);
+  // 切模式就從頭走：兩種模式的節點序列不同，硬接會對不上
+  startTree();
+}
+
+/* 三種節點型態共用的入口：question / imaging / result。
+   快速模式下，影像節點在「推進 treePath 之前」就先判斷要不要跳過——
+   推進去再跳會讓返回鍵回到這個節點又立刻被跳掉，變成退不出去。 */
 function goNode(nodeId, keepPath){
   const node = TREE.nodes[nodeId];
   if (!node) return;
-  if (!keepPath) treePath.push({ node: nodeId });
 
+  if (treeMode === 'fast' && node.type === 'imaging'){
+    if (node.gate) { goNode(node.next, keepPath); return; }   // 跳過提醒頁，直接問影像所見
+    openDx(node.dx);                                          // 診斷已確定，直接開診斷頁
+    return;
+  }
+
+  if (!keepPath) treePath.push({ node: nodeId });
   if (node.type === 'imaging') renderImaging(node);
   else renderQuestion(node);
 }
@@ -223,6 +253,15 @@ function takeOption(o){
 
 function renderQuestion(node){
   crumbsInto($('treeCrumbs'));
+  $('txtTreeMode').textContent = L(treeMode === 'fast' ? UI.modeNowFast : UI.modeNowGuided);
+  // 紅旗提示條只在快速模式的第一題出現——那是它真正有用的時機
+  const rf = $('fastRedFlag');
+  if (treeMode === 'fast' && treePath.length === 1){
+    rf.textContent = '⚠ ' + L(UI.fastRedFlag);
+    rf.hidden = false;
+  } else {
+    rf.hidden = true;
+  }
   $('treeQ').textContent = L(node.q);
   const hint = $('treeHint');
   if (node.hint){ hint.innerHTML = md(L(node.hint)); hint.hidden = false; }
@@ -664,18 +703,21 @@ function noteText(){
 $('btnLang').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));
 $('btnHome').addEventListener('click', () => { curDx = null; show('screenHome'); });
 
-$('btnModeAsk').addEventListener('click', startTree);
+$('btnModeAsk').addEventListener('click', () => startTree('guided'));
+$('btnModeFast').addEventListener('click', () => startTree('fast'));
+$('btnTreeMode').addEventListener('click', () =>
+  setTreeMode(treeMode === 'fast' ? 'guided' : 'fast'));
 $('btnModeBrowse').addEventListener('click', () => {
   renderBrowse($('dxSearch').value);
   show('screenBrowse');
 });
 
 $('btnTreeBack').addEventListener('click', treeBack);
-$('btnTreeRestart').addEventListener('click', startTree);
+$('btnTreeRestart').addEventListener('click', () => startTree());
 $('btnImgBack').addEventListener('click', treeBack);
-$('btnImgRestart').addEventListener('click', startTree);
+$('btnImgRestart').addEventListener('click', () => startTree());
 $('btnResultBack').addEventListener('click', backToLastNode);
-$('btnResultRestart').addEventListener('click', startTree);
+$('btnResultRestart').addEventListener('click', () => startTree());
 
 // 「還沒拍」看完先做什麼之後，片子好了就直接接回影像所見那一題
 $('btnPendingNext').addEventListener('click', () => {

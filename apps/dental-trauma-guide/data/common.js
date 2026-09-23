@@ -12,10 +12,18 @@ const UI = {
   appName:      { zh: '牙外傷處置指南',           en: 'Dental Trauma Guide' },
   appTagline:   { zh: '依 IADT 2020 指引整理',     en: 'Based on the IADT 2020 Guidelines' },
 
-  modeAsk:      { zh: '我不確定是哪一種',          en: "I'm not sure which injury" },
-  modeAskDesc:  { zh: '一路問答，導到診斷與處置',   en: 'Answer a few questions to reach the diagnosis' },
+  modeAsk:      { zh: '問答導引',                  en: 'Guided' },
+  modeAskDesc:  { zh: '含影像提醒：該拍哪幾張、為什麼非拍不可', en: 'With imaging prompts: which films to take and why they matter' },
+  modeFast:     { zh: '快速選取',                  en: 'Quick pick' },
+  modeFastDesc: { zh: '只選選項，直接看診斷與處置', en: 'Just the questions — straight to diagnosis and management' },
   modeBrowse:   { zh: '我知道診斷，直接查',        en: 'I know the diagnosis' },
   modeBrowseDesc:{ zh: '依分類列表直接開',         en: 'Browse the full list by category' },
+
+  modeNowGuided:{ zh: '問答導引模式',              en: 'Guided mode' },
+  modeNowFast:  { zh: '快速模式（不顯示影像提醒）', en: 'Quick mode (imaging prompts hidden)' },
+  modeSwitch:   { zh: '切換',                      en: 'Switch' },
+  fastRedFlag:  { zh: '開始前先確認沒有：失去意識、持續嘔吐、神經學症狀、疑似顏面或頸椎骨折、無法控制的出血。有任何一項先送急診。',
+                  en: 'Before you start, confirm none of these: loss of consciousness, persistent vomiting, neurological signs, suspected facial or cervical spine fracture, uncontrolled bleeding. If any is present, medical emergency care comes first.' },
 
   audClinical:  { zh: '醫師版',                   en: 'Clinician' },
   audPublic:    { zh: '家屬版',                   en: 'Patient / Family' },

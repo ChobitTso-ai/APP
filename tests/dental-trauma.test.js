@@ -73,8 +73,10 @@ async function authed(browser){
   {
     await p.click('#btnLang');
     await p.waitForFunction(() => document.getElementById('txtAppName').textContent === 'Dental Trauma Guide');
-    ok('切到英文：標題與模式文字都換語言',
-      (await p.textContent('#txtModeAsk')).includes("not sure"));
+    ok('切到英文：標題與三張模式卡片都換語言',
+      (await p.textContent('#txtModeAsk')) === 'Guided' &&
+      (await p.textContent('#txtModeFast')) === 'Quick pick' &&
+      /imaging prompts/i.test(await p.textContent('#txtModeAskDesc')));
     ok('英文的保存液第一項是 Milk',
       (await p.textContent('#storageRow .media b')).trim().startsWith('Milk'));
     const saved = await p.evaluate(() => localStorage.getItem('dtg_lang'));
@@ -222,6 +224,76 @@ async function authed(browser){
     ok('★ 乳牙：搖動＋有斷裂線 → 牙根斷裂（舊流程到不了這裡）',
       (await p.textContent('#dxNameZh')) === '牙根斷裂' &&
       (await p.textContent('#dxDentition')) === '乳牙');
+  }
+
+  /* ── 4d. 快速模式：跳掉的必須是提醒，不能是診斷依據 ── */
+  {
+    await p.click('#btnHome');
+    const cards = await p.$$eval('.modes .mode-card strong', ns => ns.map(n => n.textContent.trim()));
+    ok('首頁有三張模式卡片', cards.length === 3, cards.join(' / '));
+
+    await p.click('#btnModeFast');
+    await p.waitForSelector('#screenTree:not([hidden])');
+    ok('★ 快速模式第一題直接問恆牙／乳牙（不佔一題問紅旗）',
+      (await p.textContent('#treeQ')).includes('恆牙還是乳牙'));
+    ok('★ 紅旗改成第一題上方的提示條，沒有消失',
+      await p.isVisible('#fastRedFlag') &&
+      /失去意識/.test(await p.textContent('#fastRedFlag')) &&
+      /先送急診/.test(await p.textContent('#fastRedFlag')));
+    ok('模式列顯示目前是快速模式',
+      /快速模式/.test(await p.textContent('#txtTreeMode')));
+    ok('模式偏好存進 localStorage',
+      (await p.evaluate(() => localStorage.getItem('dtg_mode'))) === 'fast');
+
+    // 恆牙 → 牙冠完整 → 位置正常 → 不搖但叩痛：影像提醒頁要被跳過，
+    // 但「影像上看到什麼」那一題必須留著，否則震盪與牙根斷裂分不開
+    await p.click('#treeOpts .opt >> nth=0');           // 恆牙
+    ok('進入第二題後紅旗提示條收起來', !(await p.isVisible('#fastRedFlag')));
+    await p.click('#treeOpts .opt >> nth=2');           // 還在嘴裡
+    await p.click('#treeOpts .opt >> nth=1');           // 不是整段一起動
+    await p.click('#treeOpts .opt >> nth=1');           // 牙冠完整
+    await p.click('#treeOpts .opt >> nth=3');           // 位置正常
+    await p.click('#treeOpts .opt >> nth=1');           // 不太搖但叩痛
+    await p.waitForSelector('#screenTree:not([hidden])');
+    ok('★ 快速模式跳過影像提醒頁', await p.isHidden('#screenImaging'));
+    ok('★ 但「影像所見」那一題留著（跳了就分不出診斷）',
+      (await p.textContent('#treeQ')).includes('影像上有看到什麼異常'));
+    await p.click('#treeOpts .opt >> nth=1');           // 完全沒有異常
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('快速模式仍導到正確診斷', (await p.textContent('#dxNameZh')) === '震盪');
+    ok('★ 跳掉的影像資訊沒有消失，診斷頁仍有「建議影像」',
+      /建議影像/.test(await p.textContent('#paneClinical')) &&
+      /根尖片/.test(await p.textContent('#paneClinical')));
+
+    // 乳牙牙釉質斷裂：「不需要照影像」那一頁在快速模式整頁跳過，直接到診斷
+    await p.click('#btnDxRestart');
+    await p.waitForSelector('#screenTree:not([hidden])');
+    await p.click('#treeOpts .opt >> nth=1');           // 乳牙
+    await p.click('#treeOpts .opt >> nth=2');           // 還在嘴裡
+    await p.click('#treeOpts .opt >> nth=1');           // 不是整段一起動
+    await p.click('#treeOpts .opt >> nth=0');           // 有斷裂
+    await p.click('#treeOpts .opt >> nth=0');           // 只缺一小塊牙釉質
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('★ 快速模式：乳牙牙釉質斷裂直接到診斷頁',
+      (await p.textContent('#dxNameZh')) === '牙釉質斷裂' &&
+      (await p.textContent('#dxDentition')) === '乳牙');
+    ok('診斷頁仍寫明不需要照影像',
+      /不需要照影像/.test(await p.textContent('#paneClinical')));
+
+    // 從診斷頁返回不會卡在被跳過的影像節點
+    await p.click('#btnDxBack');
+    await p.waitForSelector('#screenTree:not([hidden])');
+    ok('★ 返回不會卡在被跳過的影像節點',
+      (await p.textContent('#treeQ')).includes('斷面看得到什麼'));
+
+    // 切回詳細模式
+    await p.click('#btnTreeMode');
+    await p.waitForSelector('#screenTree:not([hidden])');
+    ok('切回詳細模式會從頭開始（兩種模式節點序列不同）',
+      (await p.textContent('#treeQ')).includes('有沒有以下任何一項'));
+    ok('詳細模式不顯示紅旗提示條（紅旗自己就是一題）', !(await p.isVisible('#fastRedFlag')));
+    ok('模式偏好跟著改',
+      (await p.evaluate(() => localStorage.getItem('dtg_mode'))) === 'guided');
   }
 
   /* ── 5. 查閱模式與搜尋 ── */
