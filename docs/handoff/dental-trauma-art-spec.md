@@ -15,19 +15,28 @@
 
 1. **只產出 SVG 檔案**。不要改任何程式碼，不要動 git（不 commit、不 push、不開 PR）。
    有另一位工程師（Claude）正在同時改 `index.html`／`app.js`／`styles.css`／`tests/`。
-2. 輸出到自己的本機交班資料夾，結構如下（Dr.Tso 會照這個結構上傳）：
+2. 輸出到本機專案資料夾（`…\Local project\牙外傷處置指南\`）。
+   本機分類與 repo 落地位置的對照如下，Dr.Tso 照這張表上傳：
 
-```
-assets/
-  dx/      ← 16 張診斷插圖
-  care/    ← 5 張急救與處置插圖
-  icon-master.svg
-```
+| 本機資料夾 | Repo 落地位置 | 內容 |
+|---|---|---|
+| 診斷圖 | `apps/dental-trauma-guide/assets/dx/` | 16 張診斷插圖 |
+| 處置圖 | `apps/dental-trauma-guide/assets/care/` | 5 張急救與處置插圖 |
+| App 圖示 | `apps/dental-trauma-guide/assets/` | `icon-master.svg` |
+| 其他圖片 | `apps/dental-trauma-guide/assets/misc/` | 上面三類以外的補充圖 |
+| 參考文件 | **不進 repo** | 見下節 |
+
+「其他圖片」若要進 App，請在交付時一併說明每張的用途與擺放位置，
+否則 Claude 不知道該接到哪裡。
 
 ## 參考資料
 
-參考圖會直接貼在 CODEX 對話裡。**只能當作解剖比例與傷害形態的參考，
-必須自己重新繪製**，不可描摹或複製原圖線條，輸出的 SVG 裡不可嵌入任何參考圖。
+參考資料放在本機專案的「參考文件」資料夾，**留在本機，不要上傳到 repo**。
+這個 repo 是 public，教科書、期刊或 IADT 原圖一旦 commit 就等於公開散布，
+而且刪掉之後 git 歷史裡還留著。
+
+**只能當作解剖比例與傷害形態的參考，必須自己重新繪製**，
+不可描摹或複製原圖線條，輸出的 SVG 裡不可嵌入任何參考圖。
 
 ## 全域規格
 

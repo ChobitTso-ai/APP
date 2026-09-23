@@ -9,10 +9,15 @@
 ```
 Claude 寫規格書  →  docs/handoff/*-spec.md  （進 repo，版本控管）
        ↓ Dr.Tso 把規格貼進 CODEX 對話
-CODEX 產出檔案   →  CODEX 自己的本機交班資料夾
+CODEX 產出檔案   →  本機專案資料夾
        ↓ Dr.Tso 用 GitHub 網頁 Add file → Upload files 拖進 repo
 Claude 整合      →  驗收、接進 App、跑測試、commit、push、開 PR、合併
 ```
+
+**Claude 讀不到本機磁碟。** 這個 repo 的 Claude session 跑在雲端容器裡，
+只有一份 GitHub clone，看不到 Windows 的 `D:\…\Local project\…`。
+本機那邊的檔案（AGENTS.md、HANDOFF.md 等）要讓 Claude 看到，
+只能貼進對話或上傳到 repo。
 
 ## 分工邊界（最重要，違反就會衝突）
 

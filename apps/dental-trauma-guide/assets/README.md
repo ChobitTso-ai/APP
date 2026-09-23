@@ -6,11 +6,13 @@
 
 ## 上傳位置
 
-| 放哪裡 | 放什麼 |
-|---|---|
-| `dx/` | 16 張診斷插圖（`base-*`、`fx-*`、`lux-*`、`avulsion.svg`） |
-| `care/` | 5 張急救與處置插圖（`hold-crown` … `apex-open-vs-closed`） |
-| 本資料夾 | `icon-master.svg`（1024×1024 App 圖示主檔，PNG 由 Claude 轉） |
+| CODEX 本機資料夾 | 上傳到這裡 | 放什麼 |
+|---|---|---|
+| 診斷圖 | `dx/` | 16 張診斷插圖（`base-*`、`fx-*`、`lux-*`、`avulsion.svg`） |
+| 處置圖 | `care/` | 5 張急救與處置插圖（`hold-crown` … `apex-open-vs-closed`） |
+| App 圖示 | 本資料夾 | `icon-master.svg`（1024×1024 主檔，PNG 由 Claude 轉） |
+| 其他圖片 | `misc/` | 上面三類以外的補充圖 |
+| 參考文件 | **不要上傳** | 留在本機，理由見下 |
 
 檔名要與規格書**完全一致**（小寫、連字號），App 是照檔名去找圖的，
 拼錯不會報錯，只會顯示佔位框。
