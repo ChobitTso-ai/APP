@@ -89,37 +89,139 @@ async function authed(browser){
     ok('切回中文', true);
   }
 
-  /* ── 4. 決策樹 ── */
+  /* ── 4. 決策樹：紅旗 → 外觀 → 影像 → 影像所見 → 診斷 ── */
   {
     await p.click('#btnModeAsk');
     await p.waitForSelector('#screenTree:not([hidden])');
-    ok('第一題問恆牙還是乳牙', (await p.textContent('#treeQ')).includes('恆牙還是乳牙'));
-    ok('第一題有提示（判斷錯後面全錯）', await p.isVisible('#treeHint'));
+    ok('★ 第一關是紅旗排除', (await p.textContent('#treeQ')).includes('有沒有以下任何一項'));
+    ok('紅旗題列出五項', /失去意識[^。]*無法控制的出血/.test(await p.textContent('#treeHint')));
 
-    // 恆牙 → 整顆掉出來 → 脫落
+    // 紅旗「有」→ 先送急診
     await p.click('#treeOpts .opt >> nth=0');
-    await p.waitForFunction(() => document.getElementById('treeQ').textContent.includes('齒槽窩'));
-    await p.click('#treeOpts .opt >> nth=0');
-    await p.waitForSelector('#screenDx:not([hidden])');
-    ok('恆牙→整顆掉出來 導到「脫落」', (await p.textContent('#dxNameZh')) === '脫落');
-    ok('脫落標示為時間急迫（紅色 chip）', await p.$('#dxDentition.urgent') !== null);
+    await p.waitForSelector('#screenResult:not([hidden])');
+    ok('★ 有紅旗導到「先處理醫療急症」', (await p.textContent('#resultTitle')).includes('先處理醫療急症'));
+    ok('急診頁仍交代脫落牙可同時泡保存液',
+      /脫落的恆牙/.test(await p.textContent('#resultBody')) &&
+      /牛奶/.test(await p.textContent('#resultBody')));
 
-    // 重走：恆牙 → 單顆 → 牙冠完整 → 位置正常 → 不搖但叩痛 → 震盪
-    await p.click('#btnDxBack');
-    await p.click('#btnTreeRestart');
+    // 退回去走正常路：紅旗都沒有 → 恆牙 → 整顆掉出來 → 脫落
+    await p.click('#btnResultBack');
+    await p.waitForSelector('#screenTree:not([hidden])');
+    await p.click('#treeOpts .opt >> nth=1');           // 都沒有
     await p.waitForFunction(() => document.getElementById('treeQ').textContent.includes('恆牙還是乳牙'));
     await p.click('#treeOpts .opt >> nth=0');           // 恆牙
-    await p.click('#treeOpts .opt >> nth=1');           // 還在嘴裡
+    await p.waitForFunction(() => document.getElementById('treeQ').textContent.includes('齒槽窩'));
+    await p.click('#treeOpts .opt >> nth=0');           // 整顆掉出來，牙齒在手上
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('恆牙→整顆掉出來 導到「脫落」', (await p.textContent('#dxNameZh')) === '脫落');
+    ok('★ 脫落不經影像節點（時間急迫）', await p.isVisible('#dxUrgentBanner'));
+    ok('急迫橫幅明講不要為了等片子延誤',
+      /不要為了等片子延誤/.test(await p.textContent('#txtUrgentNoWait')));
+
+    // 重走：恆牙 → 單顆 → 牙冠完整 → 位置正常 → 不搖但叩痛 → 影像關卡 → 震盪
+    await p.click("#screenDx:not([hidden]) #btnDxRestart, #screenTree:not([hidden]) #btnTreeRestart");
+    await p.waitForFunction(() => document.getElementById('treeQ').textContent.includes('有沒有以下任何一項'));
+    await p.click('#treeOpts .opt >> nth=1');           // 紅旗都沒有
+    await p.click('#treeOpts .opt >> nth=0');           // 恆牙
+    await p.click('#treeOpts .opt >> nth=2');           // 還在嘴裡
     await p.click('#treeOpts .opt >> nth=1');           // 不是整段一起動
     await p.click('#treeOpts .opt >> nth=1');           // 牙冠完整
     await p.click('#treeOpts .opt >> nth=3');           // 位置正常
     await p.waitForFunction(() => document.getElementById('treeQ').textContent.includes('會搖'));
-    ok('動搖度那一題提示要排除牙根斷裂',
-      /牙根斷裂/.test(await p.textContent('#treeHint')));
     await p.click('#treeOpts .opt >> nth=1');           // 不太搖但叩痛
+
+    await p.waitForSelector('#screenImaging:not([hidden])');
+    ok('★ 外觀檢查之後先到影像節點', true);
+    ok('影像節點說明為什麼非拍不可（不搖也可能是牙根斷裂）',
+      /不會搖也可能是牙根斷裂/.test(await p.textContent('#imgWhy')));
+    const films = await p.$$eval('#imgFilms li', ns => ns.map(n => n.textContent.trim()));
+    ok('列出要拍不同水平與垂直角度的根尖片',
+      films.some(f => /不同水平與垂直角度/.test(f)), films.length + ' 項');
+
+    // 「還沒拍」的出口
+    await p.click('#imgOpts .opt >> nth=1');
+    await p.waitForSelector('#screenPending:not([hidden])');
+    ok('★「還沒拍」給出在拿到片子之前可以做什麼',
+      /不要因為初診敏感性測試陰性就做根管治療/.test(await p.textContent('#pendingBody')));
+    await p.click('#btnPendingNext');
+
+    await p.waitForSelector('#screenTree:not([hidden])');
+    ok('片子好了接回影像所見那一題',
+      (await p.textContent('#treeQ')).includes('影像上有看到什麼異常'));
+    await p.click('#treeOpts .opt >> nth=1');           // 完全沒有異常
     await p.waitForSelector('#screenDx:not([hidden])');
-    ok('恆牙→牙冠完整→位置正常→不搖但叩痛 導到「震盪」',
-      (await p.textContent('#dxNameZh')) === '震盪');
+    ok('★ 不搖＋影像無異常 才導到「震盪」', (await p.textContent('#dxNameZh')) === '震盪');
+    ok('震盪不是時間急迫', !(await p.isVisible('#dxUrgentBanner')));
+
+    // 同一個影像節點，選「有斷裂線」要導到牙根斷裂
+    await p.click('#btnDxBack');
+    await p.waitForSelector('#screenTree:not([hidden])');
+    await p.click('#treeOpts .opt >> nth=0');           // 有牙根斷裂線
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('★ 不搖＋影像有斷裂線 導到「牙根斷裂」', (await p.textContent('#dxNameZh')) === '牙根斷裂');
+  }
+
+  /* ── 4b. 找不到牙齒要先排除內縮，不能直接當脫落 ── */
+  {
+    await p.click("#screenDx:not([hidden]) #btnDxRestart, #screenTree:not([hidden]) #btnTreeRestart");
+    await p.click('#treeOpts .opt >> nth=1');           // 紅旗都沒有
+    await p.click('#treeOpts .opt >> nth=0');           // 恆牙
+    await p.click('#treeOpts .opt >> nth=1');           // 找不到牙齒
+    await p.waitForSelector('#screenImaging:not([hidden])');
+    ok('★ 找不到牙齒先進影像節點',
+      /不能直接當作脫落/.test(await p.textContent('#imgWhy')));
+    ok('影像節點提醒有呼吸症狀要轉急診',
+      /呼吸症狀/.test(await p.textContent('#imgWhy')));
+    await p.click('#imgOpts .opt >> nth=0');           // 我拍好了
+    await p.waitForSelector('#screenTree:not([hidden])');
+    await p.click('#treeOpts .opt >> nth=1');           // 牙齒還在骨內
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('★ 影像顯示牙齒還在骨內 → 內縮性脫位，不是脫落',
+      (await p.textContent('#dxNameZh')) === '內縮性脫位');
+  }
+
+  /* ── 4c. 乳牙：IADT 明文不需照影像的兩個診斷 ── */
+  {
+    await p.click("#screenDx:not([hidden]) #btnDxRestart, #screenTree:not([hidden]) #btnTreeRestart");
+    await p.click('#treeOpts .opt >> nth=1');           // 紅旗都沒有
+    await p.click('#treeOpts .opt >> nth=1');           // 乳牙
+    await p.click('#treeOpts .opt >> nth=2');           // 還在嘴裡
+    await p.click('#treeOpts .opt >> nth=1');           // 不是整段一起動
+    await p.click('#treeOpts .opt >> nth=1');           // 牙冠完整
+    await p.click('#treeOpts .opt >> nth=3');           // 位置正常
+    await p.waitForFunction(() => document.getElementById('treeQ').textContent.includes('齦溝'));
+    ok('乳牙動搖度題點出震盪與半脫位的分界是齦溝出血',
+      /齦溝不出血/.test(await p.textContent('#treeHint')));
+    await p.click('#treeOpts .opt >> nth=1');           // 搖動度正常、不出血
+    await p.waitForSelector('#screenImaging:not([hidden])');
+    ok('★ 乳牙震盪：明寫這個診斷不需要照影像', await p.isVisible('#imgNotNeeded'));
+    ok('★ 並說明理由（不要對小孩做不必要的曝照）',
+      /不需要基準影像/.test(await p.textContent('#imgWhy')) &&
+      /不必要的曝照/.test(await p.textContent('#imgWhy')));
+    ok('不需照影像時不顯示拍攝清單', !(await p.isVisible('#imgFilmsBox')));
+    await p.click('#imgOpts .opt >> nth=0');           // 繼續
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('導到乳牙震盪', (await p.textContent('#dxNameZh')) === '震盪' &&
+      (await p.textContent('#dxDentition')) === '乳牙');
+
+    // 乳牙半脫位那條要有 gate，因為牙根斷裂臨床上分不出來
+    await p.click("#screenDx:not([hidden]) #btnDxRestart, #screenTree:not([hidden]) #btnTreeRestart");
+    await p.click('#treeOpts .opt >> nth=1');
+    await p.click('#treeOpts .opt >> nth=1');           // 乳牙
+    await p.click('#treeOpts .opt >> nth=2');
+    await p.click('#treeOpts .opt >> nth=1');
+    await p.click('#treeOpts .opt >> nth=1');
+    await p.click('#treeOpts .opt >> nth=3');
+    await p.click('#treeOpts .opt >> nth=0');           // 搖動度增加、齦溝出血
+    await p.waitForSelector('#screenImaging:not([hidden])');
+    ok('★ 乳牙半脫位這條要等片子（與牙根斷裂臨床重疊）',
+      /臨床表現重疊/.test(await p.textContent('#imgWhy')));
+    await p.click('#imgOpts .opt >> nth=0');
+    await p.click('#treeOpts .opt >> nth=0');           // 有斷裂線
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('★ 乳牙：搖動＋有斷裂線 → 牙根斷裂（舊流程到不了這裡）',
+      (await p.textContent('#dxNameZh')) === '牙根斷裂' &&
+      (await p.textContent('#dxDentition')) === '乳牙');
   }
 
   /* ── 5. 查閱模式與搜尋 ── */
@@ -217,11 +319,10 @@ async function authed(browser){
   {
     await p.click('#btnHome');
     await p.click('#btnModeAsk');
+    await p.click('#treeOpts .opt >> nth=1');           // 紅旗都沒有
     await p.click('#treeOpts .opt >> nth=1');           // 乳牙
-    await p.waitForFunction(() => document.getElementById('treeHint') &&
-      !document.getElementById('treeHint').hidden);
-    ok('乳牙找不到牙齒時提示要排除吸入', /吸入呼吸道/.test(await p.textContent('#treeHint')));
-    await p.click('#treeOpts .opt >> nth=0');           // 整顆掉出來
+    await p.waitForFunction(() => document.getElementById('treeQ').textContent.includes('齒槽窩'));
+    await p.click('#treeOpts .opt >> nth=0');           // 整顆掉出來，牙齒有帶來
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('乳牙脫落頁', (await p.textContent('#dxNameZh')) === '脫落' &&
       (await p.textContent('#dxDentition')) === '乳牙');

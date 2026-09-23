@@ -131,6 +131,35 @@ details.card > summary + *{margin-top:12px}
 }
 .opt:hover{background:rgba(91,140,255,.16);border-color:var(--accent)}
 
+/* ===== 影像節點 ===== */
+.imaging{border-color:rgba(111,211,194,.32)}
+.img-step{
+  font-size:1.05rem;letter-spacing:.02em;
+  padding-bottom:10px;margin-bottom:12px;
+  border-bottom:1px solid var(--line);
+}
+.imaging h3{font-size:.86rem;color:var(--ok);margin:14px 0 6px;letter-spacing:.04em}
+.imaging .sec-list li::before{background:var(--ok)}
+.why{
+  font-size:.9rem;line-height:1.8;
+  background:rgba(111,211,194,.08);border-left:3px solid var(--ok);
+  border-radius:0 10px 10px 0;padding:11px 14px;
+}
+.opt.ghost-opt{
+  background:transparent;color:var(--muted);border-style:dashed;
+}
+.opt.ghost-opt:hover{background:rgba(255,255,255,.05);border-color:var(--muted);color:var(--text)}
+
+/* ===== 時間急迫的橫幅 ===== */
+.urgent-banner{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:12px 14px;margin-bottom:14px;
+}
+.urgent-banner .alert-head{margin:0;font-size:1.1rem;line-height:1.5}
+.urgent-banner p{font-size:.88rem;line-height:1.7}
+#screenResult .headline{margin-bottom:12px}
+#screenResult .headline:last-child{margin-bottom:0}
+
 /* ===== 查閱列表 ===== */
 .search{
   width:100%; padding:12px 16px; margin-bottom:14px;

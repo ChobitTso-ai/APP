@@ -159,6 +159,7 @@ const PERMANENT_DX = [
   img:'dx/fx-complicated-crown.svg', source:'IADT-1 Table 4',
   name:{ zh:'複雜性牙冠斷裂（露髓）', en:'Complicated crown fracture' },
   short:{ zh:'牙釉質與牙本質斷裂並露髓', en:'Enamel-dentin fracture with pulp exposure' },
+  timeCritical:true,
   pub:{
     what:{ zh:'斷面中央看得到紅色或會出血的組織，那是牙髓。這不等於一定要抽神經——尤其年輕恆牙，保住活的牙髓對牙根繼續發育非常重要。', en:'Red or bleeding tissue is visible at the centre of the fracture — that is the pulp. This does not automatically mean root canal treatment; in young permanent teeth, keeping the pulp alive is important for the root to finish developing.' },
     doNow:{ zh:'找到斷片並保持濕潤，儘快就醫。越早處理，保住活髓的機會越大。', en:'Find the fragment, keep it moist, and see a dentist quickly. The sooner it is treated, the better the chance of keeping the pulp alive.' },
@@ -509,6 +510,7 @@ const PERMANENT_DX = [
   img:'dx/lux-extrusive.svg', source:'IADT-1 Table 11',
   name:{ zh:'外突性脫位', en:'Extrusive luxation' },
   short:{ zh:'牙齒沿長軸部分脫出齒槽窩', en:'Partial displacement of the tooth out of its socket along the long axis' },
+  timeCritical:true,
   pub:{
     what:{ zh:'牙齒沿著牙根方向被拉出來一些，看起來比旁邊的牙齒長，而且很鬆。', en:'The tooth has been pulled partly out of its socket; it looks longer than the neighbouring teeth and is very loose.' },
     doNow:{ zh:'保持原狀，立刻就醫。需要由牙醫復位，不會自己回去。', en:'Leave it as it is and see a dentist at once. It needs to be repositioned by a dentist — it will not go back on its own.' },
@@ -562,6 +564,7 @@ const PERMANENT_DX = [
   img:'dx/lux-lateral.svg', source:'IADT-1 Table 12',
   name:{ zh:'側向脫位', en:'Lateral luxation' },
   short:{ zh:'非沿長軸的移位，常合併齒槽窩壁或唇側骨板斷裂', en:'Non-axial displacement, usually with fracture of the socket wall or labial cortical plate' },
+  timeCritical:true,
   pub:{
     what:{ zh:'牙齒被撞歪向嘴唇側或舌側，而且常卡在破裂變形的骨頭裡，所以反而「不太會搖」。', en:'The tooth has been pushed sideways, and is often locked into fractured bone — which is why it may not feel loose at all.' },
     doNow:{ zh:'保持原狀，立刻就醫。', en:'Leave it as it is and see a dentist at once.' },
@@ -616,6 +619,7 @@ const PERMANENT_DX = [
   img:'dx/lux-intrusive.svg', source:'IADT-1 Table 13',
   name:{ zh:'內縮性脫位', en:'Intrusive luxation' },
   short:{ zh:'牙齒沿根尖方向被壓入齒槽骨', en:'Displacement of the tooth in an apical direction into the alveolar bone' },
+  timeCritical:true,
   pub:{
     what:{ zh:'牙齒被撞進齒槽骨裡，看起來突然變短，甚至有一部分不見了。這是嚴重的脫位傷害。', en:'The tooth has been driven into the bone and suddenly looks shorter, or part of it has disappeared. This is a severe luxation injury.' },
     doNow:{ zh:'立刻由有牙外傷經驗的牙醫評估。處置方式會依牙根是否成熟與撞入深度而不同。', en:'Have it assessed immediately by a dentist experienced in dental trauma. Management depends on root maturity and the depth of intrusion.' },

@@ -52,6 +52,19 @@ const UI = {
 
   back:         { zh: '返回',                     en: 'Back' },
   restart:      { zh: '重新開始',                 en: 'Start over' },
+
+  imgStep:      { zh: '影像檢查',                 en: 'Imaging' },
+  imgTake:      { zh: '建議拍攝',                 en: 'Take these films' },
+  imgWhy:       { zh: '為什麼要照',               en: 'Why it matters' },
+  imgWhyNot:    { zh: '為什麼不用照',             en: 'Why no film is needed' },
+  imgNotNeeded: { zh: '這個診斷不需要照影像',      en: 'No radiograph is needed for this diagnosis' },
+  imgDone:      { zh: '我拍好了 →',               en: 'I have the films →' },
+  imgPending:   { zh: '還沒拍',                   en: 'Not imaged yet' },
+  imgContinue:  { zh: '繼續 →',                   en: 'Continue →' },
+  imgBefore:    { zh: '在拿到片子之前',           en: 'Before the films are available' },
+  imgBackToFilm:{ zh: '片子好了，繼續 →',         en: 'Films are ready, continue →' },
+  urgentNoWait: { zh: '時間急迫：先處置，影像同時進行或隨後補，不要為了等片子延誤。',
+                  en: 'Time-critical: treat first. Imaging can run alongside or follow — do not delay treatment waiting for films.' },
   search:       { zh: '搜尋診斷…',                en: 'Search diagnoses…' },
   noResult:     { zh: '找不到符合的診斷',          en: 'No matching diagnosis' },
 
@@ -244,13 +257,38 @@ const PULP_TEST_CAVEAT = {
   zh: '外傷後第一次敏感性測試陰性，不等於牙髓壞死。脫位傷害後神經傳導可能停止數週到數月，但血流仍在，假陰性很常見。決定是否根管治療的是「序列變化」與感染證據（症狀、變色、竇管、腫脹、根尖病灶、發炎性吸收），不是單次測試結果。',
   en: 'A negative sensibility test at the first visit does not mean pulp necrosis. After luxation injuries, nerve conduction may cease for weeks to months while blood supply persists, so false negatives are common. Endodontic treatment is decided by serial change and evidence of infection (symptoms, discoloration, sinus tract, swelling, apical pathosis, inflammatory resorption) — not by a single test.'
 };
-
 /* ---- 決策樹 ----
-   node: { id, q:{zh,en}, hint:{zh,en}, opts:[{ label:{zh,en}, next:'nodeId' | dx:'dxId' }] }
-   dx 指向 PERMANENT_DX / PRIMARY_DX 裡的 id。 */
+   走法比照急診的實際順序：
+     紅旗排除 → 乳牙恆牙 → 外觀檢查（純臨床）→ 影像 → 影像所見 → 診斷處置
+
+   節點型態
+     question  一般問答。opts:[{ label, next | dx | result }]
+     imaging   影像節點。films 要拍什麼、why 為什麼非拍不可。
+               gate:false → 診斷臨床上已經確定，只是提醒，按「繼續」直接到 dx
+               gate:true  → 非等片子不可，兩個出口：
+                            拍好了 → next（影像所見）
+                            還沒拍 → pending（先能做什麼），之後再回 next
+     result    終點但不是診斷（目前只有「先送急診」）
+
+   **時間急迫的診斷不經影像節點**——脫落、露髓、明顯移位的脫位，
+   急性處置不能等 X 光（乾燥 30 分鐘後多數牙周韌帶細胞已無存活力）。
+   這些診斷頁本身就列了建議影像，不會漏掉。 */
 const TREE = {
-  start: 'dentition',
+  start: 'redflag',
   nodes: {
+
+    /* ===== 第 1 關：紅旗 ===== */
+    redflag: {
+      q:{ zh:'有沒有以下任何一項？', en:'Is any of the following present?' },
+      hint:{ zh:'失去意識、持續嘔吐、神經學症狀、疑似顏面或頸椎骨折、無法控制的出血。牙齒的處理永遠排在這些後面。',
+             en:'Loss of consciousness, persistent vomiting, neurological signs, suspected facial or cervical spine fracture, uncontrolled bleeding. Dental treatment always comes after these.' },
+      opts:[
+        { label:{ zh:'有，至少一項',   en:'Yes, at least one' }, result:'refer' },
+        { label:{ zh:'都沒有',         en:'None of these' },     next:'dentition' }
+      ]
+    },
+
+    /* ===== 第 2 關：乳牙還是恆牙 ===== */
     dentition: {
       q:{ zh:'受傷的是恆牙還是乳牙？', en:'Is the injured tooth permanent or primary?' },
       hint:{ zh:'不確定時看年齡與牙齒大小：上顎門齒約 7–8 歲換牙。乳牙與恆牙的處置原則差很多，這一題判斷錯後面全錯。',
@@ -261,12 +299,13 @@ const TREE = {
       ]
     },
 
-    /* ===== 恆牙 ===== */
+    /* ===== 恆牙 · 第 3 關：外觀檢查 ===== */
     p_inSocket: {
       q:{ zh:'牙齒還在齒槽窩裡嗎？', en:'Is the tooth still in its socket?' },
       opts:[
-        { label:{ zh:'整顆掉出來了', en:'Completely out of the socket' }, dx:'p-avulsion' },
-        { label:{ zh:'還在嘴裡',     en:'Still in the mouth' },           next:'p_segment' }
+        { label:{ zh:'整顆掉出來了，牙齒在手上', en:'Completely out of the socket, the tooth is in hand' }, dx:'p-avulsion' },
+        { label:{ zh:'找不到牙齒',               en:'The tooth cannot be found' },                          next:'p_img_missing' },
+        { label:{ zh:'還在嘴裡',                 en:'Still in the mouth' },                                 next:'p_segment' }
       ]
     },
     p_segment: {
@@ -274,7 +313,7 @@ const TREE = {
       hint:{ zh:'用手指輕壓一顆牙，看鄰牙會不會跟著動；常合併咬合錯亂。',
              en:'Press one tooth gently and watch whether the neighbours move with it; occlusal disturbance is common.' },
       opts:[
-        { label:{ zh:'是，整段一起動', en:'Yes, the segment moves as a block' }, dx:'p-alveolar-fracture' },
+        { label:{ zh:'是，整段一起動', en:'Yes, the segment moves as a block' }, next:'p_img_alveolar' },
         { label:{ zh:'不是，單顆牙',   en:'No, individual teeth' },              next:'p_crown' }
       ]
     },
@@ -290,18 +329,18 @@ const TREE = {
       hint:{ zh:'斷裂線如果往齦下延伸、斷片會晃，選最後一項。',
              en:'If the fracture line extends below the gingival margin and the fragment is mobile, choose the last option.' },
       opts:[
-        { label:{ zh:'只有裂紋，沒有缺損',           en:'Craze lines only, no loss of tooth structure' }, dx:'p-enamel-infraction' },
-        { label:{ zh:'只缺一小塊白色的牙釉質',       en:'A small chip confined to enamel' },              dx:'p-enamel-fracture' },
-        { label:{ zh:'看得到黃色牙本質，沒有紅點',   en:'Yellow dentin exposed, no red spot' },           dx:'p-enamel-dentin-fracture' },
-        { label:{ zh:'看得到紅色或出血的牙髓',       en:'Red or bleeding pulp exposed' },                 dx:'p-complicated-crown-fracture' },
-        { label:{ zh:'裂線延伸到牙齦以下',           en:'Fracture line extends below the gingiva' },      next:'p_crownRoot' }
+        { label:{ zh:'只有裂紋，沒有缺損',         en:'Craze lines only, no loss of tooth structure' }, next:'p_img_crown' },
+        { label:{ zh:'只缺一小塊白色的牙釉質',     en:'A small chip confined to enamel' },              next:'p_img_crown2' },
+        { label:{ zh:'看得到黃色牙本質，沒有紅點', en:'Yellow dentin exposed, no red spot' },           next:'p_img_crown3' },
+        { label:{ zh:'看得到紅色或出血的牙髓',     en:'Red or bleeding pulp exposed' },                 dx:'p-complicated-crown-fracture' },
+        { label:{ zh:'裂線延伸到牙齦以下',         en:'Fracture line extends below the gingiva' },      next:'p_crownRoot' }
       ]
     },
     p_crownRoot: {
       q:{ zh:'這條延伸到齦下的裂線有沒有通過牙髓？', en:'Does that subgingival fracture involve the pulp?' },
       opts:[
-        { label:{ zh:'沒有露髓', en:'No pulp exposure' }, dx:'p-crown-root-fracture-uncomp' },
-        { label:{ zh:'有露髓',   en:'Pulp exposed'     }, dx:'p-crown-root-fracture-comp' }
+        { label:{ zh:'沒有露髓', en:'No pulp exposure' }, next:'p_img_cr_uncomp' },
+        { label:{ zh:'有露髓',   en:'Pulp exposed'     }, next:'p_img_cr_comp' }
       ]
     },
     p_position: {
@@ -315,29 +354,135 @@ const TREE = {
     },
     p_mobility: {
       q:{ zh:'牙齒會搖嗎？', en:'Is the tooth mobile?' },
-      hint:{ zh:'牙冠完整卻異常鬆動或有移位，務必用不同水平與垂直角度的根尖片排除牙根斷裂——單一張角度很容易漏診。',
-             en:'An intact crown with abnormal mobility or displacement must be radiographed at different horizontal and vertical angulations to exclude root fracture — a single view misses it easily.' },
       opts:[
-        { label:{ zh:'會搖，齦溝有出血',         en:'Mobile, with sulcular bleeding' },           dx:'p-subluxation' },
-        { label:{ zh:'不太搖，但叩診或咬合會痛', en:'Not mobile, but tender to percussion or biting' }, dx:'p-concussion' },
-        { label:{ zh:'很鬆或位置怪，X 光看到牙根有橫向斷裂線', en:'Very mobile or oddly positioned; radiograph shows a transverse root fracture line' }, dx:'p-root-fracture' }
+        { label:{ zh:'會搖，齦溝有出血',         en:'Mobile, with sulcular bleeding' },                 next:'p_img_loose' },
+        { label:{ zh:'不太搖，但叩診或咬合會痛', en:'Not mobile, but tender to percussion or biting' }, next:'p_img_tender' }
       ]
     },
 
-    /* ===== 乳牙 ===== */
+    /* ===== 恆牙 · 第 4 關：影像 ===== */
+    p_img_missing: {
+      type:'imaging', gate:true, next:'p_film_missing',
+      films:[
+        { zh:'不同水平與垂直角度的根尖片，加一張咬合片', en:'Periapical views at different horizontal and vertical angulations, plus an occlusal view' },
+        { zh:'唇、頰、舌的軟組織影像', en:'Soft tissue views of the lip, cheek and tongue' }
+      ],
+      why:{ zh:'找不到牙齒時，**不能直接當作脫落**。必須先排除它其實是被撞進齒槽骨（內縮性脫位）、嵌在軟組織裡、跑進鼻腔，或被吞入、吸入。有呼吸症狀時轉急診做醫療評估。',
+             en:'A missing tooth **must not be assumed to be avulsed**. Exclude intrusion into the alveolar bone, embedding in soft tissue, displacement into the nose, ingestion and aspiration. With respiratory symptoms, refer for medical evaluation.' },
+      beforeFilm:{ zh:'先壓迫止血、檢查軟組織有無傷口與異物。**有呼吸症狀就直接轉急診**，不要等牙科影像。',
+                   en:'Control bleeding and examine the soft tissues for wounds and foreign bodies. **With any respiratory symptoms, refer to the emergency department immediately** — do not wait for dental imaging.' }
+    },
+    p_img_alveolar: {
+      type:'imaging', gate:false, dx:'p-alveolar-fracture',
+      films:[
+        { zh:'不同水平與垂直角度的根尖片，加一張咬合片', en:'Periapical views at different horizontal and vertical angulations, plus an occlusal view' },
+        { zh:'平片不足以規劃治療時，考慮全景片與／或 CBCT', en:'If plain films are insufficient for planning, consider a panoramic radiograph and/or CBCT' }
+      ],
+      why:{ zh:'整段一起動在臨床上已經可以診斷，影像是要**定出骨折線的位置、範圍與方向**，並逐顆確認哪些牙在骨折線上。',
+             en:'The en bloc movement already makes the diagnosis clinically; imaging is to **determine the location, extent and direction of the fracture line** and to identify which teeth lie in it.' }
+    },
+    p_img_crown: {
+      type:'imaging', gate:false, dx:'p-enamel-infraction',
+      films:[{ zh:'一張平行投影根尖片', en:'One parallel periapical radiograph' }],
+      why:{ zh:'裂紋本身影像上看不到。照這一張是為了**排除合併的脫位或牙根斷裂**——有叩痛時尤其要照。',
+             en:'The infraction itself is not visible radiographically. The film is to **exclude an associated luxation or root fracture** — especially if the tooth is tender to percussion.' }
+    },
+    p_img_crown2: {
+      type:'imaging', gate:false, dx:'p-enamel-fracture',
+      films:[
+        { zh:'一張平行投影根尖片', en:'One parallel periapical radiograph' },
+        { zh:'斷片下落不明且唇頰有傷口時，加照軟組織影像', en:'Soft tissue views if the fragment is unaccounted for and the lip or cheek is injured' }
+      ],
+      why:{ zh:'排除合併的脫位或牙根斷裂。**斷片找不到時不要假設它掉在現場**——可能嵌在嘴唇裡。',
+             en:'To exclude an associated luxation or root fracture. **Do not assume a missing fragment was lost at the scene** — it may be embedded in the lip.' }
+    },
+    p_img_crown3: {
+      type:'imaging', gate:false, dx:'p-enamel-dentin-fracture',
+      films:[
+        { zh:'一張平行投影根尖片', en:'One parallel periapical radiograph' },
+        { zh:'斷片下落不明且唇頰有傷口時，加照軟組織影像', en:'Soft tissue views if the fragment is unaccounted for and the lip or cheek is injured' }
+      ],
+      why:{ zh:'排除合併的脫位或牙根斷裂，並確認剩餘牙本質厚度。',
+             en:'To exclude an associated luxation or root fracture, and to judge the remaining dentin thickness.' }
+    },
+    p_img_cr_uncomp: {
+      type:'imaging', gate:false, dx:'p-crown-root-fracture-uncomp',
+      films:[
+        { zh:'一張平行投影根尖片，加不同水平與垂直角度的加照', en:'One parallel periapical radiograph plus views at different horizontal and vertical angulations' },
+        { zh:'**考慮 CBCT**：看清裂線路徑、範圍、與邊緣骨的關係，並評估冠根比', en:'**Consider CBCT** to clarify the fracture path, its extent and relationship to the marginal bone, and to assess the crown-root ratio' }
+      ],
+      why:{ zh:'齦下裂線延伸多深，決定這顆牙能不能修復、要不要做牙根突出術，二維影像常常界定不出來。',
+             en:'How far the subgingival fracture extends determines restorability and whether extrusion is needed — two-dimensional imaging often cannot define it.' }
+    },
+    p_img_cr_comp: {
+      type:'imaging', gate:false, dx:'p-crown-root-fracture-comp',
+      films:[
+        { zh:'一張平行投影根尖片，加不同水平與垂直角度的加照', en:'One parallel periapical radiograph plus views at different horizontal and vertical angulations' },
+        { zh:'**考慮 CBCT**：裂線路徑、範圍、與邊緣骨的關係、冠根比', en:'**Consider CBCT**: fracture path, extent, relationship to the marginal bone, crown-root ratio' }
+      ],
+      why:{ zh:'同未露髓型；另外要確認牙根長度與牙髓處置的可行性。',
+             en:'As for the uncomplicated type, and additionally to confirm root length and the feasibility of pulp treatment.' }
+    },
+    p_img_loose: {
+      type:'imaging', gate:true, next:'p_film_loose',
+      films:[
+        { zh:'**不同水平與垂直角度的根尖片**（不只一張角度）', en:'**Periapical views at different horizontal and vertical angulations** — not a single view' },
+        { zh:'必要時加一張咬合片', en:'Add an occlusal view when needed' },
+        { zh:'平片不足以規劃治療時，考慮 CBCT', en:'Consider CBCT if plain films are insufficient for planning' }
+      ],
+      why:{ zh:'**牙冠完整卻異常鬆動，非照不可。**半脫位與牙根斷裂在臨床上一模一樣，牙根斷裂只有影像看得到，而且 IADT 原文明講「不加照就可能漏診」——單一角度很容易錯過斜向的裂線。',
+             en:'**An intact crown with abnormal mobility must be imaged.** Subluxation and root fracture look identical clinically; only imaging shows the fracture, and the IADT states that root fractures "may be undetected without additional imaging" — a single angulation easily misses an oblique line.' },
+      beforeFilm:{ zh:'先不要反覆搖動牙齒。軟食、避免用該牙施力、保持清潔。**不要在拿到片子之前就做預防性根管治療。**',
+                   en:'Stop repeatedly testing mobility. Soft diet, avoid loading the tooth, keep it clean. **Do not start prophylactic endodontic treatment before the films are available.**' }
+    },
+    p_img_tender: {
+      type:'imaging', gate:true, next:'p_film_tender',
+      films:[
+        { zh:'不同水平與垂直角度的根尖片', en:'Periapical views at different horizontal and vertical angulations' },
+        { zh:'必要時加一張咬合片', en:'Add an occlusal view when needed' }
+      ],
+      why:{ zh:'不會搖也可能是牙根斷裂——斷片沒有移位時搖動度可以完全正常。震盪的定義本來就包含「影像上無異常」，所以要有片子才說得出是震盪。',
+             en:'An immobile tooth can still have a root fracture: mobility may be entirely normal when the fragments are undisplaced. Concussion is defined partly by the absence of radiographic abnormality, so a film is needed before calling it concussion.' },
+      beforeFilm:{ zh:'軟食、避免用該牙施力。**不要因為初診敏感性測試陰性就做根管治療。**',
+                   en:'Soft diet, avoid loading the tooth. **Do not start endodontic treatment because of a negative sensibility test at the first visit.**' }
+    },
+
+    /* ===== 恆牙 · 第 5 關：影像所見 ===== */
+    p_film_missing: {
+      q:{ zh:'影像上看到什麼？', en:'What do the films show?' },
+      opts:[
+        { label:{ zh:'齒槽窩是空的，牙齒不在骨內', en:'The socket is empty; the tooth is not in the bone' }, dx:'p-avulsion' },
+        { label:{ zh:'牙齒還在骨內，只是被壓進去了', en:'The tooth is still in the bone, driven apically' }, dx:'p-intrusive-luxation' }
+      ]
+    },
+    p_film_loose: {
+      q:{ zh:'影像上有看到牙根的橫向或斜向斷裂線嗎？', en:'Do the films show a transverse or oblique root fracture line?' },
+      opts:[
+        { label:{ zh:'有，看得到斷裂線', en:'Yes, a fracture line is visible' }, dx:'p-root-fracture' },
+        { label:{ zh:'沒有，牙根完整（牙周韌帶腔可能略增寬）', en:'No, the root is intact (the periodontal ligament space may be slightly widened)' }, dx:'p-subluxation' }
+      ]
+    },
+    p_film_tender: {
+      q:{ zh:'影像上有看到什麼異常嗎？', en:'Do the films show any abnormality?' },
+      opts:[
+        { label:{ zh:'有牙根的橫向或斜向斷裂線', en:'A transverse or oblique root fracture line' }, dx:'p-root-fracture' },
+        { label:{ zh:'完全沒有異常',             en:'No abnormality at all' },                      dx:'p-concussion' }
+      ]
+    },
+
+    /* ===== 乳牙 · 第 3 關：外觀檢查 ===== */
     d_inSocket: {
       q:{ zh:'牙齒還在齒槽窩裡嗎？', en:'Is the tooth still in its socket?' },
-      hint:{ zh:'乳牙找不到時，一定要確認它不是被撞進齒槽骨、嵌在軟組織裡，或被吸入呼吸道。',
-             en:'If a primary tooth cannot be found, exclude intrusion into bone, embedding in soft tissue, or aspiration.' },
       opts:[
-        { label:{ zh:'整顆掉出來了', en:'Completely out of the socket' }, dx:'d-avulsion' },
-        { label:{ zh:'還在嘴裡',     en:'Still in the mouth' },           next:'d_segment' }
+        { label:{ zh:'整顆掉出來了，牙齒有帶來', en:'Completely out, and the tooth has been brought in' }, dx:'d-avulsion' },
+        { label:{ zh:'找不到牙齒',               en:'The tooth cannot be found' },                        next:'d_img_missing' },
+        { label:{ zh:'還在嘴裡',                 en:'Still in the mouth' },                               next:'d_segment' }
       ]
     },
     d_segment: {
       q:{ zh:'是好幾顆牙連同一塊骨頭一起動嗎？', en:'Do several teeth move together as one bony segment?' },
       opts:[
-        { label:{ zh:'是，整段一起動', en:'Yes, the segment moves as a block' }, dx:'d-alveolar-fracture' },
+        { label:{ zh:'是，整段一起動', en:'Yes, the segment moves as a block' }, next:'d_img_alveolar' },
         { label:{ zh:'不是，單顆牙',   en:'No, individual teeth' },              next:'d_crown' }
       ]
     },
@@ -351,29 +496,149 @@ const TREE = {
     d_crownDepth: {
       q:{ zh:'斷面看得到什麼？', en:'What can you see at the fracture surface?' },
       opts:[
-        { label:{ zh:'只缺一小塊白色的牙釉質',     en:'A small chip confined to enamel' },         dx:'d-enamel-fracture' },
-        { label:{ zh:'看得到黃色牙本質，沒有紅點', en:'Yellow dentin exposed, no red spot' },      dx:'d-enamel-dentin-fracture' },
-        { label:{ zh:'看得到紅色或出血的牙髓',     en:'Red or bleeding pulp exposed' },            dx:'d-complicated-crown-fracture' },
-        { label:{ zh:'裂線延伸到牙齦以下',         en:'Fracture line extends below the gingiva' }, dx:'d-crown-root-fracture' }
+        { label:{ zh:'只缺一小塊白色的牙釉質',     en:'A small chip confined to enamel' },         next:'d_img_enamel' },
+        { label:{ zh:'看得到黃色牙本質，沒有紅點', en:'Yellow dentin exposed, no red spot' },      next:'d_img_dentin' },
+        { label:{ zh:'看得到紅色或出血的牙髓',     en:'Red or bleeding pulp exposed' },            next:'d_img_pulp' },
+        { label:{ zh:'裂線延伸到牙齦以下',         en:'Fracture line extends below the gingiva' }, next:'d_img_crownroot' }
       ]
     },
     d_position: {
       q:{ zh:'牙齒的位置有變嗎？', en:'Has the tooth been displaced?' },
       opts:[
-        { label:{ zh:'變長，像被拉出來一些', en:'Appears elongated, partially out of the socket' }, dx:'d-extrusive-luxation' },
-        { label:{ zh:'歪向唇側或舌側',       en:'Tipped labially or palatally' },                  dx:'d-lateral-luxation' },
-        { label:{ zh:'變短甚至看不到',       en:'Shortened or almost disappeared' },               dx:'d-intrusive-luxation' },
+        { label:{ zh:'變長，像被拉出來一些', en:'Appears elongated, partially out of the socket' }, next:'d_img_extrusive' },
+        { label:{ zh:'歪向唇側或舌側',       en:'Tipped labially or palatally' },                  next:'d_img_lateral' },
+        { label:{ zh:'變短甚至看不到',       en:'Shortened or almost disappeared' },               next:'d_img_intrusive' },
         { label:{ zh:'位置看起來正常',       en:'Position looks normal' },                         next:'d_mobility' }
       ]
     },
     d_mobility: {
-      q:{ zh:'牙齒會搖嗎？', en:'Is the tooth mobile?' },
+      q:{ zh:'牙齒會搖嗎？齦溝有沒有出血？', en:'Is the tooth mobile? Is the gingival crevice bleeding?' },
+      hint:{ zh:'乳牙的震盪與半脫位就差在這裡：**震盪的搖動度正常、齦溝不出血**；半脫位搖動度增加、齦溝可能出血。',
+             en:'This is what separates primary concussion from subluxation: **concussion has normal mobility and no sulcular bleeding**; subluxation has increased mobility and may bleed from the crevice.' },
       opts:[
-        { label:{ zh:'會搖，齦溝有出血',         en:'Mobile, with sulcular bleeding' },                 dx:'d-subluxation' },
-        { label:{ zh:'不太搖，但碰到會痛',       en:'Not mobile, but tender on contact' },              dx:'d-concussion' },
-        { label:{ zh:'很鬆或位置怪，X 光看到牙根有斷裂線', en:'Very mobile or oddly positioned; radiograph shows a root fracture line' }, dx:'d-root-fracture' }
+        { label:{ zh:'搖動度增加，齦溝有出血',     en:'Increased mobility with sulcular bleeding' }, next:'d_img_sublux' },
+        { label:{ zh:'搖動度正常，齦溝不出血，只是碰到會痛', en:'Normal mobility, no bleeding, just tender to touch' }, next:'d_img_concussion' }
+      ]
+    },
+
+    /* ===== 乳牙 · 第 4 關：影像 =====
+       IADT-3 對乳牙的影像規定比恆牙保守得多，有兩個診斷明文不需要照。
+       這裡照原文寫，不要一律提醒拍片。 */
+    d_img_missing: {
+      type:'imaging', gate:true, next:'d_film_missing',
+      films:[{ zh:'根尖片（0 號感應器／底片，平行投影）或咬合片（2 號感應器／底片）', en:'Periapical (size 0 sensor/film, paralleling technique) or occlusal (size 2 sensor/film) radiograph' }],
+      why:{ zh:'**牙齒沒有帶到診間時，這張影像是必要的**——要確認這顆牙不是被內縮進去。同時也作為發育中恆牙的基準，並判斷恆牙有沒有被推移。找不到牙齒且有呼吸症狀時，轉急診做醫療評估。',
+             en:'**Where the tooth is not brought to the clinic this radiograph is essential** — to confirm the tooth has not been intruded. It also provides a baseline for the developing permanent tooth and shows whether it has been displaced. If the tooth is missing and there are respiratory symptoms, refer for medical evaluation.' },
+      beforeFilm:{ zh:'壓迫止血，檢查唇、頰、舌有沒有嵌入的牙齒。**有呼吸症狀直接轉急診。**',
+                   en:'Control bleeding and check the lip, cheek and tongue for an embedded tooth. **With respiratory symptoms, refer to the emergency department.**' }
+    },
+    d_img_enamel: {
+      type:'imaging', gate:false, dx:'d-enamel-fracture', notNeeded:true,
+      films:[],
+      why:{ zh:'**IADT 對乳牙的單純牙釉質斷裂明文寫「不需要照影像」。**這個診斷也不建議做臨床或影像追蹤。不要對小孩做不必要的曝照。',
+             en:'**For an isolated primary enamel fracture the IADT states that no radiographs are recommended.** No clinical or radiographic follow-up is recommended either. Avoid unnecessary exposure in a child.' }
+    },
+    d_img_dentin: {
+      type:'imaging', gate:false, dx:'d-enamel-dentin-fracture', optional:true,
+      films:[
+        { zh:'基準影像**可照可不照**（optional）', en:'Baseline radiograph **optional**' },
+        { zh:'懷疑斷片嵌在唇、頰或舌內時，照軟組織影像', en:'Radiograph the soft tissues if the fragment may be embedded in the lip, cheek or tongue' }
+      ],
+      why:{ zh:'IADT 對這個診斷把基準影像列為可選。**真正一定要照的是軟組織**——斷片找不到而嘴唇有傷口時，它可能就在嘴唇裡。',
+             en:'The IADT lists the baseline film as optional for this diagnosis. **What must not be skipped is the soft tissue view** — if the fragment is unaccounted for and the lip is wounded, it may be inside the lip.' }
+    },
+    d_img_pulp: {
+      type:'imaging', gate:false, dx:'d-complicated-crown-fracture',
+      films:[
+        { zh:'根尖片（0 號，平行投影）或咬合片（2 號），作為診斷與基準', en:'Periapical (size 0, paralleling technique) or occlusal (size 2) radiograph, for diagnosis and as a baseline' },
+        { zh:'懷疑斷片嵌在軟組織內時加照軟組織影像', en:'Soft tissue views if a fragment may be embedded' }
+      ],
+      why:{ zh:'判斷牙根發育階段與有無根尖病灶，決定做局部斷髓術還是冠髓切除術。',
+             en:'To judge the stage of root development and any apical pathosis, which decides between partial and cervical pulpotomy.' }
+    },
+    d_img_crownroot: {
+      type:'imaging', gate:false, dx:'d-crown-root-fracture',
+      films:[{ zh:'根尖片（0 號，平行投影）或咬合片（2 號），作為診斷與基準', en:'Periapical (size 0) or occlusal (size 2) radiograph, for diagnosis and as a baseline' }],
+      why:{ zh:'判斷裂線深度與剩餘牙根，決定是移除鬆動斷片後修復，還是整顆拔除。同時看恆牙牙胚的位置。',
+             en:'To judge the depth of the fracture and the remaining root — whether to remove the loose fragment and restore, or extract — and to see the position of the permanent tooth germ.' }
+    },
+    d_img_extrusive: {
+      type:'imaging', gate:false, dx:'d-extrusive-luxation',
+      films:[{ zh:'根尖片（0 號）或咬合片（2 號），作為基準', en:'Periapical (size 0) or occlusal (size 2) radiograph as a baseline' }],
+      why:{ zh:'看根尖側牙周韌帶腔增寬的程度，並作為日後比對的基準。處置主要仍看臨床：有沒有干擾咬合、搖動度、脫出幾 mm。\n\n**看片時順便排除牙根斷裂**——乳牙牙根斷裂的冠側斷片本來就可能移位，看起來會像脫位。片子上若有斷裂線，改看「牙根斷裂」。',
+             en:'To see how far the apical periodontal ligament space is widened and to serve as a baseline. Management still turns on the clinical picture: occlusal interference, mobility, and how many millimetres the tooth is extruded.\n\n**Use the film to exclude a root fracture as well** — the coronal fragment of a primary root fracture may itself be displaced and can look like a luxation. If a fracture line is present, go to "Root fracture" instead.' }
+    },
+    d_img_lateral: {
+      type:'imaging', gate:false, dx:'d-lateral-luxation',
+      films:[{ zh:'根尖片（0 號）或**咬合片（2 號）**', en:'Periapical (size 0) or **occlusal (size 2)** radiograph' }],
+      why:{ zh:'根尖側牙周韌帶腔增寬在**咬合片上最看得清楚**，尤其牙齒向唇側移位時。也要確認根尖有沒有頂到恆牙牙胚。\n\n**看片時順便排除牙根斷裂**——乳牙牙根斷裂的冠側斷片本來就可能移位，看起來會像脫位。片子上若有斷裂線，改看「牙根斷裂」。',
+             en:'The widened apical periodontal ligament space is **most clearly seen on an occlusal radiograph**, especially when the tooth is displaced labially. Also check whether the apex impinges on the permanent tooth germ.\n\n**Use the film to exclude a root fracture as well** — the coronal fragment of a primary root fracture may itself be displaced and can look like a luxation. If a fracture line is present, go to "Root fracture" instead.' }
+    },
+    d_img_intrusive: {
+      type:'imaging', gate:true, next:'d_film_intrusive',
+      films:[{ zh:'根尖片（0 號，平行投影）或咬合片（2 號），作為診斷與基準', en:'Periapical (size 0, paralleling technique) or occlusal (size 2) radiograph, for diagnosis and as a baseline' }],
+      why:{ zh:'**要判斷根尖往哪裡去**：朝唇側骨板還是朝恆牙牙胚。影像上的表現剛好相反——根尖穿向唇側時看得到根尖、牙齒顯得比對側短；根尖朝牙胚時看不到根尖、牙齒反而顯得長。這關係到對恆牙的風險評估與家長告知。',
+             en:'**To determine where the apex has gone**: towards the labial bone plate or towards the permanent tooth germ. The radiographic appearance is opposite in the two cases — when the apex is displaced labially the tip is visible and the tooth looks foreshortened; when it points at the germ the tip cannot be seen and the tooth looks elongated. This drives the risk assessment and what the parents are told.' },
+      beforeFilm:{ zh:'不要嘗試把牙齒拉出來。壓迫止血、軟食。**不論哪個方向，2020 版都是等它自行再萌出**，所以影像不改變急性處置，但改變對恆牙的風險評估。',
+                   en:'Do not attempt to pull the tooth out. Control bleeding, soft diet. **In the 2020 guideline the tooth is left to re-erupt regardless of direction**, so imaging does not change the acute management — it changes the risk assessment for the permanent successor.' }
+    },
+    d_img_sublux: {
+      type:'imaging', gate:true, next:'d_film_sublux',
+      films:[{ zh:'根尖片（0 號感應器／底片，平行投影）或咬合片（2 號感應器／底片）', en:'Periapical (size 0 sensor/film, paralleling technique) or occlusal (size 2 sensor/film) radiograph' }],
+      why:{ zh:'**半脫位與牙根斷裂在乳牙上臨床表現重疊**——兩者都可能是「搖動度增加、位置看起來正常」，要靠片子分。這張同時是基準影像，日後出現變色或腫脹才有得比對。',
+             en:'**Subluxation and root fracture overlap clinically in primary teeth** — both can present as increased mobility with a normal-looking position, and the film is what separates them. It also serves as the baseline for comparison if discoloration or swelling appears later.' },
+      beforeFilm:{ zh:'不要反覆搖動牙齒。軟食、保持清潔。大多數乳牙半脫位不需要固定，**但在排除牙根斷裂之前不要下結論**。',
+                   en:'Stop testing the mobility repeatedly. Soft diet, keep it clean. Most primary subluxations need no splint, **but do not conclude that before a root fracture has been excluded**.' }
+    },
+    d_film_sublux: {
+      q:{ zh:'影像上有看到牙根的斷裂線嗎？', en:'Does the film show a root fracture line?' },
+      opts:[
+        { label:{ zh:'有，看得到斷裂線（多半在牙根中段或根尖三分之一）', en:'Yes, a fracture line is visible (usually mid-root or apical third)' }, dx:'d-root-fracture' },
+        { label:{ zh:'沒有，牙根完整（牙周韌帶腔正常到略增寬）', en:'No, the root is intact (normal to slightly widened periodontal ligament space)' }, dx:'d-subluxation' }
+      ]
+    },
+    d_img_concussion: {
+      type:'imaging', gate:false, dx:'d-concussion', notNeeded:true,
+      films:[],
+      why:{ zh:'**IADT 對乳牙震盪明文寫「不需要基準影像」。**後續也只有在臨床發現暗示病變時才加照。不要對小孩做不必要的曝照。',
+             en:'**For primary tooth concussion the IADT states that no baseline radiograph is recommended.** Later films are indicated only when clinical findings suggest pathosis. Avoid unnecessary exposure in a child.' }
+    },
+    d_img_alveolar: {
+      type:'imaging', gate:false, dx:'d-alveolar-fracture',
+      films:[
+        { zh:'根尖片（0 號）或咬合片（2 號），作為基準', en:'Periapical (size 0) or occlusal (size 2) radiograph as a baseline' },
+        { zh:'**4 週與 1 年要再加照**，評估骨折線上的乳牙與恆牙牙胚', en:'**Repeat at 4 weeks and 1 year** to assess the primary teeth and permanent tooth germs in the line of the fracture' }
+      ],
+      why:{ zh:'乳牙的影像追蹤原則上不是例行的，齒槽骨骨折是明文的例外——4 週與 1 年那兩張可能提示需要更密集的追蹤。',
+             en:'Radiographic follow-up is generally not routine in the primary dentition; alveolar fracture is an explicit exception — the 4-week and 1-year films may indicate that a more frequent regimen is needed.' }
+    },
+
+    /* ===== 乳牙 · 第 5 關：影像所見 ===== */
+    d_film_missing: {
+      q:{ zh:'影像上看到什麼？', en:'What does the film show?' },
+      opts:[
+        { label:{ zh:'齒槽窩是空的，牙齒不在骨內', en:'The socket is empty; the tooth is not in the bone' }, dx:'d-avulsion' },
+        { label:{ zh:'牙齒還在骨內，被壓進去了',   en:'The tooth is still in the bone, driven apically' },  dx:'d-intrusive-luxation' }
+      ]
+    },
+    d_film_intrusive: {
+      q:{ zh:'影像上根尖往哪個方向？', en:'Which way has the apex gone?' },
+      hint:{ zh:'兩種方向的處置相同（等自行再萌出），但對恆牙牙胚的風險不同，家長告知的內容也不同。',
+             en:'Management is the same either way (allow spontaneous re-eruption), but the risk to the permanent tooth germ — and therefore what the parents are told — differs.' },
+      opts:[
+        { label:{ zh:'看得到根尖，牙齒顯得比對側短（朝唇側骨板）', en:'The apical tip is visible and the tooth looks foreshortened (towards the labial plate)' }, dx:'d-intrusive-luxation' },
+        { label:{ zh:'看不到根尖，牙齒反而顯得長（朝恆牙牙胚）',   en:'The apical tip cannot be seen and the tooth looks elongated (towards the tooth germ)' },   dx:'d-intrusive-luxation' }
       ]
     }
+  }
+};
+
+/* ---- 決策樹的終點但不是診斷 ---- */
+const TREE_RESULTS = {
+  refer: {
+    title:{ zh:'先處理醫療急症', en:'Medical emergency first' },
+    body:{ zh:'出現失去意識、持續嘔吐、神經學症狀、疑似顏面或頸椎骨折，或無法控制的出血時，**先啟動醫療急救或送急診**，牙齒的處理往後排。\n\n等生命徵象與神經學狀況穩定、外科評估完成之後，再回來做牙外傷的診斷與處置。\n\n**唯一的例外是脫落的恆牙**：如果患者清醒、沒有立即的醫療禁忌，牙齒可以在等待的同時就放進保存液（牛奶為首選），不要讓牙根乾掉——時間就是牙周韌帶。',
+           en:'With loss of consciousness, persistent vomiting, neurological signs, suspected facial or cervical spine fracture, or uncontrolled bleeding, **activate medical emergency care first**; dental treatment comes after.\n\nReturn to the dental assessment once the vital signs and neurological status are stable and the surgical evaluation is complete.\n\n**The one exception is an avulsed permanent tooth**: if the patient is conscious with no immediate medical contraindication, the tooth can go into a storage medium (milk first choice) while waiting — do not let the root dry. Time is periodontal ligament.' }
   }
 };
 

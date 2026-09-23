@@ -32,8 +32,13 @@ function esc(s){
   }[c]));
 }
 
-// 資料檔裡用 **粗體** 標出關鍵字。先跳脫再轉標記，避免內容注入標籤。
-function md(s){ return esc(s).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); }
+// 資料檔裡用 **粗體** 標出關鍵字、空行分段。先跳脫再轉標記，避免內容注入標籤。
+function md(s){
+  return esc(s)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
 
 function el(tag, cls, html){
   const n = document.createElement(tag);
@@ -86,7 +91,7 @@ function figure(src, alt, phText){
 
 /* ---------- 畫面切換 ---------- */
 
-const SCREENS = ['screenHome','screenTree','screenBrowse','screenDx'];
+const SCREENS = ['screenHome','screenTree','screenImaging','screenPending','screenResult','screenBrowse','screenDx'];
 function show(id){
   SCREENS.forEach(s => { $(s).hidden = (s !== id); });
   window.scrollTo(0, 0);
@@ -126,7 +131,11 @@ function setLang(next){
   localStorage.setItem(LANG_KEY, lang);
   applyUiText();
   renderHome();
-  if (!$('screenTree').hidden) renderTree(treePath.length ? treePath[treePath.length-1].node : TREE.start, true);
+  // 決策樹、影像節點、終點頁都要跟著換語言；用目前停在哪個畫面決定重畫哪一個
+  if (!$('screenTree').hidden || !$('screenImaging').hidden){
+    if (treePath.length) goNode(treePath[treePath.length - 1].node, true);
+  }
+  if (!$('screenPending').hidden && pendingNode) renderPending(pendingNode);
   if (!$('screenBrowse').hidden) renderBrowse($('dxSearch').value);
   if (curDx) openDx(curDx.id, true);
 }
@@ -184,23 +193,36 @@ function renderHome(){
 
 function startTree(){
   treePath = [];
-  renderTree(TREE.start);
-  show('screenTree');
+  goNode(TREE.start);
 }
 
-function renderTree(nodeId, keepPath){
+/* 三種節點型態共用的入口：question / imaging / result */
+function goNode(nodeId, keepPath){
   const node = TREE.nodes[nodeId];
   if (!node) return;
-  if (!keepPath && !treePath.some(p => p.node === nodeId)) {
-    treePath.push({ node: nodeId });
-  }
+  if (!keepPath) treePath.push({ node: nodeId });
 
-  const crumbs = $('treeCrumbs');
-  crumbs.innerHTML = '';
+  if (node.type === 'imaging') renderImaging(node);
+  else renderQuestion(node);
+}
+
+function crumbsInto(host){
+  host.innerHTML = '';
   treePath.forEach(p => {
-    if (p.pick) crumbs.appendChild(el('span', null, esc(p.pick)));
+    if (p.pick) host.appendChild(el('span', null, esc(p.pick)));
   });
+}
 
+// 選了某個出口之後往下走；o 可能帶 next / dx / result
+function takeOption(o){
+  treePath[treePath.length - 1].pick = L(o.label);
+  if (o.dx) openDx(o.dx);
+  else if (o.result) renderResult(o.result);
+  else goNode(o.next);
+}
+
+function renderQuestion(node){
+  crumbsInto($('treeCrumbs'));
   $('treeQ').textContent = L(node.q);
   const hint = $('treeHint');
   if (node.hint){ hint.innerHTML = md(L(node.hint)); hint.hidden = false; }
@@ -210,22 +232,93 @@ function renderTree(nodeId, keepPath){
   opts.innerHTML = '';
   node.opts.forEach(o => {
     const b = el('button', 'opt', md(L(o.label)));
-    b.addEventListener('click', () => {
-      treePath[treePath.length - 1].pick = L(o.label);
-      if (o.dx) openDx(o.dx);
-      else renderTree(o.next);
-    });
+    b.addEventListener('click', () => takeOption(o));
     opts.appendChild(b);
   });
   $('btnTreeBack').hidden = (treePath.length <= 1);
+  show('screenTree');
 }
 
+/* 影像節點。
+   gate:false → 診斷臨床上已經確定，只是告知該拍什麼，一個「繼續」出口。
+   gate:true  → 非等片子不可，兩個出口（拍好了／還沒拍）。 */
+function renderImaging(node){
+  crumbsInto($('imgCrumbs'));
+
+  const nn = $('imgNotNeeded');
+  const box = $('imgFilmsBox');
+  const skip = node.notNeeded || !node.films.length;
+  $('imgWhyLabel').textContent = L(skip ? UI.imgWhyNot : UI.imgWhy);
+  if (skip){
+    nn.textContent = L(UI.imgNotNeeded);
+    nn.hidden = false;
+    box.hidden = true;
+  } else {
+    nn.hidden = true;
+    box.hidden = false;
+    const ul = $('imgFilms');
+    ul.innerHTML = '';
+    node.films.forEach(f => ul.appendChild(el('li', null, md(L(f)))));
+  }
+  $('imgWhy').innerHTML = md(L(node.why));
+
+  const opts = $('imgOpts');
+  opts.innerHTML = '';
+  if (node.gate){
+    const done = el('button', 'opt', esc(L(UI.imgDone)));
+    done.addEventListener('click', () => {
+      treePath[treePath.length - 1].pick = L(UI.imgDone);
+      goNode(node.next);
+    });
+    opts.appendChild(done);
+
+    const later = el('button', 'opt ghost-opt', esc(L(UI.imgPending)));
+    later.addEventListener('click', () => renderPending(node));
+    opts.appendChild(later);
+  } else {
+    const go = el('button', 'opt', esc(L(UI.imgContinue)));
+    go.addEventListener('click', () => {
+      treePath[treePath.length - 1].pick = L(UI.imgStep);
+      openDx(node.dx);
+    });
+    opts.appendChild(go);
+  }
+  $('btnImgBack').hidden = (treePath.length <= 1);
+  show('screenImaging');
+}
+
+/* 還沒拍片：先給在拿到片子之前可以做的事，之後可以直接接回影像所見 */
+let pendingNode = null;
+function renderPending(node){
+  pendingNode = node;
+  $('pendingBody').innerHTML = md(L(node.beforeFilm || node.why));
+  show('screenPending');
+}
+
+function renderResult(key){
+  const r = TREE_RESULTS[key];
+  if (!r) return;
+  $('resultTitle').textContent = L(r.title);
+  $('resultBody').innerHTML = L(r.body).split('\n\n')
+    .map(par => '<p class="headline">' + md(par) + '</p>').join('');
+  show('screenResult');
+}
+
+/* 在節點上按「返回」：退掉目前這個節點，回到上一個 */
 function treeBack(){
   if (treePath.length <= 1) return;
   treePath.pop();
+  backToLastNode();
+}
+
+/* 在終點頁（診斷、先送急診）按「返回」：終點不是節點，treePath 最後一個
+   就是把我們送過來的那一題，所以只要清掉它的選擇再重畫，不能 pop。 */
+function backToLastNode(){
+  if (!treePath.length) return false;
   const last = treePath[treePath.length - 1];
   delete last.pick;
-  renderTree(last.node, true);
+  goNode(last.node, true);
+  return true;
 }
 
 /* ---------- 查閱列表 ---------- */
@@ -295,7 +388,13 @@ function openDx(id, keepScroll){
 
   const chip = $('dxDentition');
   chip.textContent = L(d.dentition === 'permanent' ? UI.permanent : UI.primary);
-  chip.className = 'chip' + (d.timeCritical || d.doNotReplant ? ' urgent' : '');
+  chip.className = 'chip';
+
+  // 時間急迫的診斷不經影像節點就到這裡，所以要在頁面上補一句：
+  // 影像仍然要照，但不能為了等片子延誤處置。
+  $('dxUrgentChip').hidden = !d.timeCritical;
+  $('dxUrgentBanner').hidden = !d.timeCritical;
+  $('txtUrgentNoWait').textContent = L(UI.urgentNoWait);
 
   $('dxNameZh').textContent = L(d.name);
   $('dxNameEn').textContent = (lang === 'en') ? d.name.zh : d.name.en;
@@ -308,6 +407,7 @@ function openDx(id, keepScroll){
   renderFollowUp(d);
 
   $('scheduleOut').hidden = true;
+  $('btnDxRestart').hidden = !treePath.length;   // 從查閱列表進來的沒有樹可重來
   show('screenDx');
   if (keepScroll) window.scrollTo(0, 0);
 }
@@ -572,9 +672,26 @@ $('btnModeBrowse').addEventListener('click', () => {
 
 $('btnTreeBack').addEventListener('click', treeBack);
 $('btnTreeRestart').addEventListener('click', startTree);
+$('btnImgBack').addEventListener('click', treeBack);
+$('btnImgRestart').addEventListener('click', startTree);
+$('btnResultBack').addEventListener('click', backToLastNode);
+$('btnResultRestart').addEventListener('click', startTree);
+
+// 「還沒拍」看完先做什麼之後，片子好了就直接接回影像所見那一題
+$('btnPendingNext').addEventListener('click', () => {
+  if (!pendingNode) return;
+  treePath[treePath.length - 1].pick = L(UI.imgDone);
+  goNode(pendingNode.next);
+});
+$('btnPendingBack').addEventListener('click', () => {
+  if (pendingNode) renderImaging(pendingNode);
+});
+
+$('btnDxRestart').addEventListener('click', () => { curDx = null; startTree(); });
 $('btnDxBack').addEventListener('click', () => {
   curDx = null;
-  show(treePath.length ? 'screenTree' : 'screenBrowse');
+  // 從決策樹進來的退回最後一題；從查閱列表進來的回列表
+  if (!backToLastNode()) show('screenBrowse');
 });
 
 $('dxSearch').addEventListener('input', e => renderBrowse(e.target.value));
