@@ -172,11 +172,16 @@
 | # | 檔名 | viewBox | 內容 |
 |---|---|---|---|
 | 17 | `hold-crown.svg` | 360×560 | 手指只捏住齒冠（綠色打勾）；牙根區加禁止符號，表示不可觸碰、不可刷洗 |
-| 18a | `storage-hbss.svg` | 240×240 | 實驗室試劑瓶：螺旋蓋、方正瓶身、瓶身中央留一塊**空白標籤矩形**（不要寫字） |
-| 18b | `storage-milk.svg` | 240×240 | 屋頂型紙盒（gable top），一眼可辨的牛奶盒外形 |
-| 18c | `storage-saline.svg` | 240×240 | 點滴軟袋：上方有吊掛孔、下方有出口管，明顯不是瓶子 |
-| 18d | `storage-saliva.svg` | 240×240 | 透明有蓋小杯，杯內有液面線 |
+| 18a | `storage-milk.svg` | 240×240 | 屋頂型紙盒（gable top），一眼可辨的牛奶盒外形 |
+| 18b | `storage-hbss.svg` | 240×240 | 實驗室試劑瓶：螺旋蓋、方正瓶身、瓶身中央留一塊**空白標籤矩形**（不要寫字） |
+| 18c | `storage-saliva.svg` | 240×240 | 透明有蓋小杯，杯內有液面線 |
+| 18d | `storage-saline.svg` | 240×240 | 點滴軟袋：上方有吊掛孔、下方有出口管，明顯不是瓶子 |
 | 18e | `storage-water-no.svg` | 240×240 | 水龍頭流水，整張打一個紅色禁止斜槓 |
+
+**18a–18d 的編號順序就是 IADT 2020 的保存液偏好順序**，App 會照這個順序排。
+Fouad et al. 2020 原文：「In descending order of preference, milk, HBSS,
+saliva (after spitting into a glass for instance), or saline are suitable and
+convenient storage mediums.」牛奶排第一、不是 HBSS。
 | 19a | `step1-pick-up.svg` | 240×240 | 手指只捏齒冠把牙撿起來 |
 | 19b | `step2-rinse.svg` | 240×240 | 牙齒在流水下沖洗（只表達「沖」，**不要畫秒數**） |
 | 19c | `step3-replant-or-milk.svg` | 240×240 | 牙齒放回齒槽窩，旁邊一個牛奶盒代表替代方案 |
