@@ -26,6 +26,7 @@ let treeMode = localStorage.getItem(MODE_KEY) === 'hints' ? 'hints' : 'normal';
 let curDx = null;        // 目前開啟的診斷
 let curSchedule = null;  // 目前採用的追蹤時程（可能是替代版本）
 let treePath = [];       // 決策樹走過的節點與選項
+let fromBrowse = false;  // 這個診斷是從查閱列表開的，還是從問答走到的
 
 /* ---------- 小工具 ---------- */
 
@@ -99,10 +100,46 @@ function figure(src, alt, phText){
 
 /* ---------- 畫面切換 ---------- */
 
-const SCREENS = ['screenHome','screenTree','screenImaging','screenPending','screenResult','screenBrowse','screenDx'];
+const SCREENS = ['screenTree','screenImaging','screenPending','screenResult','screenBrowse','screenDx'];
+let curScreen = 'screenTree';
 function show(id){
+  curScreen = id;
   SCREENS.forEach(s => { $(s).hidden = (s !== id); });
+  // 決策樹的第一題底下才掛參考資料（急救速查、保存液、文獻），
+  // 往下走之後收起來，免得每一題都拖一長條。
+  $('refBlocks').hidden = !(id === 'screenTree' && treePath.length <= 1);
+  updateBackBtn();
   window.scrollTo(0, 0);
+}
+
+/* 返回鍵放在固定頂列——診斷頁很長，放頁尾等於要捲到底才找得到 */
+function updateBackBtn(){
+  const atRoot = (curScreen === 'screenTree' && treePath.length <= 1);
+  $('btnBack').hidden = atRoot;
+}
+
+function goBack(){
+  switch (curScreen){
+    case 'screenTree':
+    case 'screenImaging':
+      treeBack();
+      break;
+    case 'screenPending':
+      if (pendingNode) renderImaging(pendingNode);
+      break;
+    case 'screenResult':
+      backToLastNode();
+      break;
+    case 'screenDx':
+      curDx = null;
+      if (fromBrowse){ renderBrowse($('dxSearch').value); show('screenBrowse'); }
+      else if (!backToLastNode()) startTree();
+      break;
+    case 'screenBrowse':
+      if (treePath.length) goNode(treePath[treePath.length - 1].node, true);
+      else startTree();
+      break;
+  }
 }
 
 /* ---------- 語言 ---------- */
@@ -112,19 +149,11 @@ function applyUiText(){
   $('btnLang').textContent = (lang === 'en') ? '中' : 'EN';
   $('txtAppName').textContent    = L(UI.appName);
   $('txtAppTagline').textContent = L(UI.appTagline);
-  $('txtModeAsk').textContent        = L(UI.modeAsk);
-  $('txtModeAskDesc').textContent    = L(UI.modeAskDesc);
-  $('txtModeHints').textContent      = L(UI.modeHints);
-  $('txtModeHintsDesc').textContent  = L(UI.modeHintsDesc);
-  $('txtModeBrowse').textContent     = L(UI.modeBrowse);
-  $('txtModeBrowseDesc').textContent = L(UI.modeBrowseDesc);
   $('dxSearch').placeholder = L(UI.search);
   $('txtDisclaimer').textContent = L(UI.disclaimer);
   $('txtReviewedThru').textContent = L(UI.reviewedThru);
   $('txtRefTitle').textContent = L(UI.refTitle);
 
-  $('txtEmergencyTitle').textContent = lang === 'en' ? 'Act now' : '立即處理';
-  $('txtRedFlagTitle').textContent   = lang === 'en' ? 'Rule these out first' : '先排除這些狀況';
   $('txtFirstAidTitle').textContent  = lang === 'en' ? 'First aid at the scene' : '現場急救速查';
   $('txtStorageTitle').textContent   = lang === 'en'
     ? 'Storage media for an avulsed tooth (IADT order of preference)'
@@ -140,27 +169,22 @@ function setLang(next){
   lang = next;
   localStorage.setItem(LANG_KEY, lang);
   applyUiText();
-  renderHome();
-  // 決策樹、影像節點、終點頁都要跟著換語言；用目前停在哪個畫面決定重畫哪一個
-  if (!$('screenTree').hidden || !$('screenImaging').hidden){
+  renderRefBlocks();
+  syncHintsBtn();
+  // 目前停在哪個畫面就重畫哪一個
+  if (curScreen === 'screenTree' || curScreen === 'screenImaging'){
     if (treePath.length) goNode(treePath[treePath.length - 1].node, true);
   }
-  if (!$('screenPending').hidden && pendingNode) renderPending(pendingNode);
-  if (!$('screenBrowse').hidden) renderBrowse($('dxSearch').value);
-  if (curDx) openDx(curDx.id, true);
+  if (curScreen === 'screenPending' && pendingNode) renderPending(pendingNode);
+  if (curScreen === 'screenBrowse') renderBrowse($('dxSearch').value);
+  if (curScreen === 'screenDx' && curDx) openDx(curDx.id, true);
 }
 
 /* ---------- 首頁 ---------- */
 
-function renderHome(){
-  $('txtEmergencyHeadline').innerHTML = md(L(EMERGENCY.headline));
-
-  const rf = $('listRedFlags');
-  rf.innerHTML = '';
-  L(EMERGENCY.redFlags).forEach(t => rf.appendChild(el('li', null, esc(t))));
-  $('txtRedFlagAction').textContent = L(EMERGENCY.redFlagAction);
-
-  // 現場急救速查表
+/* 參考資料（急救速查、保存液、文獻）。掛在第一題底下，摺疊。
+   「立即處理」與紅旗卡片依 Dr.Tso 要求移除——開啟 App 就該是第一題。 */
+function renderRefBlocks(){
   const head = lang === 'en'
     ? ['What it looks like','Do now','Do not','How soon']
     : ['看起來像什麼','現場立即怎麼做','不要做什麼','就醫急迫度'];
@@ -173,7 +197,6 @@ function renderHome(){
       '</td><td>' + md(L(r.dont)) + '</td><td>' + md(L(r.when)) + '</td></tr>'
     ).join('');
 
-  // 保存液
   const row = $('storageRow');
   row.innerHTML = '';
   STORAGE_MEDIA.forEach((m, i) => {
@@ -188,7 +211,6 @@ function renderHome(){
   });
   $('txtPdlNote').innerHTML = md(L(PDL_NOTE));
 
-  // 參考文獻
   const refs = $('listRefs');
   refs.innerHTML = '';
   REFERENCES.forEach(r => {
@@ -215,8 +237,17 @@ function setTreeMode(mode){
   if (mode === treeMode) return;
   treeMode = mode;
   localStorage.setItem(MODE_KEY, treeMode);
+  syncHintsBtn();
   // 切模式就從頭走：兩種模式的節點序列不同，硬接會對不上
   startTree();
+}
+
+function syncHintsBtn(){
+  const on = (treeMode === 'hints');
+  const b = $('btnHints');
+  b.classList.toggle('on', on);
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  b.title = L(on ? UI.modeHintsOff : UI.modeHintsOn);
 }
 
 /* 三種節點型態共用的入口：question / imaging / result。
@@ -228,6 +259,7 @@ function goNode(nodeId, keepPath){
 
   if (treeMode === 'normal' && node.type === 'imaging'){
     if (node.gate) { goNode(node.next, keepPath); return; }   // 不顯示影像關卡，直接問影像所見
+    fromBrowse = false;
     openDx(node.dx);                                          // 診斷已確定，直接開診斷頁
     return;
   }
@@ -247,24 +279,13 @@ function crumbsInto(host){
 // 選了某個出口之後往下走；o 可能帶 next / dx / result
 function takeOption(o){
   treePath[treePath.length - 1].pick = L(o.label);
-  if (o.dx) openDx(o.dx);
+  if (o.dx) { fromBrowse = false; openDx(o.dx); }
   else if (o.result) renderResult(o.result);
   else goNode(o.next);
 }
 
 function renderQuestion(node){
   crumbsInto($('treeCrumbs'));
-  const isNormal = (treeMode === 'normal');
-  $('txtTreeMode').textContent = L(isNormal ? UI.modeNowNormal : UI.modeNowHints);
-  $('btnTreeMode').textContent = L(isNormal ? UI.modeHintsOn : UI.modeHintsOff);
-  // 紅旗提示條只在一般模式的第一題出現——那是它真正有用的時機
-  const rf = $('fastRedFlag');
-  if (isNormal && treePath.length === 1){
-    rf.textContent = '⚠ ' + L(UI.normalRedFlag);
-    rf.hidden = false;
-  } else {
-    rf.hidden = true;
-  }
   $('treeQ').textContent = L(node.q);
   const hint = $('treeHint');
   if (node.hint){ hint.innerHTML = md(L(node.hint)); hint.hidden = false; }
@@ -277,7 +298,6 @@ function renderQuestion(node){
     b.addEventListener('click', () => takeOption(o));
     opts.appendChild(b);
   });
-  $('btnTreeBack').hidden = (treePath.length <= 1);
   show('screenTree');
 }
 
@@ -321,11 +341,11 @@ function renderImaging(node){
     const go = el('button', 'opt', esc(L(UI.imgContinue)));
     go.addEventListener('click', () => {
       treePath[treePath.length - 1].pick = L(UI.imgStep);
+      fromBrowse = false;
       openDx(node.dx);
     });
     opts.appendChild(go);
   }
-  $('btnImgBack').hidden = (treePath.length <= 1);
   show('screenImaging');
 }
 
@@ -393,6 +413,7 @@ function renderBrowse(filter){
     });
   });
 
+  $('browseLegend').innerHTML = '⚡ ' + md(L(UI.urgentLegend));
   $('browseEmpty').textContent = L(UI.noResult);
   $('browseEmpty').hidden = (total > 0);
 }
@@ -403,9 +424,9 @@ function dxItem(d){
   th.className = 'thumb';
   b.appendChild(th);
   b.appendChild(el('div', 'nm',
-    '<b>' + esc(L(d.name)) + (d.timeCritical || d.doNotReplant ? ' <span class="urgent-dot">●</span>' : '') +
+    '<b>' + esc(L(d.name)) + (d.timeCritical ? ' <span class="urgent-dot" title="' + esc(L(UI.urgentLegend)) + '">⚡</span>' : '') +
     '</b><i>' + esc(lang === 'en' ? d.name.zh : d.name.en) + '</i>'));
-  b.addEventListener('click', () => openDx(d.id));
+  b.addEventListener('click', () => { fromBrowse = true; openDx(d.id); });
   return b;
 }
 
@@ -449,7 +470,6 @@ function openDx(id, keepScroll){
   renderFollowUp(d);
 
   $('scheduleOut').hidden = true;
-  $('btnDxRestart').hidden = !treePath.length;   // 從查閱列表進來的沒有樹可重來
   show('screenDx');
   if (keepScroll) window.scrollTo(0, 0);
 }
@@ -703,40 +723,27 @@ function noteText(){
 
 /* ---------- 事件綁定 ---------- */
 
+$('btnBack').addEventListener('click', goBack);
 $('btnLang').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));
-$('btnHome').addEventListener('click', () => { curDx = null; show('screenHome'); });
 
-$('btnModeAsk').addEventListener('click', () => startTree('normal'));
-$('btnModeHints').addEventListener('click', () => startTree('hints'));
-$('btnTreeMode').addEventListener('click', () =>
+// 右上角兩顆：影像提示開關、依診斷查閱
+$('btnHints').addEventListener('click', () =>
   setTreeMode(treeMode === 'normal' ? 'hints' : 'normal'));
-$('btnModeBrowse').addEventListener('click', () => {
+$('btnBrowse').addEventListener('click', () => {
   renderBrowse($('dxSearch').value);
   show('screenBrowse');
 });
 
-$('btnTreeBack').addEventListener('click', treeBack);
 $('btnTreeRestart').addEventListener('click', () => startTree());
-$('btnImgBack').addEventListener('click', treeBack);
 $('btnImgRestart').addEventListener('click', () => startTree());
-$('btnResultBack').addEventListener('click', backToLastNode);
 $('btnResultRestart').addEventListener('click', () => startTree());
+$('btnDxRestart').addEventListener('click', () => { curDx = null; startTree(); });
 
 // 「還沒拍」看完先做什麼之後，X 光好了就直接接回影像所見那一題
 $('btnPendingNext').addEventListener('click', () => {
   if (!pendingNode) return;
   treePath[treePath.length - 1].pick = L(UI.imgDone);
   goNode(pendingNode.next);
-});
-$('btnPendingBack').addEventListener('click', () => {
-  if (pendingNode) renderImaging(pendingNode);
-});
-
-$('btnDxRestart').addEventListener('click', () => { curDx = null; startTree(); });
-$('btnDxBack').addEventListener('click', () => {
-  curDx = null;
-  // 從決策樹進來的退回最後一題；從查閱列表進來的回列表
-  if (!backToLastNode()) show('screenBrowse');
 });
 
 $('dxSearch').addEventListener('input', e => renderBrowse(e.target.value));
@@ -751,9 +758,10 @@ $('btnCopyNote').addEventListener('click', () => copy(noteText()));
 /* ---------- 啟動 ---------- */
 
 applyUiText();
-renderHome();
+renderRefBlocks();
+syncHintsBtn();
 setAudience(aud);
-show('screenHome');
+startTree();          // 開啟 App 直接進第一題，沒有首頁
 
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
   window.addEventListener('load', () => {

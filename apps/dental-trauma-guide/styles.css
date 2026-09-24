@@ -46,21 +46,37 @@ body{
 /* ===== 頂列 ===== */
 .topbar{
   position:sticky; top:0; z-index:20;
-  display:flex; align-items:center; gap:10px;
-  padding:10px 14px; border-radius:0; border-left:0; border-right:0; border-top:0;
+  display:flex; align-items:center; gap:7px;
+  padding:9px 12px; border-radius:0; border-left:0; border-right:0; border-top:0;
   padding-top:calc(10px + env(safe-area-inset-top));
   /* 內容會從頂列底下捲過去。站台通用的 --glass（.55）當背景沒問題，
      當固定頂列就太透，後面的字讀得出來很吵。這裡調到幾乎不透。 */
   background:rgba(13,19,36,.92);
 }
 .topbar-title{flex:1;min-width:0;line-height:1.3}
-.topbar-title strong{display:block;font-size:1.02rem}
-.topbar-title small{display:block;color:var(--muted);font-size:.74rem}
+.topbar-title strong{display:block;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-title small{display:block;color:var(--muted);font-size:.72rem}
+/* 手機上頂列要塞下返回、標題與三顆按鈕，副標讓位 */
+@media(max-width:520px){ .topbar-title small{display:none} }
 .icon-btn{
-  background:none;border:0;color:var(--text);font-size:1.5rem;cursor:pointer;
-  padding:2px 4px;border-radius:10px;
+  background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);
+  font-size:1.1rem;line-height:1;cursor:pointer;flex:none;
+  padding:7px 11px;border-radius:10px;
 }
-.icon-btn:hover{background:rgba(255,255,255,.06)}
+.icon-btn:hover{background:rgba(255,255,255,.12)}
+
+/* 右上角：影像提示開關、依診斷查閱 */
+.chip-btn{
+  display:inline-flex;align-items:center;gap:4px;flex:none;
+  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--muted);
+  border-radius:999px;padding:5px 11px;font:inherit;font-size:.78rem;cursor:pointer;
+}
+.chip-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.chip-btn.on{
+  background:rgba(111,211,194,.2);border-color:rgba(111,211,194,.5);
+  color:#d6fff7;font-weight:600;
+}
+@media(max-width:400px){ .chip-btn span:last-child{display:none} .chip-btn{padding:6px 9px} }
 .lang-btn{
   background:rgba(91,140,255,.14); border:1px solid var(--line); color:var(--text);
   border-radius:999px; padding:5px 14px; font:inherit; font-size:.82rem;
@@ -82,7 +98,7 @@ details.card > summary::before{content:"▸";color:var(--accent);transition:tran
 details.card[open] > summary::before{transform:rotate(90deg)}
 details.card > summary + *{margin-top:12px}
 
-/* ===== 急救提示 ===== */
+/* ===== 提示框 ===== */
 .alert{
   padding:16px; margin-bottom:14px;
   border-color:rgba(255,77,79,.4);
@@ -91,45 +107,20 @@ details.card > summary + *{margin-top:12px}
 .alert-head{font-weight:700;font-size:.9rem;letter-spacing:.04em;margin-bottom:6px}
 .headline{font-size:.98rem;line-height:1.8}
 
-.redflag ul{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.redflag li{
-  background:rgba(255,107,138,.16); border:1px solid rgba(255,107,138,.3);
-  border-radius:999px; padding:3px 11px; font-size:.82rem;
-}
 
-/* ===== 模式選擇 ===== */
-.modes{display:grid;gap:12px;margin-bottom:14px}
-@media(min-width:620px){
-  .modes{grid-template-columns:1fr 1fr}
-  /* 三張卡在窄一點的桌機寬度會擠，等更寬才排成一列 */
-  .modes-3{grid-template-columns:1fr 1fr}
-}
-@media(min-width:900px){ .modes-3{grid-template-columns:repeat(3,1fr)} }
-.mode-card{
-  display:flex; flex-direction:column; align-items:flex-start; gap:2px;
-  padding:18px 16px; text-align:left; color:var(--text); font:inherit; cursor:pointer;
-  transition:transform .12s, border-color .12s;
-}
-.mode-card:hover{transform:translateY(-2px);border-color:rgba(140,165,255,.4)}
-.mode-icon{font-size:1.6rem;line-height:1}
-.mode-card strong{font-size:1rem;margin-top:4px}
-.mode-card small{color:var(--muted);font-size:.8rem}
+
+
+
+
+
+
+
 
 /* ===== 決策樹 ===== */
-.mode-bar{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  font-size:.76rem;color:var(--muted);margin-bottom:10px;padding:0 4px;
-}
-.link-btn{
-  background:none;border:0;color:var(--accent);font:inherit;font-size:.76rem;
-  cursor:pointer;padding:2px 6px;border-radius:6px;text-decoration:underline;
-}
-.link-btn:hover{background:rgba(91,140,255,.14)}
-.fast-redflag{
-  font-size:.8rem;line-height:1.7;margin-bottom:12px;padding:9px 13px;
-  color:#ffd9da;background:rgba(255,77,79,.12);
-  border:1px solid rgba(255,77,79,.34);border-radius:10px;
-}
+
+
+
+
 .crumbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;font-size:.78rem}
 .crumbs span{
   background:rgba(91,140,255,.12); border:1px solid var(--line);
@@ -207,7 +198,12 @@ details.card > summary + *{margin-top:12px}
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .dx-item .thumb img{width:100%;height:100%;object-fit:contain}
-.urgent-dot{color:var(--urgent);font-size:.7rem}
+.urgent-dot{color:var(--warn);font-size:.8rem}
+.legend{
+  margin:-6px 4px 12px; line-height:1.7;
+  padding:7px 12px; border-radius:9px;
+  background:rgba(255,200,107,.08); border:1px solid rgba(255,200,107,.22);
+}
 
 /* ===== 診斷頁 ===== */
 .dx-head{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}

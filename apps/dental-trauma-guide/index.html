@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0e1a">
-<title>牙外傷處置指南 v1.0 · Dental Trauma Guide</title>
+<title>牙外傷處置指南 v1.1 · Dental Trauma Guide</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,73 +15,24 @@
 <body>
 
 <header class="topbar glass">
-  <button id="btnHome" class="icon-btn" title="回首頁" aria-label="回首頁">🚑</button>
+  <button id="btnBack" class="icon-btn" aria-label="返回" hidden>←</button>
   <div class="topbar-title">
     <strong id="txtAppName">牙外傷處置指南</strong>
     <small id="txtAppTagline">依 IADT 2020 指引整理</small>
   </div>
+  <button id="btnHints" class="chip-btn" aria-pressed="false" title="影像提示">
+    <span aria-hidden="true">🩻</span><span data-ui="navHints">提示</span>
+  </button>
+  <button id="btnBrowse" class="chip-btn" title="依診斷查閱">
+    <span aria-hidden="true">📖</span><span data-ui="navBrowse">查閱</span>
+  </button>
   <button id="btnLang" class="lang-btn" aria-label="切換語言">EN</button>
 </header>
 
 <main class="wrap">
 
-  <!-- ===== 首頁 ===== -->
-  <section id="screenHome">
-
-    <div class="alert glass" id="emergencyCard">
-      <div class="alert-head">⚡ <span id="txtEmergencyTitle">立即處理</span></div>
-      <p class="headline" id="txtEmergencyHeadline"></p>
-    </div>
-
-    <div class="card glass redflag">
-      <h2 id="txtRedFlagTitle">先排除這些狀況</h2>
-      <ul id="listRedFlags"></ul>
-      <p class="muted" id="txtRedFlagAction"></p>
-    </div>
-
-    <div class="modes modes-3">
-      <button class="mode-card glass" id="btnModeAsk">
-        <span class="mode-icon">⚡</span>
-        <strong id="txtModeAsk">問答導引</strong>
-        <small id="txtModeAskDesc">含影像提醒：該拍哪幾張、為什麼非拍不可</small>
-      </button>
-      <button class="mode-card glass" id="btnModeHints">
-        <span class="mode-icon">🩻</span>
-        <strong id="txtModeHints">問答導引＋影像提示</strong>
-        <small id="txtModeHintsDesc">多一關影像檢查：該拍哪幾張、為什麼非拍不可</small>
-      </button>
-      <button class="mode-card glass" id="btnModeBrowse">
-        <span class="mode-icon">📖</span>
-        <strong id="txtModeBrowse">我知道診斷，直接查</strong>
-        <small id="txtModeBrowseDesc">依分類列表直接開</small>
-      </button>
-    </div>
-
-    <details class="card glass">
-      <summary id="txtFirstAidTitle">現場急救速查</summary>
-      <div class="table-scroll"><table class="fa-table" id="tblFirstAid"></table></div>
-    </details>
-
-    <details class="card glass">
-      <summary id="txtStorageTitle">脫落牙的保存液（依 IADT 偏好順序）</summary>
-      <div class="media-row" id="storageRow"></div>
-      <p class="muted small" id="txtPdlNote"></p>
-    </details>
-
-    <details class="card glass">
-      <summary id="txtRefTitle">參考文獻</summary>
-      <ul class="refs" id="listRefs"></ul>
-      <p class="muted small"><span id="txtReviewedThru">臨床內容核對至</span> <strong id="txtReviewedDate"></strong></p>
-    </details>
-  </section>
-
-  <!-- ===== 決策樹 ===== -->
-  <section id="screenTree" hidden>
-    <div class="mode-bar" id="treeModeBar">
-      <span id="txtTreeMode"></span>
-      <button class="link-btn" id="btnTreeMode">開啟影像提示</button>
-    </div>
-    <div class="fast-redflag" id="fastRedFlag" hidden></div>
+  <!-- ===== 決策樹（開啟 App 就從這裡開始）===== -->
+  <section id="screenTree">
     <div class="crumbs" id="treeCrumbs"></div>
     <div class="card glass question">
       <h2 id="treeQ"></h2>
@@ -89,8 +40,27 @@
       <div class="opts" id="treeOpts"></div>
     </div>
     <div class="row-btns">
-      <button class="btn ghost" id="btnTreeBack">← <span data-ui="back">返回</span></button>
       <button class="btn ghost" id="btnTreeRestart"><span data-ui="restart">重新開始</span></button>
+    </div>
+
+    <!-- 只在第一題顯示的參考資料 -->
+    <div id="refBlocks">
+      <details class="card glass">
+        <summary id="txtFirstAidTitle">現場急救速查</summary>
+        <div class="table-scroll"><table class="fa-table" id="tblFirstAid"></table></div>
+      </details>
+
+      <details class="card glass">
+        <summary id="txtStorageTitle">脫落牙的保存液（依 IADT 偏好順序）</summary>
+        <div class="media-row" id="storageRow"></div>
+        <p class="muted small" id="txtPdlNote"></p>
+      </details>
+
+      <details class="card glass">
+        <summary id="txtRefTitle">參考文獻</summary>
+        <ul class="refs" id="listRefs"></ul>
+        <p class="muted small"><span id="txtReviewedThru">臨床內容核對至</span> <strong id="txtReviewedDate"></strong></p>
+      </details>
     </div>
   </section>
 
@@ -109,7 +79,6 @@
       <div class="opts" id="imgOpts"></div>
     </div>
     <div class="row-btns">
-      <button class="btn ghost" id="btnImgBack">← <span data-ui="back">返回</span></button>
       <button class="btn ghost" id="btnImgRestart"><span data-ui="restart">重新開始</span></button>
     </div>
   </section>
@@ -121,7 +90,6 @@
       <p class="why" id="pendingBody"></p>
       <div class="row-btns">
         <button class="btn" id="btnPendingNext" data-ui="imgBackToFilm">X 光好了，繼續 →</button>
-        <button class="btn ghost" id="btnPendingBack">← <span data-ui="back">返回</span></button>
       </div>
     </div>
   </section>
@@ -133,7 +101,6 @@
       <div id="resultBody"></div>
     </div>
     <div class="row-btns">
-      <button class="btn ghost" id="btnResultBack">← <span data-ui="back">返回</span></button>
       <button class="btn ghost" id="btnResultRestart"><span data-ui="restart">重新開始</span></button>
     </div>
   </section>
@@ -141,6 +108,7 @@
   <!-- ===== 查閱列表 ===== -->
   <section id="screenBrowse" hidden>
     <input type="search" id="dxSearch" class="search glass" placeholder="搜尋診斷…" autocomplete="off">
+    <p class="legend muted small" id="browseLegend"></p>
     <div id="browseList"></div>
     <p class="muted center" id="browseEmpty" hidden></p>
   </section>
@@ -190,7 +158,6 @@
     </div>
 
     <div class="row-btns">
-      <button class="btn ghost" id="btnDxBack">← <span data-ui="back">返回</span></button>
       <button class="btn ghost" id="btnDxRestart" hidden><span data-ui="restart">重新開始</span></button>
     </div>
   </section>
@@ -199,7 +166,7 @@
 
 <footer>
   <p class="muted small" id="txtDisclaimer"></p>
-  <p class="muted small">©Tso KY - All Rights Reserved</p>
+  <p class="muted small">v1.1 · ©Tso KY - All Rights Reserved</p>
 </footer>
 
 <div class="toast" id="toast" hidden></div>

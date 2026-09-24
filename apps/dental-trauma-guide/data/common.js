@@ -12,19 +12,15 @@ const UI = {
   appName:      { zh: '牙外傷處置指南',           en: 'Dental Trauma Guide' },
   appTagline:   { zh: '依 IADT 2020 指引整理',     en: 'Based on the IADT 2020 Guidelines' },
 
-  modeAsk:      { zh: '問答導引',                  en: 'Guided questions' },
-  modeAskDesc:  { zh: '依序選選項，直接到診斷與處置', en: 'Answer in order, straight to diagnosis and management' },
-  modeHints:    { zh: '問答導引＋影像提示',        en: 'Guided questions + imaging prompts' },
-  modeHintsDesc:{ zh: '多一關影像檢查：該拍哪幾張、為什麼非拍不可', en: 'Adds an imaging step: which films to take and why they matter' },
-  modeBrowse:   { zh: '我知道診斷，直接查',        en: 'I know the diagnosis' },
-  modeBrowseDesc:{ zh: '依分類列表直接開',         en: 'Browse the full list by category' },
-
-  modeNowNormal:{ zh: '一般模式',                  en: 'Standard mode' },
-  modeNowHints: { zh: '已開啟影像提示',            en: 'Imaging prompts on' },
+  /* 右上角兩顆 */
+  navHints:     { zh: '提示',                      en: 'Hints' },
+  navBrowse:    { zh: '查閱',                      en: 'List' },
   modeHintsOn:  { zh: '開啟影像提示',              en: 'Turn imaging prompts on' },
   modeHintsOff: { zh: '關閉影像提示',              en: 'Turn imaging prompts off' },
-  normalRedFlag:{ zh: '開始前先確認沒有：失去意識、持續嘔吐、神經學症狀、疑似顏面或頸椎骨折、無法控制的出血。有任何一項先送急診。',
-                  en: 'Before you start, confirm none of these: loss of consciousness, persistent vomiting, neurological signs, suspected facial or cervical spine fracture, uncontrolled bleeding. If any is present, medical emergency care comes first.' },
+
+  /* ⚡ 的意思：診斷列表上有這個標記的，處置不能等影像 */
+  urgentLegend: { zh: '**時間急迫**：急性處置不能等 X 光，先處置、影像同時進行或隨後補。',
+                  en: '**Time-critical**: do not wait for imaging — treat first, image alongside or afterwards.' },
 
   audClinical:  { zh: '醫師版',                   en: 'Clinician' },
   audPublic:    { zh: '家屬版',                   en: 'Patient / Family' },
