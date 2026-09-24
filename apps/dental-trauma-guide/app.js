@@ -211,6 +211,16 @@ function renderRefBlocks(){
   });
   $('txtPdlNote').innerHTML = md(L(PDL_NOTE));
 
+  // 加到主畫面：已經是 standalone（從主畫面圖示開的）就不用再教一次
+  const installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+                 || window.navigator.standalone === true;
+  $('cardInstall').hidden = installed;
+  if (!installed){
+    $('txtInstallTitle').textContent = L(UI.installTitle);
+    $('listInstall').innerHTML = INSTALL_STEPS.map(s => '<li>' + md(L(s)) + '</li>').join('');
+    $('txtInstallNote').innerHTML = md(L(UI.installNote));
+  }
+
   const refs = $('listRefs');
   refs.innerHTML = '';
   REFERENCES.forEach(r => {
@@ -294,11 +304,30 @@ function renderQuestion(node){
   const opts = $('treeOpts');
   opts.innerHTML = '';
   node.opts.forEach(o => {
-    const b = el('button', 'opt', md(L(o.label)));
+    const b = el('button', 'opt');
+    if (o.img) b.appendChild(optThumb(b, o.img, L(o.label)));
+    b.appendChild(el('span', 'opt-label', md(L(o.label))));
     b.addEventListener('click', () => takeOption(o));
     opts.appendChild(b);
   });
   show('screenTree');
+}
+
+/* 選項的示意圖。「斷面看得到什麼」這種分水嶺光靠文字分不出來，掛一張圖
+   讓人知道要看哪裡。圖檔還沒進 repo 時**整塊拿掉**——不留佔位框，
+   不然每一題都是一排空框，比沒有圖更難選。 */
+function optThumb(btn, src, alt){
+  const box = el('span', 'opt-fig');
+  const img = new Image();
+  img.alt = alt || '';
+  img.addEventListener('error', () => {
+    box.remove();
+    btn.classList.remove('has-fig');
+  });
+  img.src = 'assets/' + src;
+  box.appendChild(img);
+  btn.classList.add('has-fig');
+  return box;
 }
 
 /* 影像節點。
@@ -385,10 +414,12 @@ function backToLastNode(){
 
 /* ---------- 查閱列表 ---------- */
 
+/* 分區標題照臨床習慣的講法寫，不要只寫「斷裂／脫位」——
+   「牙齒與齒槽骨折斷」一看就知道這一區收的是哪些診斷。 */
 const GROUP_LABEL = {
-  fracture: { zh:'斷裂', en:'Fractures' },
-  luxation: { zh:'脫位', en:'Luxations' },
-  avulsion: { zh:'脫落', en:'Avulsion' }
+  fracture: { zh:'牙齒與齒槽骨折斷', en:'Tooth & alveolar fractures' },
+  luxation: { zh:'震盪與脫位傷',     en:'Concussion & luxation injuries' },
+  avulsion: { zh:'完全脫落',         en:'Avulsion' }
 };
 
 function renderBrowse(filter){
@@ -398,6 +429,7 @@ function renderBrowse(filter){
   let total = 0;
 
   [['permanent', UI.permanent], ['primary', UI.primary]].forEach(([dent, label]) => {
+    const secs = [];
     ['fracture','luxation','avulsion'].forEach(grp => {
       const list = ALL_DX.filter(d =>
         d.dentition === dent && d.group === grp &&
@@ -405,12 +437,14 @@ function renderBrowse(filter){
       );
       if (!list.length) return;
       total += list.length;
-      host.appendChild(el('div', 'group-title',
-        esc(L(label)) + ' · ' + esc(L(GROUP_LABEL[grp]))));
-      const box = el('div', 'dx-list');
-      list.forEach(d => box.appendChild(dxItem(d)));
-      host.appendChild(box);
+      secs.push(el('div', 'group-title', esc(L(GROUP_LABEL[grp]))));
+      const box = el('div', 'dx-grid');
+      list.forEach(d => box.appendChild(dxCard(d)));
+      secs.push(box);
     });
+    if (!secs.length) return;
+    host.appendChild(el('h2', 'browse-sec', esc(L(label))));
+    secs.forEach(n => host.appendChild(n));
   });
 
   $('browseLegend').innerHTML = '⚡ ' + md(L(UI.urgentLegend));
@@ -418,14 +452,23 @@ function renderBrowse(filter){
   $('browseEmpty').hidden = (total > 0);
 }
 
-function dxItem(d){
-  const b = el('button', 'dx-item');
-  const th = figure(d.img, L(d.name), '🦷');
-  th.className = 'thumb';
-  b.appendChild(th);
-  b.appendChild(el('div', 'nm',
-    '<b>' + esc(L(d.name)) + (d.timeCritical ? ' <span class="urgent-dot" title="' + esc(L(UI.urgentLegend)) + '">⚡</span>' : '') +
-    '</b><i>' + esc(lang === 'en' ? d.name.zh : d.name.en) + '</i>'));
+/* 插圖在上、中文名在下、英文名當副標的卡片。兩欄排列，手機一眼掃得完。
+   跟決策樹選項同一條規則：插圖還沒到就不留空框，卡片退回純文字。 */
+function dxCard(d){
+  const b = el('button', 'dx-card');
+  const fig = el('div', 'dx-card-fig');
+  const img = new Image();
+  img.alt = L(d.name);
+  img.addEventListener('error', () => { fig.remove(); b.classList.remove('has-fig'); });
+  img.src = 'assets/' + d.img;
+  fig.appendChild(img);
+  b.appendChild(fig);
+  b.classList.add('has-fig');
+
+  b.appendChild(el('span', 'nm',
+    esc(L(d.name)) +
+    (d.timeCritical ? ' <span class="urgent-dot" title="' + esc(L(UI.urgentLegend)) + '">⚡</span>' : '')));
+  b.appendChild(el('span', 'en', esc(lang === 'en' ? d.name.zh : d.name.en)));
   b.addEventListener('click', () => { fromBrowse = true; openDx(d.id); });
   return b;
 }

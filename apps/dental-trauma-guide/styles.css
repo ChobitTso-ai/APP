@@ -140,6 +140,16 @@ details.card > summary + *{margin-top:12px}
   transition:background .12s, border-color .12s;
 }
 .opt:hover{background:rgba(91,140,255,.16);border-color:var(--accent)}
+/* 帶示意圖的選項。圖載入失敗時 has-fig 會被拿掉，版面退回純文字，
+   不留空框——見 app.js 的 optThumb()。 */
+.opt.has-fig{display:flex;align-items:center;gap:13px}
+.opt-fig{
+  width:54px;height:68px;flex:none;border-radius:9px;
+  background:rgba(255,255,255,.05);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.opt-fig img{width:100%;height:100%;object-fit:contain}
+.opt-label{flex:1;min-width:0}
 
 /* ===== 影像節點 ===== */
 .imaging{border-color:rgba(111,211,194,.32)}
@@ -176,28 +186,33 @@ details.card > summary + *{margin-top:12px}
   color:var(--text); font:inherit; border-radius:999px;
 }
 .search::placeholder{color:var(--muted)}
+.browse-sec{
+  font-size:1rem; letter-spacing:.02em; margin:22px 0 2px;
+  padding-bottom:8px; border-bottom:1px solid var(--line);
+}
+.browse-sec:first-child{margin-top:0}
 .group-title{
   font-size:.86rem; color:var(--muted); letter-spacing:.06em;
-  margin:18px 0 8px; padding-left:4px;
+  margin:16px 0 8px; padding-left:4px;
 }
-.dx-list{display:grid;gap:8px}
-@media(min-width:620px){ .dx-list{grid-template-columns:1fr 1fr} }
-.dx-item{
-  display:flex; align-items:center; gap:12px; text-align:left;
-  font:inherit; color:var(--text); cursor:pointer; padding:12px 14px;
-  background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:12px;
-  transition:background .12s, border-color .12s;
+/* 插圖卡片：兩欄，圖在上、中文名、英文副標。手機也維持兩欄，
+   一屏能掃到的診斷才夠多——這一頁的用途就是「快速選」。 */
+.dx-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:720px){ .dx-grid{grid-template-columns:repeat(3,1fr)} }
+.dx-card{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  font:inherit; color:var(--text); cursor:pointer; padding:14px 10px 12px;
+  background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:14px;
+  transition:background .12s, border-color .12s, transform .12s;
 }
-.dx-item:hover{background:rgba(91,140,255,.16);border-color:var(--accent)}
-.dx-item .nm{flex:1;min-width:0;line-height:1.4}
-.dx-item .nm b{display:block;font-size:.94rem;font-weight:600}
-.dx-item .nm i{display:block;font-style:normal;font-size:.76rem;color:var(--muted)}
-.dx-item .thumb{
-  width:38px;height:38px;flex:none;border-radius:9px;
-  background:rgba(255,255,255,.05); border:1px solid var(--line);
+.dx-card:hover{background:rgba(91,140,255,.16);border-color:var(--accent);transform:translateY(-1px)}
+.dx-card-fig{
+  width:74px;height:96px;margin-bottom:10px;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-.dx-item .thumb img{width:100%;height:100%;object-fit:contain}
+.dx-card-fig img{width:100%;height:100%;object-fit:contain}
+.dx-card .nm{font-size:.94rem;font-weight:600;line-height:1.4}
+.dx-card .en{font-size:.74rem;color:var(--muted);line-height:1.45;margin-top:3px}
 .urgent-dot{color:var(--warn);font-size:.8rem}
 .legend{
   margin:-6px 4px 12px; line-height:1.7;
@@ -317,6 +332,20 @@ th{color:var(--muted);font-weight:600;white-space:nowrap;font-size:.78rem}
 .media .rank{
   display:inline-block;font-size:.66rem;color:var(--muted);
   border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-bottom:4px;
+}
+
+/* 加到主畫面的三步驟 */
+.steps{list-style:none;counter-reset:step;display:grid;gap:9px;margin-bottom:10px}
+.steps li{
+  counter-increment:step; position:relative; padding-left:34px;
+  font-size:.88rem; line-height:1.75;
+}
+.steps li::before{
+  content:counter(step); position:absolute; left:0; top:2px;
+  width:23px;height:23px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.74rem;font-weight:700;color:#cbd6f5;
+  background:rgba(91,140,255,.2);border:1px solid var(--line);
 }
 
 .refs{list-style:none;display:grid;gap:10px}

@@ -2,7 +2,7 @@
    策略：network-first（線上永遠拿最新版，離線才回退快取），確保部署即時生效。
    插圖是逐張補上的，所以 CORE 只放一定存在的檔案；assets/ 底下的圖
    由 fetch 事件在第一次成功載入時順手快取，缺圖不會讓 install 整個失敗。 */
-var CACHE = "dtg-v1_1";
+var CACHE = "dtg-v1_2";
 var CORE = [
   "./",
   "./index.html",

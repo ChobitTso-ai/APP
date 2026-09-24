@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0e1a">
-<title>牙外傷處置指南 v1.1 · Dental Trauma Guide</title>
+<title>牙外傷處置指南 v1.2 · Dental Trauma Guide</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -54,6 +54,12 @@
         <summary id="txtStorageTitle">脫落牙的保存液（依 IADT 偏好順序）</summary>
         <div class="media-row" id="storageRow"></div>
         <p class="muted small" id="txtPdlNote"></p>
+      </details>
+
+      <details class="card glass" id="cardInstall" hidden>
+        <summary id="txtInstallTitle">把這個指南放到手機主畫面</summary>
+        <ol class="steps" id="listInstall"></ol>
+        <p class="muted small" id="txtInstallNote"></p>
       </details>
 
       <details class="card glass">
@@ -166,7 +172,7 @@
 
 <footer>
   <p class="muted small" id="txtDisclaimer"></p>
-  <p class="muted small">v1.1 · ©Tso KY - All Rights Reserved</p>
+  <p class="muted small">v1.2 · ©Tso KY - All Rights Reserved</p>
 </footer>
 
 <div class="toast" id="toast" hidden></div>
