@@ -77,11 +77,27 @@ const UI = {
   refTitle:     { zh: '參考文獻',                 en: 'References' },
   reviewedThru: { zh: '臨床內容核對至',           en: 'Clinical content reviewed through' },
 
+  installTitle: { zh: '把這個指南放到手機主畫面',  en: 'Add this guide to your phone’s home screen' },
+  installNote:  { zh: '加好之後主畫面會多一個專屬圖示，點它就直接進來，**收訊不好或離線也開得起來**。',
+                  en: 'You then get its own icon on the home screen. Tapping it opens the guide directly, **and it still works with a poor signal or offline**.' },
+
   disclaimer: {
     zh: '本工具整理自 IADT 2020 指引，僅供牙科專業人員參考，不能取代臨床判斷、親自檢查與影像診斷。緊急狀況請直接就醫。',
     en: 'This tool summarizes the IADT 2020 guidelines for reference by dental professionals. It does not replace clinical judgment, direct examination or imaging. In an emergency, seek care immediately.'
   },
 };
+
+/* ---- 加到手機主畫面（PWA 安裝步驟）----
+   iOS 的 Safari 沒有 beforeinstallprompt，裝不了「一鍵安裝」按鈕，
+   只能寫清楚三個步驟讓使用者自己走。已經以 standalone 開啟時整塊隱藏。 */
+const INSTALL_STEPS = [
+  { zh: '用手機的**瀏覽器**打開這一頁（iPhone 用 Safari，Android 用 Chrome）',
+    en: 'Open this page in your phone’s **browser** (Safari on iPhone, Chrome on Android)' },
+  { zh: '按**「分享」**（iPhone 是下方中間的 ⬆️ 箭頭，Android 是右上角的 ⋮）',
+    en: 'Tap **Share** (the ⬆️ arrow at the bottom on iPhone, the ⋮ menu at the top right on Android)' },
+  { zh: '往下捲，選**「加入主畫面」**',
+    en: 'Scroll down and choose **Add to Home Screen**' }
+];
 
 /* ---- 現場急救：家屬版速查（首屏）---- */
 const EMERGENCY = {
@@ -318,8 +334,8 @@ const TREE = {
       hint:{ zh:'用手指輕壓一顆牙，看鄰牙會不會跟著動；常合併咬合錯亂。',
              en:'Press one tooth gently and watch whether the neighbours move with it; occlusal disturbance is common.' },
       opts:[
-        { label:{ zh:'是，整段一起動', en:'Yes, the segment moves as a block' }, next:'p_img_alveolar' },
-        { label:{ zh:'不是，單顆牙',   en:'No, individual teeth' },              next:'p_crown' }
+        { label:{ zh:'是，整段一起動', en:'Yes, the segment moves as a block' }, next:'p_img_alveolar', img:'dx/fx-alveolar.svg' },
+        { label:{ zh:'不是，單顆牙',   en:'No, individual teeth' },              next:'p_crown', img:'dx/base-closed-apex.svg' }
       ]
     },
     p_crown: {
@@ -334,34 +350,34 @@ const TREE = {
       hint:{ zh:'斷裂線如果往齦下延伸、斷片會晃，選最後一項。',
              en:'If the fracture line extends below the gingival margin and the fragment is mobile, choose the last option.' },
       opts:[
-        { label:{ zh:'只有裂紋，沒有缺損',         en:'Craze lines only, no loss of tooth structure' }, next:'p_img_crown' },
-        { label:{ zh:'只缺一小塊白色的牙釉質',     en:'A small chip confined to enamel' },              next:'p_img_crown2' },
-        { label:{ zh:'看得到黃色牙本質，沒有紅點', en:'Yellow dentin exposed, no red spot' },           next:'p_img_crown3' },
-        { label:{ zh:'看得到紅色或出血的牙髓',     en:'Red or bleeding pulp exposed' },                 dx:'p-complicated-crown-fracture' },
-        { label:{ zh:'裂線延伸到牙齦以下',         en:'Fracture line extends below the gingiva' },      next:'p_crownRoot' }
+        { label:{ zh:'只有裂紋，沒有缺損',         en:'Craze lines only, no loss of tooth structure' }, next:'p_img_crown', img:'dx/fx-infraction.svg' },
+        { label:{ zh:'只缺一小塊白色的牙釉質',     en:'A small chip confined to enamel' },              next:'p_img_crown2', img:'dx/fx-enamel.svg' },
+        { label:{ zh:'看得到黃色牙本質，沒有紅點', en:'Yellow dentin exposed, no red spot' },           next:'p_img_crown3', img:'dx/fx-enamel-dentin.svg' },
+        { label:{ zh:'看得到紅色或出血的牙髓',     en:'Red or bleeding pulp exposed' },                 dx:'p-complicated-crown-fracture', img:'dx/fx-complicated-crown.svg' },
+        { label:{ zh:'裂線延伸到牙齦以下',         en:'Fracture line extends below the gingiva' },      next:'p_crownRoot', img:'dx/fx-crown-root-uncomp.svg' }
       ]
     },
     p_crownRoot: {
       q:{ zh:'這條延伸到齦下的裂線有沒有通過牙髓？', en:'Does that subgingival fracture involve the pulp?' },
       opts:[
-        { label:{ zh:'沒有露髓', en:'No pulp exposure' }, next:'p_img_cr_uncomp' },
-        { label:{ zh:'有露髓',   en:'Pulp exposed'     }, next:'p_img_cr_comp' }
+        { label:{ zh:'沒有露髓', en:'No pulp exposure' }, next:'p_img_cr_uncomp', img:'dx/fx-crown-root-uncomp.svg' },
+        { label:{ zh:'有露髓',   en:'Pulp exposed'     }, next:'p_img_cr_comp', img:'dx/fx-crown-root-comp.svg' }
       ]
     },
     p_position: {
       q:{ zh:'牙齒的位置有變嗎？', en:'Has the tooth been displaced?' },
       opts:[
-        { label:{ zh:'變長，像被拉出來一些', en:'Appears elongated, partially out of the socket' }, dx:'p-extrusive-luxation' },
-        { label:{ zh:'歪向唇側或舌側，常卡住不太會動', en:'Tipped labially or palatally, often locked and immobile' }, dx:'p-lateral-luxation' },
-        { label:{ zh:'變短，像被撞進骨頭裡', en:'Appears shortened, driven into the bone' }, dx:'p-intrusive-luxation' },
-        { label:{ zh:'位置看起來正常',       en:'Position looks normal' },                   next:'p_mobility' }
+        { label:{ zh:'變長，像被拉出來一些', en:'Appears elongated, partially out of the socket' }, dx:'p-extrusive-luxation', img:'dx/lux-extrusive.svg' },
+        { label:{ zh:'歪向唇側或舌側，常卡住不太會動', en:'Tipped labially or palatally, often locked and immobile' }, dx:'p-lateral-luxation', img:'dx/lux-lateral.svg' },
+        { label:{ zh:'變短，像被撞進骨頭裡', en:'Appears shortened, driven into the bone' }, dx:'p-intrusive-luxation', img:'dx/lux-intrusive.svg' },
+        { label:{ zh:'位置看起來正常',       en:'Position looks normal' },                   next:'p_mobility', img:'dx/base-closed-apex.svg' }
       ]
     },
     p_mobility: {
       q:{ zh:'牙齒會搖嗎？', en:'Is the tooth mobile?' },
       opts:[
-        { label:{ zh:'會搖，齦溝有出血',         en:'Mobile, with sulcular bleeding' },                 next:'p_img_loose' },
-        { label:{ zh:'不太搖，但叩診或咬合會痛', en:'Not mobile, but tender to percussion or biting' }, next:'p_img_tender' }
+        { label:{ zh:'會搖，齦溝有出血',         en:'Mobile, with sulcular bleeding' },                 next:'p_img_loose', img:'dx/lux-subluxation.svg' },
+        { label:{ zh:'不太搖，但叩診或咬合會痛', en:'Not mobile, but tender to percussion or biting' }, next:'p_img_tender', img:'dx/lux-concussion.svg' }
       ]
     },
 
@@ -454,24 +470,30 @@ const TREE = {
 
     /* ===== 恆牙 · 第 5 關：影像所見 ===== */
     p_film_missing: {
-      q:{ zh:'影像上看到什麼？', en:'What do the films show?' },
+      q:{ zh:'X 光片上看到什麼？', en:'What do the X-rays show?' },
+      hint:{ zh:'看齒槽窩：空的，還是牙齒被壓進骨頭裡。',
+             en:'Look at the socket: empty, or the tooth driven up into the bone.' },
       opts:[
-        { label:{ zh:'齒槽窩是空的，牙齒不在骨內', en:'The socket is empty; the tooth is not in the bone' }, dx:'p-avulsion' },
-        { label:{ zh:'牙齒還在骨內，只是被壓進去了', en:'The tooth is still in the bone, driven apically' }, dx:'p-intrusive-luxation' }
+        { label:{ zh:'齒槽窩是空的，牙齒不在骨內', en:'The socket is empty; the tooth is not in the bone' }, dx:'p-avulsion', img:'dx/avulsion.svg' },
+        { label:{ zh:'牙齒還在骨內，只是被壓進去了', en:'The tooth is still in the bone, driven apically' }, dx:'p-intrusive-luxation', img:'dx/lux-intrusive.svg' }
       ]
     },
     p_film_loose: {
-      q:{ zh:'影像上有看到牙根的橫向或斜向斷裂線嗎？', en:'Do the films show a transverse or oblique root fracture line?' },
+      q:{ zh:'X 光片上有看到牙根的橫向或斜向斷裂線嗎？', en:'Do the X-rays show a transverse or oblique root fracture line?' },
+      hint:{ zh:'沿著牙根從頸部看到根尖，找一條橫過牙根的透射線。',
+             en:'Trace the root from the cervical area to the apex and look for a radiolucent line crossing it.' },
       opts:[
-        { label:{ zh:'有，看得到斷裂線', en:'Yes, a fracture line is visible' }, dx:'p-root-fracture' },
-        { label:{ zh:'沒有，牙根完整（牙周韌帶腔可能略增寬）', en:'No, the root is intact (the periodontal ligament space may be slightly widened)' }, dx:'p-subluxation' }
+        { label:{ zh:'有，看得到斷裂線', en:'Yes, a fracture line is visible' }, dx:'p-root-fracture', img:'dx/fx-root-thirds.svg' },
+        { label:{ zh:'沒有，牙根完整（牙周韌帶腔可能略增寬）', en:'No, the root is intact (the periodontal ligament space may be slightly widened)' }, dx:'p-subluxation', img:'dx/lux-subluxation.svg' }
       ]
     },
     p_film_tender: {
-      q:{ zh:'影像上有看到什麼異常嗎？', en:'Do the films show any abnormality?' },
+      q:{ zh:'X 光片上有看到什麼異常嗎？', en:'Do the X-rays show any abnormality?' },
+      hint:{ zh:'震盪的定義包含「影像上無異常」，所以這一題要有 X 光片才答得出來。',
+             en:'Concussion is defined partly by the absence of radiographic abnormality, so this question needs the film.' },
       opts:[
-        { label:{ zh:'有牙根的橫向或斜向斷裂線', en:'A transverse or oblique root fracture line' }, dx:'p-root-fracture' },
-        { label:{ zh:'完全沒有異常',             en:'No abnormality at all' },                      dx:'p-concussion' }
+        { label:{ zh:'有牙根的橫向或斜向斷裂線', en:'A transverse or oblique root fracture line' }, dx:'p-root-fracture', img:'dx/fx-root-thirds.svg' },
+        { label:{ zh:'完全沒有異常',             en:'No abnormality at all' },                      dx:'p-concussion', img:'dx/lux-concussion.svg' }
       ]
     },
 
@@ -487,8 +509,8 @@ const TREE = {
     d_segment: {
       q:{ zh:'是好幾顆牙連同一塊骨頭一起動嗎？', en:'Do several teeth move together as one bony segment?' },
       opts:[
-        { label:{ zh:'是，整段一起動', en:'Yes, the segment moves as a block' }, next:'d_img_alveolar' },
-        { label:{ zh:'不是，單顆牙',   en:'No, individual teeth' },              next:'d_crown' }
+        { label:{ zh:'是，整段一起動', en:'Yes, the segment moves as a block' }, next:'d_img_alveolar', img:'dx/fx-alveolar.svg' },
+        { label:{ zh:'不是，單顆牙',   en:'No, individual teeth' },              next:'d_crown', img:'dx/base-closed-apex.svg' }
       ]
     },
     d_crown: {
@@ -501,19 +523,19 @@ const TREE = {
     d_crownDepth: {
       q:{ zh:'斷面看得到什麼？', en:'What can you see at the fracture surface?' },
       opts:[
-        { label:{ zh:'只缺一小塊白色的牙釉質',     en:'A small chip confined to enamel' },         next:'d_img_enamel' },
-        { label:{ zh:'看得到黃色牙本質，沒有紅點', en:'Yellow dentin exposed, no red spot' },      next:'d_img_dentin' },
-        { label:{ zh:'看得到紅色或出血的牙髓',     en:'Red or bleeding pulp exposed' },            next:'d_img_pulp' },
-        { label:{ zh:'裂線延伸到牙齦以下',         en:'Fracture line extends below the gingiva' }, next:'d_img_crownroot' }
+        { label:{ zh:'只缺一小塊白色的牙釉質',     en:'A small chip confined to enamel' },         next:'d_img_enamel', img:'dx/fx-enamel.svg' },
+        { label:{ zh:'看得到黃色牙本質，沒有紅點', en:'Yellow dentin exposed, no red spot' },      next:'d_img_dentin', img:'dx/fx-enamel-dentin.svg' },
+        { label:{ zh:'看得到紅色或出血的牙髓',     en:'Red or bleeding pulp exposed' },            next:'d_img_pulp', img:'dx/fx-complicated-crown.svg' },
+        { label:{ zh:'裂線延伸到牙齦以下',         en:'Fracture line extends below the gingiva' }, next:'d_img_crownroot', img:'dx/fx-crown-root-uncomp.svg' }
       ]
     },
     d_position: {
       q:{ zh:'牙齒的位置有變嗎？', en:'Has the tooth been displaced?' },
       opts:[
-        { label:{ zh:'變長，像被拉出來一些', en:'Appears elongated, partially out of the socket' }, next:'d_img_extrusive' },
-        { label:{ zh:'歪向唇側或舌側',       en:'Tipped labially or palatally' },                  next:'d_img_lateral' },
-        { label:{ zh:'變短甚至看不到',       en:'Shortened or almost disappeared' },               next:'d_img_intrusive' },
-        { label:{ zh:'位置看起來正常',       en:'Position looks normal' },                         next:'d_mobility' }
+        { label:{ zh:'變長，像被拉出來一些', en:'Appears elongated, partially out of the socket' }, next:'d_img_extrusive', img:'dx/lux-extrusive.svg' },
+        { label:{ zh:'歪向唇側或舌側',       en:'Tipped labially or palatally' },                  next:'d_img_lateral', img:'dx/lux-lateral.svg' },
+        { label:{ zh:'變短甚至看不到',       en:'Shortened or almost disappeared' },               next:'d_img_intrusive', img:'dx/lux-intrusive.svg' },
+        { label:{ zh:'位置看起來正常',       en:'Position looks normal' },                         next:'d_mobility', img:'dx/base-closed-apex.svg' }
       ]
     },
     d_mobility: {
@@ -521,8 +543,8 @@ const TREE = {
       hint:{ zh:'乳牙的震盪與半脫位就差在這裡：**震盪的搖動度正常、齦溝不出血**；半脫位搖動度增加、齦溝可能出血。',
              en:'This is what separates primary concussion from subluxation: **concussion has normal mobility and no sulcular bleeding**; subluxation has increased mobility and may bleed from the crevice.' },
       opts:[
-        { label:{ zh:'搖動度增加，齦溝有出血',     en:'Increased mobility with sulcular bleeding' }, next:'d_img_sublux' },
-        { label:{ zh:'搖動度正常，齦溝不出血，只是碰到會痛', en:'Normal mobility, no bleeding, just tender to touch' }, next:'d_img_concussion' }
+        { label:{ zh:'搖動度增加，齦溝有出血',     en:'Increased mobility with sulcular bleeding' }, next:'d_img_sublux', img:'dx/lux-subluxation.svg' },
+        { label:{ zh:'搖動度正常，齦溝不出血，只是碰到會痛', en:'Normal mobility, no bleeding, just tender to touch' }, next:'d_img_concussion', img:'dx/lux-concussion.svg' }
       ]
     },
 
@@ -596,10 +618,12 @@ const TREE = {
                    en:'Stop testing the mobility repeatedly. Soft diet, keep it clean. Most primary subluxations need no splint, **but do not conclude that before a root fracture has been excluded**.' }
     },
     d_film_sublux: {
-      q:{ zh:'影像上有看到牙根的斷裂線嗎？', en:'Does the film show a root fracture line?' },
+      q:{ zh:'X 光片上有看到牙根的斷裂線嗎？', en:'Does the X-ray show a root fracture line?' },
+      hint:{ zh:'乳牙的牙根斷裂多半在中段或根尖三分之一。',
+             en:'Root fractures in primary teeth are usually mid-root or in the apical third.' },
       opts:[
-        { label:{ zh:'有，看得到斷裂線（多半在牙根中段或根尖三分之一）', en:'Yes, a fracture line is visible (usually mid-root or apical third)' }, dx:'d-root-fracture' },
-        { label:{ zh:'沒有，牙根完整（牙周韌帶腔正常到略增寬）', en:'No, the root is intact (normal to slightly widened periodontal ligament space)' }, dx:'d-subluxation' }
+        { label:{ zh:'有，看得到斷裂線（多半在牙根中段或根尖三分之一）', en:'Yes, a fracture line is visible (usually mid-root or apical third)' }, dx:'d-root-fracture', img:'dx/fx-root-thirds.svg' },
+        { label:{ zh:'沒有，牙根完整（牙周韌帶腔正常到略增寬）', en:'No, the root is intact (normal to slightly widened periodontal ligament space)' }, dx:'d-subluxation', img:'dx/lux-subluxation.svg' }
       ]
     },
     d_img_concussion: {
@@ -620,19 +644,21 @@ const TREE = {
 
     /* ===== 乳牙 · 第 5 關：影像所見 ===== */
     d_film_missing: {
-      q:{ zh:'影像上看到什麼？', en:'What does the film show?' },
+      q:{ zh:'X 光片上看到什麼？', en:'What does the X-ray show?' },
+      hint:{ zh:'看齒槽窩：空的，還是牙齒被壓進骨頭裡。',
+             en:'Look at the socket: empty, or the tooth driven up into the bone.' },
       opts:[
-        { label:{ zh:'齒槽窩是空的，牙齒不在骨內', en:'The socket is empty; the tooth is not in the bone' }, dx:'d-avulsion' },
-        { label:{ zh:'牙齒還在骨內，被壓進去了',   en:'The tooth is still in the bone, driven apically' },  dx:'d-intrusive-luxation' }
+        { label:{ zh:'齒槽窩是空的，牙齒不在骨內', en:'The socket is empty; the tooth is not in the bone' }, dx:'d-avulsion', img:'dx/avulsion.svg' },
+        { label:{ zh:'牙齒還在骨內，被壓進去了',   en:'The tooth is still in the bone, driven apically' },  dx:'d-intrusive-luxation', img:'dx/lux-intrusive.svg' }
       ]
     },
     d_film_intrusive: {
-      q:{ zh:'影像上根尖往哪個方向？', en:'Which way has the apex gone?' },
-      hint:{ zh:'兩種方向的處置相同（等自行再萌出），但對恆牙牙胚的風險不同，家長告知的內容也不同。',
-             en:'Management is the same either way (allow spontaneous re-eruption), but the risk to the permanent tooth germ — and therefore what the parents are told — differs.' },
+      q:{ zh:'X 光片上根尖往哪個方向？', en:'On the X-ray, which way has the apex gone?' },
+      hint:{ zh:'兩種方向的處置相同（等自行再萌出），但對恆牙牙胚的風險不同，家長告知的內容也不同。\n\n**X 光片上的表現跟直覺相反**：根尖穿向唇側時看得到根尖、牙齒顯得短；根尖朝牙胚時看不到根尖、牙齒反而顯得長。',
+             en:'Management is the same either way (allow spontaneous re-eruption), but the risk to the permanent tooth germ — and therefore what the parents are told — differs.\n\n**The radiographic appearance is counter-intuitive**: when the apex perforates the labial plate the tip is visible and the tooth looks foreshortened; when it moves towards the germ the tip is hidden and the tooth looks elongated.' },
       opts:[
-        { label:{ zh:'看得到根尖，牙齒顯得比對側短（朝唇側骨板）', en:'The apical tip is visible and the tooth looks foreshortened (towards the labial plate)' }, dx:'d-intrusive-luxation' },
-        { label:{ zh:'看不到根尖，牙齒反而顯得長（朝恆牙牙胚）',   en:'The apical tip cannot be seen and the tooth looks elongated (towards the tooth germ)' },   dx:'d-intrusive-luxation' }
+        { label:{ zh:'看得到根尖，牙齒顯得比對側短（朝唇側骨板）', en:'The apical tip is visible and the tooth looks foreshortened (towards the labial plate)' }, dx:'d-intrusive-luxation', img:'dx/intrusion-apex-labial.svg' },
+        { label:{ zh:'看不到根尖，牙齒反而顯得長（朝恆牙牙胚）',   en:'The apical tip cannot be seen and the tooth looks elongated (towards the tooth germ)' },   dx:'d-intrusive-luxation', img:'dx/intrusion-apex-germ.svg' }
       ]
     }
   }

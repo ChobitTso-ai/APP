@@ -11,7 +11,13 @@
    · 開啟 App 直接是第一題，沒有首頁
    · 返回鍵在固定頂列（放頁尾的話診斷頁要捲到底才找得到）
    · ⚡ 有圖例說明（先前是沒有任何解釋的紅點）
-   · 影像提示預設關閉，開關在右上角 */
+   · 影像提示預設關閉，開關在右上角
+
+   v1.2 再加的：
+   · 問影像所見的題目要明講「X 光片」（先前寫「影像上…」，看不出是要拍片）
+   · 分水嶺題目的選項掛示意圖；圖還沒到就**整塊隱藏**，不留佔位空框
+   · 查閱改成兩欄插圖卡片，依恆牙／乳牙與損傷類型分區
+   · 第一題底下有「加到手機主畫面」的三步驟 */
 const { chromium } = require('playwright-core');
 const { BASE, LOGIN, chromePath, OUT } = require('./env');
 const path = require('path');
@@ -26,8 +32,11 @@ async function stubStats(ctx){
     route.fulfill({ status:200, contentType:'text/javascript', body:'void 0;' }));
 }
 
+/* serviceWorkers:'block'——這個 App 是 PWA，sw.js 用 network-first 攔所有 GET。
+   Service Worker 一旦接手，page.route() 就攔不到圖片請求（請求是從 SW 發的），
+   插圖的攔截測試會永遠等不到。這一檔測的是畫面行為，不測離線快取，直接關掉。 */
 async function authed(browser){
-  const ctx = await browser.newContext({ viewport:{ width:414, height:900 } });
+  const ctx = await browser.newContext({ viewport:{ width:414, height:900 }, serviceWorkers:'block' });
   await stubStats(ctx);
   const p = await ctx.newPage();
   await p.goto(LOGIN);
@@ -89,6 +98,17 @@ async function reset(p){
     const refs = await p.$$eval('#listRefs li', ns => ns.length);
     ok('參考文獻列出 4 篇 IADT 2020', refs === 4, refs + ' 篇');
     ok('頁尾有免責聲明', /不能取代臨床判斷/.test(await p.textContent('#txtDisclaimer')));
+
+    // v1.2：加到手機主畫面的三步驟。用瀏覽器開的時候要看得到。
+    ok('★ 有「加到手機主畫面」的說明', await p.isVisible('#cardInstall'));
+    const steps = await p.$$eval('#listInstall li', ns => ns.map(x => x.textContent.trim()));
+    ok('★ 三個步驟：瀏覽器開啟 → 分享 → 加入主畫面',
+      steps.length === 3 && /瀏覽器/.test(steps[0]) &&
+      /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
+    ok('說明有提到 iPhone 與 Android 的差別',
+      /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
+    ok('版本號是 v1.2', /v1\.2/.test(await p.title()) &&
+      /v1\.2/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -143,7 +163,7 @@ async function reset(p){
     await p.waitForSelector('#screenTree:not([hidden])');
     ok('★ 一般模式不出現影像檢查那一關', await p.isHidden('#screenImaging'));
     ok('★ 直接在「影像所見」選 finding',
-      (await p.textContent('#treeQ')).includes('影像上有看到什麼異常'));
+      (await p.textContent('#treeQ')).includes('X 光片上有看到什麼異常'));
     await p.click('#treeOpts .opt >> nth=1');           // 完全沒有異常
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('★ 不搖＋影像無異常 才導到「震盪」', (await p.textContent('#dxNameZh')) === '震盪');
@@ -166,7 +186,7 @@ async function reset(p){
     await p.click('#treeOpts .opt >> nth=1');           // 找不到牙齒
     await p.waitForSelector('#screenTree:not([hidden])');
     ok('★ 找不到牙齒導到影像所見（不是直接當脫落）',
-      (await p.textContent('#treeQ')).includes('影像上看到什麼'));
+      (await p.textContent('#treeQ')).includes('X 光片上看到什麼'));
     await p.click('#treeOpts .opt >> nth=1');           // 牙齒還在骨內
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('★ 影像顯示牙齒還在骨內 → 內縮性脫位，不是脫落',
@@ -223,7 +243,7 @@ async function reset(p){
     await p.click('#btnPendingNext');
     await p.waitForSelector('#screenTree:not([hidden])');
     ok('X 光好了接回影像所見那一題',
-      (await p.textContent('#treeQ')).includes('影像上有看到什麼異常'));
+      (await p.textContent('#treeQ')).includes('X 光片上有看到什麼異常'));
 
     // 乳牙：IADT 明文不需照影像的診斷
     await p.click('#btnTreeRestart');
@@ -268,7 +288,7 @@ async function reset(p){
     await p.click('#treeOpts .opt >> nth=0');           // 搖動度增加、齦溝出血
     await p.waitForSelector('#screenTree:not([hidden])');
     ok('★ 乳牙半脫位這條要看影像所見（與牙根斷裂臨床重疊）',
-      (await p.textContent('#treeQ')).includes('影像上有看到牙根的斷裂線'));
+      (await p.textContent('#treeQ')).includes('X 光片上有看到牙根的斷裂線'));
     await p.click('#treeOpts .opt >> nth=0');           // 有斷裂線
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('★ 乳牙：搖動＋有斷裂線 → 牙根斷裂',
@@ -276,12 +296,69 @@ async function reset(p){
       (await p.textContent('#dxDentition')) === '乳牙');
   }
 
+  /* ── 7b. 示意圖機制（v1.2）：圖沒到就整塊隱藏、圖到了自動長出來 ──
+     插圖是 CODEX 一張一張補進來的，所以這兩種狀態都要測。
+     只斷言「現在沒有圖」不夠——那樣圖到了才發現版面壞掉就太晚。 */
+  {
+    const toFractureSurface = async () => {
+      await reset(p);
+      await p.click('#treeOpts .opt >> nth=0');         // 恆牙
+      await p.click('#treeOpts .opt >> nth=2');         // 還在嘴裡
+      await p.click('#treeOpts .opt >> nth=1');         // 單顆牙
+      await p.click('#treeOpts .opt >> nth=0');         // 有斷裂或缺角
+      await p.waitForFunction(() =>
+        document.getElementById('treeQ').textContent.includes('斷面看得到什麼'));
+    };
+
+    await toFractureSurface();
+    await p.waitForFunction(() =>
+      document.querySelectorAll('#treeOpts .opt-fig').length === 0);
+    ok('★ 插圖還沒進 repo：選項不留佔位空框',
+      (await p.$$('#treeOpts .opt.has-fig')).length === 0 &&
+      (await p.$$eval('#treeOpts .opt', ns => ns.length)) === 5);
+
+    // 換成「圖已經到了」：攔截 dx/*.svg 回一張最小的 SVG
+    const STUB = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+               + '<rect width="10" height="10" fill="#6FD3C2"/></svg>';
+    await p.route('**/assets/dx/*.svg', r =>
+      r.fulfill({ status:200, contentType:'image/svg+xml', body:STUB }));
+
+    await toFractureSurface();
+    await p.waitForFunction(() =>
+      document.querySelectorAll('#treeOpts .opt-fig img').length === 5);
+    ok('★ 插圖到了：五個選項各自長出縮圖', true);
+    const boxed = await p.$eval('#treeOpts .opt-fig', n => n.getBoundingClientRect().width > 20);
+    ok('縮圖有實際寬度（不是 0 × 0）', boxed);
+
+    await p.click('#btnBrowse');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    await p.waitForFunction(() =>
+      document.querySelectorAll('#browseList .dx-card-fig img').length === 26);
+    ok('★ 查閱卡片的插圖也跟著出現（26 張）', true);
+
+    await p.unroute('**/assets/dx/*.svg');
+    await p.click('#btnBrowse');
+    await p.waitForFunction(() =>
+      document.querySelectorAll('#browseList .dx-card-fig').length === 0);
+    ok('★ 插圖不存在時查閱卡片退回純文字，不留空框',
+      (await p.$$('#browseList .dx-card')).length === 26);
+  }
+
   /* ── 8. 查閱模式與搜尋 ── */
   {
     await p.click('#btnBrowse');
     await p.waitForSelector('#screenBrowse:not([hidden])');
-    const n = await p.$$eval('#browseList .dx-item', ns => ns.length);
+    const n = await p.$$eval('#browseList .dx-card', ns => ns.length);
     ok('列表共 26 種診斷（恆牙 14＋乳牙 12）', n === 26, n + ' 種');
+    const secs = await p.$$eval('#browseList .browse-sec', ns => ns.map(x => x.textContent.trim()));
+    ok('★ 依恆牙／乳牙分大區', secs.join('｜') === '恆牙｜乳牙', secs.join('｜'));
+    const grps = await p.$$eval('#browseList .group-title', ns => ns.map(x => x.textContent.trim()));
+    ok('★ 分區標題用臨床講法（牙齒與齒槽骨折斷／震盪與脫位傷／完全脫落）',
+      grps.length === 6 && grps[0] === '牙齒與齒槽骨折斷' &&
+      grps[1] === '震盪與脫位傷' && grps[2] === '完全脫落', grps.join('｜'));
+    const cols = await p.$eval('#browseList .dx-grid',
+      n => getComputedStyle(n).gridTemplateColumns.split(' ').length);
+    ok('★ 卡片兩欄排列（手機一屏掃得完）', cols === 2, cols + ' 欄');
     ok('★ ⚡ 有圖例說明（先前是沒有解釋的紅點）',
       await p.isVisible('#browseLegend') &&
       /時間急迫/.test(await p.textContent('#browseLegend')) &&
@@ -292,7 +369,7 @@ async function reset(p){
 
     await p.fill('#dxSearch', '脫位');
     await p.waitForTimeout(120);
-    const m = await p.$$eval('#browseList .dx-item b', ns => ns.map(x => x.textContent.trim()));
+    const m = await p.$$eval('#browseList .dx-card .nm', ns => ns.map(x => x.textContent.trim()));
     ok('搜尋「脫位」找得到半脫位／外突性／側向／內縮性（恆牙乳牙各 4）',
       m.length === 8 && m.every(x => /脫位/.test(x)), m.length + ' 筆');
 
@@ -306,7 +383,7 @@ async function reset(p){
   {
     await p.fill('#dxSearch', '內縮性');
     await p.waitForTimeout(120);
-    await p.click('#browseList .dx-item >> nth=0');
+    await p.click('#browseList .dx-card >> nth=0');
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('開到恆牙內縮性脫位', (await p.textContent('#dxNameZh')) === '內縮性脫位');
 
@@ -354,7 +431,7 @@ async function reset(p){
     // 區間型時間點（6–8 週）要顯示成日期區間
     await p.fill('#dxSearch', '牙釉質斷裂');
     await p.waitForTimeout(120);
-    await p.click('#browseList .dx-item >> nth=0');
+    await p.click('#browseList .dx-card >> nth=0');
     await p.fill('#injuryDate', '2026-03-01');
     await p.click('#btnCalc');
     await p.waitForSelector('#scheduleOut:not([hidden])');
@@ -402,7 +479,7 @@ async function reset(p){
     await p.click('#btnBrowse');
     await p.fill('#dxSearch', '裂紋');
     await p.waitForTimeout(120);
-    await p.click('#browseList .dx-item >> nth=0');
+    await p.click('#browseList .dx-card >> nth=0');
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('牙釉質裂紋：IADT 不要求例行追蹤',
       /不要求例行追蹤/.test(await p.textContent('#dxFollowUp')));
@@ -444,7 +521,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.1/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v1\.2/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
