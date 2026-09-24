@@ -10,7 +10,7 @@
 Claude 寫規格書  →  docs/handoff/*-spec.md  （進 repo，版本控管）
        ↓ Dr.Tso 把規格貼進 CODEX 對話
 CODEX 產出檔案   →  本機專案資料夾
-       ↓ Dr.Tso 用 GitHub 網頁 Add file → Upload files 拖進 repo
+       ↓ Dr.Tso 把整批壓成 zip 丟進 Claude 對話（見下方「怎麼把檔案交給 Claude」）
 Claude 整合      →  驗收、接進 App、跑測試、commit、push、開 PR、合併
 ```
 
@@ -39,10 +39,20 @@ CODEX 只負責產檔案，不要順手幫忙改程式碼或動 git——Claude 
   否則交回來的東西很難一次到位。
 - 規格改了就改規格書本身，不要只在對話裡講——下次重產會用回舊規格。
 
-## 上傳檔案時的注意事項
+## 怎麼把檔案交給 Claude（2026-09-24 實測）
 
-- 落地資料夾已經先建好（裡面放 `.gitkeep`），直接進該資料夾按
-  **Add file → Upload files** 拖檔案即可。
+**`.svg` 單檔傳不上去**——對話上傳與 GitHub 網頁 Upload files 兩邊都失敗
+（SVG 可以夾帶 script，上傳驗證多半直接拒收）。實測可行的順序：
+
+| # | 做法 | 實測 |
+|---|---|---|
+| 1 | **整批打包成 `.zip` 丟進對話** | ✅ **可行，首選。**Claude 解開後自己放進 repo 並 commit |
+| 2 | GitHub **Create new file**（不是 Upload）→ 檔名自己打、內容貼進去 | 未實測，但不經過上傳機制，理論上可行 |
+| 3 | 把 SVG 原始碼直接貼進對話 | 可行，但一次只適合一兩張 |
+
+zip 直達做法：把該批 `.svg` 全選 → 右鍵 → 壓縮 → 丟進對話即可，
+不用先分資料夾，Claude 會依檔名判斷該放 `dx/` 還是 `care/`。
+
 - 檔名必須與規格書完全一致，程式是照檔名找檔的。
 - **有版權的參考資料不要上傳**：本 repo 是 public，commit 之後即使刪除，
   git 歷史裡仍然留著。參考圖請直接貼在 CODEX 對話裡。
@@ -51,4 +61,4 @@ CODEX 只負責產檔案，不要順手幫忙改程式碼或動 git——Claude 
 
 | 規格書 | 主題 | 落地位置 |
 |---|---|---|
-| `dental-trauma-art-spec.md` | 牙外傷指南的 22 張向量插圖 | `apps/dental-trauma-guide/assets/` |
+| `dental-trauma-art-spec.md` | 牙外傷指南的 31 張向量插圖（v3） | `apps/dental-trauma-guide/assets/` |
