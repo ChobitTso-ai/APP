@@ -41,14 +41,14 @@
 
     <div class="modes modes-3">
       <button class="mode-card glass" id="btnModeAsk">
-        <span class="mode-icon">🩺</span>
+        <span class="mode-icon">⚡</span>
         <strong id="txtModeAsk">問答導引</strong>
         <small id="txtModeAskDesc">含影像提醒：該拍哪幾張、為什麼非拍不可</small>
       </button>
-      <button class="mode-card glass" id="btnModeFast">
-        <span class="mode-icon">⚡</span>
-        <strong id="txtModeFast">快速選取</strong>
-        <small id="txtModeFastDesc">只選選項，直接看診斷與處置</small>
+      <button class="mode-card glass" id="btnModeHints">
+        <span class="mode-icon">🩻</span>
+        <strong id="txtModeHints">問答導引＋影像提示</strong>
+        <small id="txtModeHintsDesc">多一關影像檢查：該拍哪幾張、為什麼非拍不可</small>
       </button>
       <button class="mode-card glass" id="btnModeBrowse">
         <span class="mode-icon">📖</span>
@@ -79,7 +79,7 @@
   <section id="screenTree" hidden>
     <div class="mode-bar" id="treeModeBar">
       <span id="txtTreeMode"></span>
-      <button class="link-btn" id="btnTreeMode" data-ui="modeSwitch">切換</button>
+      <button class="link-btn" id="btnTreeMode">開啟影像提示</button>
     </div>
     <div class="fast-redflag" id="fastRedFlag" hidden></div>
     <div class="crumbs" id="treeCrumbs"></div>
@@ -117,10 +117,10 @@
   <!-- ===== 還沒拍片：先能做什麼 ===== -->
   <section id="screenPending" hidden>
     <div class="card glass">
-      <h2>⏳ <span data-ui="imgBefore">在拿到片子之前</span></h2>
+      <h2>⏳ <span data-ui="imgBefore">在拿到 X 光之前</span></h2>
       <p class="why" id="pendingBody"></p>
       <div class="row-btns">
-        <button class="btn" id="btnPendingNext" data-ui="imgBackToFilm">片子好了，繼續 →</button>
+        <button class="btn" id="btnPendingNext" data-ui="imgBackToFilm">X 光好了，繼續 →</button>
         <button class="btn ghost" id="btnPendingBack">← <span data-ui="back">返回</span></button>
       </div>
     </div>

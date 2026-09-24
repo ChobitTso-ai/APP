@@ -74,9 +74,9 @@ async function authed(browser){
     await p.click('#btnLang');
     await p.waitForFunction(() => document.getElementById('txtAppName').textContent === 'Dental Trauma Guide');
     ok('切到英文：標題與三張模式卡片都換語言',
-      (await p.textContent('#txtModeAsk')) === 'Guided' &&
-      (await p.textContent('#txtModeFast')) === 'Quick pick' &&
-      /imaging prompts/i.test(await p.textContent('#txtModeAskDesc')));
+      (await p.textContent('#txtModeAsk')) === 'Guided questions' &&
+      (await p.textContent('#txtModeHints')) === 'Guided questions + imaging prompts' &&
+      /imaging step/i.test(await p.textContent("#txtModeHintsDesc")));
     ok('英文的保存液第一項是 Milk',
       (await p.textContent('#storageRow .media b')).trim().startsWith('Milk'));
     const saved = await p.evaluate(() => localStorage.getItem('dtg_lang'));
@@ -93,9 +93,9 @@ async function authed(browser){
 
   /* ── 4. 決策樹：紅旗 → 外觀 → 影像 → 影像所見 → 診斷 ── */
   {
-    await p.click('#btnModeAsk');
+    await p.click('#btnModeHints');
     await p.waitForSelector('#screenTree:not([hidden])');
-    ok('★ 第一關是紅旗排除', (await p.textContent('#treeQ')).includes('有沒有以下任何一項'));
+    ok('★ 開啟影像提示後,第一關是紅旗排除', (await p.textContent('#treeQ')).includes('有沒有以下任何一項'));
     ok('紅旗題列出五項', /失去意識[^。]*無法控制的出血/.test(await p.textContent('#treeHint')));
 
     // 紅旗「有」→ 先送急診
@@ -117,8 +117,8 @@ async function authed(browser){
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('恆牙→整顆掉出來 導到「脫落」', (await p.textContent('#dxNameZh')) === '脫落');
     ok('★ 脫落不經影像節點（時間急迫）', await p.isVisible('#dxUrgentBanner'));
-    ok('急迫橫幅明講不要為了等片子延誤',
-      /不要為了等片子延誤/.test(await p.textContent('#txtUrgentNoWait')));
+    ok('急迫橫幅明講不要為了等 X 光延誤',
+      /不要為了等 X 光延誤/.test(await p.textContent('#txtUrgentNoWait')));
 
     // 重走：恆牙 → 單顆 → 牙冠完整 → 位置正常 → 不搖但叩痛 → 影像關卡 → 震盪
     await p.click("#screenDx:not([hidden]) #btnDxRestart, #screenTree:not([hidden]) #btnTreeRestart");
@@ -143,12 +143,12 @@ async function authed(browser){
     // 「還沒拍」的出口
     await p.click('#imgOpts .opt >> nth=1');
     await p.waitForSelector('#screenPending:not([hidden])');
-    ok('★「還沒拍」給出在拿到片子之前可以做什麼',
+    ok('★「還沒拍」給出在拿到 X 光之前可以做什麼',
       /不要因為初診敏感性測試陰性就做根管治療/.test(await p.textContent('#pendingBody')));
     await p.click('#btnPendingNext');
 
     await p.waitForSelector('#screenTree:not([hidden])');
-    ok('片子好了接回影像所見那一題',
+    ok('X 光好了接回影像所見那一題',
       (await p.textContent('#treeQ')).includes('影像上有看到什麼異常'));
     await p.click('#treeOpts .opt >> nth=1');           // 完全沒有異常
     await p.waitForSelector('#screenDx:not([hidden])');
@@ -216,7 +216,7 @@ async function authed(browser){
     await p.click('#treeOpts .opt >> nth=3');
     await p.click('#treeOpts .opt >> nth=0');           // 搖動度增加、齦溝出血
     await p.waitForSelector('#screenImaging:not([hidden])');
-    ok('★ 乳牙半脫位這條要等片子（與牙根斷裂臨床重疊）',
+    ok('★ 乳牙半脫位這條要等 X 光（與牙根斷裂臨床重疊）',
       /臨床表現重疊/.test(await p.textContent('#imgWhy')));
     await p.click('#imgOpts .opt >> nth=0');
     await p.click('#treeOpts .opt >> nth=0');           // 有斷裂線
@@ -226,27 +226,29 @@ async function authed(browser){
       (await p.textContent('#dxDentition')) === '乳牙');
   }
 
-  /* ── 4d. 快速模式：跳掉的必須是提醒，不能是診斷依據 ── */
+  /* ── 4d. 一般模式(預設):不出現影像檢查那一關 ── */
   {
     await p.click('#btnHome');
     const cards = await p.$$eval('.modes .mode-card strong', ns => ns.map(n => n.textContent.trim()));
     ok('首頁有三張模式卡片', cards.length === 3, cards.join(' / '));
 
-    await p.click('#btnModeFast');
+    await p.click('#btnModeAsk');
     await p.waitForSelector('#screenTree:not([hidden])');
-    ok('★ 快速模式第一題直接問恆牙／乳牙（不佔一題問紅旗）',
+    ok('★ 一般模式第一題直接問恆牙／乳牙(不佔一題問紅旗)',
       (await p.textContent('#treeQ')).includes('恆牙還是乳牙'));
-    ok('★ 紅旗改成第一題上方的提示條，沒有消失',
+    ok('★ 紅旗改成第一題上方的提示條,沒有消失',
       await p.isVisible('#fastRedFlag') &&
       /失去意識/.test(await p.textContent('#fastRedFlag')) &&
       /先送急診/.test(await p.textContent('#fastRedFlag')));
-    ok('模式列顯示目前是快速模式',
-      /快速模式/.test(await p.textContent('#txtTreeMode')));
+    ok('模式列顯示目前是一般模式',
+      (await p.textContent('#txtTreeMode')).trim() === '一般模式');
+    ok('切換鈕寫「開啟影像提示」',
+      (await p.textContent('#btnTreeMode')).trim() === '開啟影像提示');
     ok('模式偏好存進 localStorage',
-      (await p.evaluate(() => localStorage.getItem('dtg_mode'))) === 'fast');
+      (await p.evaluate(() => localStorage.getItem('dtg_mode'))) === 'normal');
 
-    // 恆牙 → 牙冠完整 → 位置正常 → 不搖但叩痛：影像提醒頁要被跳過，
-    // 但「影像上看到什麼」那一題必須留著，否則震盪與牙根斷裂分不開
+    // 恆牙 → 牙冠完整 → 位置正常 → 不搖但叩痛:
+    // 影像檢查那一關不出現,但「影像所見」必須留著,否則震盪與牙根斷裂分不開
     await p.click('#treeOpts .opt >> nth=0');           // 恆牙
     ok('進入第二題後紅旗提示條收起來', !(await p.isVisible('#fastRedFlag')));
     await p.click('#treeOpts .opt >> nth=2');           // 還在嘴裡
@@ -255,17 +257,17 @@ async function authed(browser){
     await p.click('#treeOpts .opt >> nth=3');           // 位置正常
     await p.click('#treeOpts .opt >> nth=1');           // 不太搖但叩痛
     await p.waitForSelector('#screenTree:not([hidden])');
-    ok('★ 快速模式跳過影像提醒頁', await p.isHidden('#screenImaging'));
-    ok('★ 但「影像所見」那一題留著（跳了就分不出診斷）',
+    ok('★ 一般模式不出現影像檢查那一關', await p.isHidden('#screenImaging'));
+    ok('★ 直接在「影像所見」選 finding',
       (await p.textContent('#treeQ')).includes('影像上有看到什麼異常'));
     await p.click('#treeOpts .opt >> nth=1');           // 完全沒有異常
     await p.waitForSelector('#screenDx:not([hidden])');
-    ok('快速模式仍導到正確診斷', (await p.textContent('#dxNameZh')) === '震盪');
-    ok('★ 跳掉的影像資訊沒有消失，診斷頁仍有「建議影像」',
+    ok('一般模式仍導到正確診斷', (await p.textContent('#dxNameZh')) === '震盪');
+    ok('★ 影像提示的內容沒有消失,診斷頁仍有「建議影像」',
       /建議影像/.test(await p.textContent('#paneClinical')) &&
       /根尖片/.test(await p.textContent('#paneClinical')));
 
-    // 乳牙牙釉質斷裂：「不需要照影像」那一頁在快速模式整頁跳過，直接到診斷
+    // 乳牙牙釉質斷裂:影像關卡在一般模式整關不出現,直接到診斷
     await p.click('#btnDxRestart');
     await p.waitForSelector('#screenTree:not([hidden])');
     await p.click('#treeOpts .opt >> nth=1');           // 乳牙
@@ -274,26 +276,50 @@ async function authed(browser){
     await p.click('#treeOpts .opt >> nth=0');           // 有斷裂
     await p.click('#treeOpts .opt >> nth=0');           // 只缺一小塊牙釉質
     await p.waitForSelector('#screenDx:not([hidden])');
-    ok('★ 快速模式：乳牙牙釉質斷裂直接到診斷頁',
+    ok('★ 一般模式:乳牙牙釉質斷裂直接到診斷頁',
       (await p.textContent('#dxNameZh')) === '牙釉質斷裂' &&
       (await p.textContent('#dxDentition')) === '乳牙');
     ok('診斷頁仍寫明不需要照影像',
       /不需要照影像/.test(await p.textContent('#paneClinical')));
 
-    // 從診斷頁返回不會卡在被跳過的影像節點
+    // 從診斷頁返回不會卡在沒有顯示的影像節點
     await p.click('#btnDxBack');
     await p.waitForSelector('#screenTree:not([hidden])');
-    ok('★ 返回不會卡在被跳過的影像節點',
+    ok('★ 返回不會卡在沒有顯示的影像節點',
       (await p.textContent('#treeQ')).includes('斷面看得到什麼'));
 
-    // 切回詳細模式
+    // 開啟影像提示
     await p.click('#btnTreeMode');
     await p.waitForSelector('#screenTree:not([hidden])');
-    ok('切回詳細模式會從頭開始（兩種模式節點序列不同）',
+    ok('★ 開啟影像提示會從頭開始(兩種模式節點序列不同)',
       (await p.textContent('#treeQ')).includes('有沒有以下任何一項'));
-    ok('詳細模式不顯示紅旗提示條（紅旗自己就是一題）', !(await p.isVisible('#fastRedFlag')));
+    ok('開啟提示後不顯示紅旗提示條(紅旗自己就是一題)', !(await p.isVisible('#fastRedFlag')));
+    ok('切換鈕改寫「關閉影像提示」',
+      (await p.textContent('#btnTreeMode')).trim() === '關閉影像提示');
     ok('模式偏好跟著改',
-      (await p.evaluate(() => localStorage.getItem('dtg_mode'))) === 'guided');
+      (await p.evaluate(() => localStorage.getItem('dtg_mode'))) === 'hints');
+
+    // 同一條路,開了提示就會出現影像檢查那一關
+    await p.click('#treeOpts .opt >> nth=1');           // 紅旗都沒有
+    await p.click('#treeOpts .opt >> nth=0');           // 恆牙
+    await p.click('#treeOpts .opt >> nth=2');
+    await p.click('#treeOpts .opt >> nth=1');
+    await p.click('#treeOpts .opt >> nth=1');
+    await p.click('#treeOpts .opt >> nth=3');
+    await p.click('#treeOpts .opt >> nth=1');           // 不太搖但叩痛
+    await p.waitForSelector('#screenImaging:not([hidden])');
+    ok('★ 開啟提示後,同一條路會多出影像檢查那一關', true);
+    ok('用詞是「X 光」不是「片子」',
+      !/片子/.test(await p.textContent('#screenImaging')));
+    await p.click('#imgOpts .opt >> nth=1');            // 還沒拍
+    await p.waitForSelector('#screenPending:not([hidden])');
+    ok('「在拿到 X 光之前」的用詞',
+      (await p.textContent('#screenPending')).includes('在拿到 X 光之前') &&
+      !/片子/.test(await p.textContent('#screenPending')));
+    ok('接回的按鈕寫「X 光好了」',
+      (await p.textContent('#btnPendingNext')).includes('X 光好了'));
+    await p.click('#btnPendingBack');
+    await p.waitForSelector('#screenImaging:not([hidden])');
   }
 
   /* ── 5. 查閱模式與搜尋 ── */
@@ -390,8 +416,7 @@ async function authed(browser){
   /* ── 10. 乳牙：不可再植 ── */
   {
     await p.click('#btnHome');
-    await p.click('#btnModeAsk');
-    await p.click('#treeOpts .opt >> nth=1');           // 紅旗都沒有
+    await p.click('#btnModeAsk');                       // 一般模式:第一題就是恆牙／乳牙
     await p.click('#treeOpts .opt >> nth=1');           // 乳牙
     await p.waitForFunction(() => document.getElementById('treeQ').textContent.includes('齒槽窩'));
     await p.click('#treeOpts .opt >> nth=0');           // 整顆掉出來，牙齒有帶來

@@ -12,17 +12,18 @@ const UI = {
   appName:      { zh: '牙外傷處置指南',           en: 'Dental Trauma Guide' },
   appTagline:   { zh: '依 IADT 2020 指引整理',     en: 'Based on the IADT 2020 Guidelines' },
 
-  modeAsk:      { zh: '問答導引',                  en: 'Guided' },
-  modeAskDesc:  { zh: '含影像提醒：該拍哪幾張、為什麼非拍不可', en: 'With imaging prompts: which films to take and why they matter' },
-  modeFast:     { zh: '快速選取',                  en: 'Quick pick' },
-  modeFastDesc: { zh: '只選選項，直接看診斷與處置', en: 'Just the questions — straight to diagnosis and management' },
+  modeAsk:      { zh: '問答導引',                  en: 'Guided questions' },
+  modeAskDesc:  { zh: '依序選選項，直接到診斷與處置', en: 'Answer in order, straight to diagnosis and management' },
+  modeHints:    { zh: '問答導引＋影像提示',        en: 'Guided questions + imaging prompts' },
+  modeHintsDesc:{ zh: '多一關影像檢查：該拍哪幾張、為什麼非拍不可', en: 'Adds an imaging step: which films to take and why they matter' },
   modeBrowse:   { zh: '我知道診斷，直接查',        en: 'I know the diagnosis' },
   modeBrowseDesc:{ zh: '依分類列表直接開',         en: 'Browse the full list by category' },
 
-  modeNowGuided:{ zh: '問答導引模式',              en: 'Guided mode' },
-  modeNowFast:  { zh: '快速模式（不顯示影像提醒）', en: 'Quick mode (imaging prompts hidden)' },
-  modeSwitch:   { zh: '切換',                      en: 'Switch' },
-  fastRedFlag:  { zh: '開始前先確認沒有：失去意識、持續嘔吐、神經學症狀、疑似顏面或頸椎骨折、無法控制的出血。有任何一項先送急診。',
+  modeNowNormal:{ zh: '一般模式',                  en: 'Standard mode' },
+  modeNowHints: { zh: '已開啟影像提示',            en: 'Imaging prompts on' },
+  modeHintsOn:  { zh: '開啟影像提示',              en: 'Turn imaging prompts on' },
+  modeHintsOff: { zh: '關閉影像提示',              en: 'Turn imaging prompts off' },
+  normalRedFlag:{ zh: '開始前先確認沒有：失去意識、持續嘔吐、神經學症狀、疑似顏面或頸椎骨折、無法控制的出血。有任何一項先送急診。',
                   en: 'Before you start, confirm none of these: loss of consciousness, persistent vomiting, neurological signs, suspected facial or cervical spine fracture, uncontrolled bleeding. If any is present, medical emergency care comes first.' },
 
   audClinical:  { zh: '醫師版',                   en: 'Clinician' },
@@ -69,9 +70,9 @@ const UI = {
   imgDone:      { zh: '我拍好了 →',               en: 'I have the films →' },
   imgPending:   { zh: '還沒拍',                   en: 'Not imaged yet' },
   imgContinue:  { zh: '繼續 →',                   en: 'Continue →' },
-  imgBefore:    { zh: '在拿到片子之前',           en: 'Before the films are available' },
-  imgBackToFilm:{ zh: '片子好了，繼續 →',         en: 'Films are ready, continue →' },
-  urgentNoWait: { zh: '時間急迫：先處置，影像同時進行或隨後補，不要為了等片子延誤。',
+  imgBefore:    { zh: '在拿到 X 光之前',           en: 'Before the films are available' },
+  imgBackToFilm:{ zh: 'X 光好了，繼續 →',         en: 'Films are ready, continue →' },
+  urgentNoWait: { zh: '時間急迫：先處置，影像同時進行或隨後補，不要為了等 X 光延誤。',
                   en: 'Time-critical: treat first. Imaging can run alongside or follow — do not delay treatment waiting for films.' },
   search:       { zh: '搜尋診斷…',                en: 'Search diagnoses…' },
   noResult:     { zh: '找不到符合的診斷',          en: 'No matching diagnosis' },
@@ -273,7 +274,7 @@ const PULP_TEST_CAVEAT = {
      question  一般問答。opts:[{ label, next | dx | result }]
      imaging   影像節點。films 要拍什麼、why 為什麼非拍不可。
                gate:false → 診斷臨床上已經確定，只是提醒，按「繼續」直接到 dx
-               gate:true  → 非等片子不可，兩個出口：
+               gate:true  → 非等 X 光不可，兩個出口：
                             拍好了 → next（影像所見）
                             還沒拍 → pending（先能做什麼），之後再回 next
      result    終點但不是診斷（目前只有「先送急診」）
@@ -440,7 +441,7 @@ const TREE = {
       ],
       why:{ zh:'**牙冠完整卻異常鬆動，非照不可。**半脫位與牙根斷裂在臨床上一模一樣，牙根斷裂只有影像看得到，而且 IADT 原文明講「不加照就可能漏診」——單一角度很容易錯過斜向的裂線。',
              en:'**An intact crown with abnormal mobility must be imaged.** Subluxation and root fracture look identical clinically; only imaging shows the fracture, and the IADT states that root fractures "may be undetected without additional imaging" — a single angulation easily misses an oblique line.' },
-      beforeFilm:{ zh:'先不要反覆搖動牙齒。軟食、避免用該牙施力、保持清潔。**不要在拿到片子之前就做預防性根管治療。**',
+      beforeFilm:{ zh:'先不要反覆搖動牙齒。軟食、避免用該牙施力、保持清潔。**不要在拿到 X 光之前就做預防性根管治療。**',
                    en:'Stop repeatedly testing mobility. Soft diet, avoid loading the tooth, keep it clean. **Do not start prophylactic endodontic treatment before the films are available.**' }
     },
     p_img_tender: {
@@ -449,7 +450,7 @@ const TREE = {
         { zh:'不同水平與垂直角度的根尖片', en:'Periapical views at different horizontal and vertical angulations' },
         { zh:'必要時加一張咬合片', en:'Add an occlusal view when needed' }
       ],
-      why:{ zh:'不會搖也可能是牙根斷裂——斷片沒有移位時搖動度可以完全正常。震盪的定義本來就包含「影像上無異常」，所以要有片子才說得出是震盪。',
+      why:{ zh:'不會搖也可能是牙根斷裂——斷片沒有移位時搖動度可以完全正常。震盪的定義本來就包含「影像上無異常」，所以要有 X 光才說得出是震盪。',
              en:'An immobile tooth can still have a root fracture: mobility may be entirely normal when the fragments are undisplaced. Concussion is defined partly by the absence of radiographic abnormality, so a film is needed before calling it concussion.' },
       beforeFilm:{ zh:'軟食、避免用該牙施力。**不要因為初診敏感性測試陰性就做根管治療。**',
                    en:'Soft diet, avoid loading the tooth. **Do not start endodontic treatment because of a negative sensibility test at the first visit.**' }
@@ -573,13 +574,13 @@ const TREE = {
     d_img_extrusive: {
       type:'imaging', gate:false, dx:'d-extrusive-luxation',
       films:[{ zh:'根尖片（0 號）或咬合片（2 號），作為基準', en:'Periapical (size 0) or occlusal (size 2) radiograph as a baseline' }],
-      why:{ zh:'看根尖側牙周韌帶腔增寬的程度，並作為日後比對的基準。處置主要仍看臨床：有沒有干擾咬合、搖動度、脫出幾 mm。\n\n**看片時順便排除牙根斷裂**——乳牙牙根斷裂的冠側斷片本來就可能移位，看起來會像脫位。片子上若有斷裂線，改看「牙根斷裂」。',
+      why:{ zh:'看根尖側牙周韌帶腔增寬的程度，並作為日後比對的基準。處置主要仍看臨床：有沒有干擾咬合、搖動度、脫出幾 mm。\n\n**看片時順便排除牙根斷裂**——乳牙牙根斷裂的冠側斷片本來就可能移位，看起來會像脫位。X 光上若有斷裂線，改看「牙根斷裂」。',
              en:'To see how far the apical periodontal ligament space is widened and to serve as a baseline. Management still turns on the clinical picture: occlusal interference, mobility, and how many millimetres the tooth is extruded.\n\n**Use the film to exclude a root fracture as well** — the coronal fragment of a primary root fracture may itself be displaced and can look like a luxation. If a fracture line is present, go to "Root fracture" instead.' }
     },
     d_img_lateral: {
       type:'imaging', gate:false, dx:'d-lateral-luxation',
       films:[{ zh:'根尖片（0 號）或**咬合片（2 號）**', en:'Periapical (size 0) or **occlusal (size 2)** radiograph' }],
-      why:{ zh:'根尖側牙周韌帶腔增寬在**咬合片上最看得清楚**，尤其牙齒向唇側移位時。也要確認根尖有沒有頂到恆牙牙胚。\n\n**看片時順便排除牙根斷裂**——乳牙牙根斷裂的冠側斷片本來就可能移位，看起來會像脫位。片子上若有斷裂線，改看「牙根斷裂」。',
+      why:{ zh:'根尖側牙周韌帶腔增寬在**咬合片上最看得清楚**，尤其牙齒向唇側移位時。也要確認根尖有沒有頂到恆牙牙胚。\n\n**看片時順便排除牙根斷裂**——乳牙牙根斷裂的冠側斷片本來就可能移位，看起來會像脫位。X 光上若有斷裂線，改看「牙根斷裂」。',
              en:'The widened apical periodontal ligament space is **most clearly seen on an occlusal radiograph**, especially when the tooth is displaced labially. Also check whether the apex impinges on the permanent tooth germ.\n\n**Use the film to exclude a root fracture as well** — the coronal fragment of a primary root fracture may itself be displaced and can look like a luxation. If a fracture line is present, go to "Root fracture" instead.' }
     },
     d_img_intrusive: {
@@ -593,7 +594,7 @@ const TREE = {
     d_img_sublux: {
       type:'imaging', gate:true, next:'d_film_sublux',
       films:[{ zh:'根尖片（0 號感應器／底片，平行投影）或咬合片（2 號感應器／底片）', en:'Periapical (size 0 sensor/film, paralleling technique) or occlusal (size 2 sensor/film) radiograph' }],
-      why:{ zh:'**半脫位與牙根斷裂在乳牙上臨床表現重疊**——兩者都可能是「搖動度增加、位置看起來正常」，要靠片子分。這張同時是基準影像，日後出現變色或腫脹才有得比對。',
+      why:{ zh:'**半脫位與牙根斷裂在乳牙上臨床表現重疊**——兩者都可能是「搖動度增加、位置看起來正常」，要靠 X 光分。這張同時是基準影像，日後出現變色或腫脹才有得比對。',
              en:'**Subluxation and root fracture overlap clinically in primary teeth** — both can present as increased mobility with a normal-looking position, and the film is what separates them. It also serves as the baseline for comparison if discoloration or swelling appears later.' },
       beforeFilm:{ zh:'不要反覆搖動牙齒。軟食、保持清潔。大多數乳牙半脫位不需要固定，**但在排除牙根斷裂之前不要下結論**。',
                    en:'Stop testing the mobility repeatedly. Soft diet, keep it clean. Most primary subluxations need no splint, **but do not conclude that before a root fracture has been excluded**.' }
