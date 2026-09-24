@@ -30,7 +30,7 @@ const APPS = [
   // 手機也能用
   { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: '📷', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-08-22', group: 'mobile' },
   { name: '即時投票', desc: '事先設定好題目，現場掃 QR 用手機作答，即時看結果。', icon: '🗳️', url: 'apps/live-poll/index.html', added: '2026-08-16', updated: '2026-08-18', group: 'mobile' },
-  { ...wipSlot, group: 'mobile' },
+  { name: '牙外傷處置指南', desc: '依 IADT 2020 指引查診斷與處置，中英切換、自動算回診日。', icon: '🚑', url: 'apps/dental-trauma-guide/index.html', added: '2026-09-23', updated: '2026-09-23', group: 'mobile' },
   { ...wipSlot, group: 'mobile' },
 
   // 電腦操作

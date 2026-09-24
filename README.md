@@ -68,6 +68,11 @@ apps/<代號>/          各個 App（每個一資料夾）
                       衍生自 FigureLab，MIT。index.html 由 make-index.py
                       從 upstream/ 的釘選快照產生，中文化在 i18n-zh-TW.js、
                       行為修正在 fixes.js。詳見該資料夾 README）
+  dental-trauma-guide/ 牙外傷處置指南（依 IADT 2020 三份指引整理的 26 種診斷，
+                      決策樹＋查閱雙模式、醫師版／家屬版、中英文切換、
+                      依受傷日自動算回診時程與病歷草稿；PWA 可離線。
+                      臨床內容資料在 data/，來源與核對紀錄見該資料夾
+                      CONTENT-SOURCES.md，插圖規格見 docs/handoff/）
 manifest.webmanifest  PWA 設定（可加入主畫面）
 sw.js                 Service Worker（首頁殼層離線快取）
 docs/ADDING_APPS.md   App 上架規則
