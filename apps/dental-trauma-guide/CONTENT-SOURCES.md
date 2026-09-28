@@ -14,12 +14,39 @@ App 的臨床內容以 **IADT 2020 三份指引**為主幹。所有數字（固�
 | **IADT-2** | Fouad AF, Abbott PV, Tsilingaridis G, et al. …: 2. Avulsion of permanent teeth. *Dent Traumatol.* 2020;36(4):331–342. DOI: 10.1111/edt.12573 |
 | **IADT-3** | Day PF, Flores MT, O'Connell AC, et al. …: 3. Injuries in the primary dentition. *Dent Traumatol.* 2020;36(4):343–359. DOI: 10.1111/edt.12576 |
 | **IADT-0** | Levin L, Day PF, Hicks L, et al. …: General introduction. *Dent Traumatol.* 2020;36(4):309–313. DOI: 10.1111/edt.12574 |
-| AAE-1 | AAE. Recommended Guidelines of the American Association of Endodontists for the Treatment of Traumatic Dental Injuries |
+| AAE-1 | Sigurdsson A, et al. Recommended Guidelines of the American Association of Endodontists for the Treatment of Traumatic Dental Injuries. *J Endod.* 2026;52(8):1237–1253. DOI: 10.1016/j.joen.2026.04.002（AAE 取得 IADT 授權，以 2020 IADT 指引為基礎發展）|
 | AAE-2 | AAE Position Statement: Use of Mouthguards |
 | AAE-3 | AAE Fact Sheet: Tooth Saving Tips |
 
 診斷分類與處置以 IADT 為準；AAE 文件用於衛教用語與預防章節，**不用來覆寫
 IADT 的數字**。兩者若有出入，以 IADT 為準並在該處註明。
+
+> **2026-09-28 補記（未決）**：整理初期把 AAE-1 當成「衛教用文件」，
+> 沒有記下它的年份。回頭查 PDF 中繼資料才確認它是 **2026 年 8 月的
+> J Endod 全文指引**，比 IADT 2020 新。它以 IADT 2020 為基礎，但**不是
+> 逐條相同**——已查到至少一處數字不一致（見下節）。要不要把 App 的依據
+> 從 IADT 2020 改成／並列 AAE 2026，**尚未決定，需要 Dr.Tso 拍板**。
+> 在那之前 App 維持 IADT 2020，畫面上的出處標示也維持 IADT。
+
+## AAE 2026 與 IADT 2020 已查到的不一致（未決）
+
+以 PDF 座標確認欄位歸屬後核對（AAE Table 3 是直排表格，純文字抽取會跨欄
+混行，**不可以只靠 grep**——欄標題都在 x≈67–75，靠 y 分欄）。
+
+| 項目 | IADT 2020（App 目前採用） | AAE 2026 | 狀態 |
+|---|---|---|---|
+| **恆牙內縮性脫位，復位後固定** | **4 wk**（IADT-1 Table 13） | **2 wk**（Table 3 內縮欄，y≈47–95） | **不一致，未決** |
+| 未成熟根 ≤7 mm，等再萌出 | 4 wk 無動靜就矯正復位 | 同左 | 一致 |
+| 成熟根 ≤3 mm，等再萌出 | 8 wk 無動靜就復位 | 同左 | 一致 |
+| 成熟根 3–7 mm／>7 mm | 矯正或手術／手術 | 同左 | 一致 |
+| 內縮性脫位，成熟根根管治療起始 | 約 2 wk | 2 wk | 一致 |
+
+**注意**：本文件下一節記載「二手整理寫約 2 週、IADT 原文是 4 wk，App 採原文」。
+現在看起來那份二手整理可能是照 AAE 寫的，不是寫錯。這一條的
+測試斷言（`★ 手術復位後固定 4 週（不是 2 週）`）目前仍鎖 IADT 的 4 wk。
+
+**其餘欄位與另外兩份 AAE 文件尚未逐條比對。** 若決定採用 AAE 2026，
+需要重跑一次完整核對，不能只改這一條。
 
 ## 核對時發現並修正的項目
 

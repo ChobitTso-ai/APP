@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" version="1.1">
+<!-- © 2026 Tso KY - All Rights Reserved
+Protected against reverse engineering and unauthorized modification
+插圖版本 v2.0 -->
+<title>HBSS 保存液</title>
+<desc>v2.0。寬口旋蓋牙齒保存液瓶，正面使用牙齒圖形。HBSS 名稱由 App 雙語標籤呈現。</desc>
+<g data-object="hbss-bottle"><path d="M81 60 L81 72 Q61 81 61 104 L61 197 Q61 215 79 215 L163 215 Q181 215 181 197 L181 104 Q181 81 161 72 L161 60 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M66 147 Q121 140 176 147 L176 197 Q176 210 162 210 L80 210 Q66 210 66 197 Z" fill="#6FD3C2" opacity=".7"/>
+<rect x="72" y="36" width="98" height="30" rx="7" fill="#6FD3C2" stroke="#6FD3C2" stroke-width="2"/><path d="M84 44 V58 M98 44 V58 M112 44 V58 M126 44 V58 M140 44 V58 M154 44 V58" fill="none" stroke="#F4F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="79" y="97" width="84" height="71" rx="10" fill="#4DA3FF"/><path d="M100 123 C97 111 107 107 118 111 Q123 113 128 111 C141 107 148 114 143 126 L135 148 Q132 154 128 145 L123 133 L118 145 Q114 154 111 147 Z" fill="#F4F7FA"/><path d="M74 91 Q68 105 70 128" fill="none" stroke="#C9D4E2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>

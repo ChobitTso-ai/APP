@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" version="1.1">
+<!-- © 2026 Tso KY - All Rights Reserved
+Protected against reverse engineering and unauthorized modification
+插圖版本 v2.0 -->
+<title>立刻就醫</title>
+<desc>v2.0。時鐘、順時針箭頭及醫療建築表示立即就醫。時鐘沒有數字或刻度，圖形不設定六十分鐘或其他時間門檻。</desc>
+<g data-object="clinic"><rect x="123" y="92" width="91" height="118" rx="7" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5"/><rect x="150" y="172" width="34" height="38" rx="3" fill="#C9D4E2"/><path d="M159 109 H178 V124 H193 V143 H178 V158 H159 V143 H144 V124 H159 Z" fill="#4DA3FF"/></g>
+<g data-object="clock"><circle cx="77" cy="94" r="48" fill="#0F1524" stroke="#C9D4E2" stroke-width="3"/><path d="M77 65 L77 94 L98 108" fill="none" stroke="#F4F7FA" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="77" cy="94" r="4" fill="#F4F7FA"/></g><g data-part="arrow"><path d="M37 46 A63 63 0 0 1 139 83 M130 72 L140 85 L148 69" fill="none" stroke="#4DA3FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M58 168 Q78 194 111 190 M100 181 L113 190 L101 199" fill="none" stroke="#4DA3FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>

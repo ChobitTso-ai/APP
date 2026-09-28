@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 560" width="360" height="560" role="img" version="1.1">
+<!-- © 2026 Tso KY - All Rights Reserved
+Protected against reverse engineering and unauthorized modification
+插圖版本 v2.0 -->
+<title>側向脫位</title>
+<desc>v2.0。根尖朝上，左唇側、右腭側；牙體以牙頸部為支點旋轉負 15 度，牙冠向腭側，根尖向唇側穿破骨板。唇側骨板局部缺口、牙周韌帶撕裂及局部受壓；牙齒卡於骨內，不畫動搖箭頭。</desc>
+<g data-part="bone">
+<path d="M48 50 Q180 38 312 50 L312 329 Q280 340 240 339 L224 326 C218 281 217 229 219 181 C221 125 213 88 205 72 C200 62 187 60 181 69 L158 92 L148 106 L140 99 L135 73 L118 70 L108 91 L99 103 L77 108 L48 112 Z" fill="#A89478" stroke="#87755C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M48 118 L76 116 L99 126 L108 143 L116 137 C109 187 114 266 126 326 Q86 342 48 329 Z" fill="#A89478" stroke="#87755C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M60 70 L79 82 L98 73 M79 82 L76 94 M60 151 L78 161 L99 151 M78 161 L84 187 L101 193 M84 187 L57 205 M101 193 L97 218 L76 232 L56 223 M76 232 L83 258 L108 269 M83 258 L58 278 M108 269 L103 296 L85 307 M246 72 L264 87 L288 78 L305 92 M264 87 L257 113 L278 128 L303 117 M278 128 L273 153 L247 164 M273 153 L301 168 M247 164 L251 191 L277 204 L303 190 M277 204 L272 229 L247 239 M272 229 L301 247 M247 239 L248 270 L272 285 L300 275 M272 285 L272 308" fill="none" stroke="#87755C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".43"/>
+</g><g data-part="pdl">
+<path d="M126 325 C117 270 112 205 119 151" fill="none" stroke="#6FD3C2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M213 301 C217 269 218 220 218 181 C219 136 215 103 207 80 M158 130 L171 117 M170 170 L184 152 M182 212 L197 192 M193 255 L211 241 M204 285 L215 277" fill="none" stroke="#6FD3C2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g><g data-tooth="1" transform="rotate(-15 170 314)">
+<g data-part="dentin"><path d="M187 78 C172 99 162 150 151 192 C139 237 138 281 132 314 C119 355 108 420 111 468 Q112 488 135 503 Q153 514 174 507 C196 482 202 447 208 416 C212 390 220 366 220 346 C220 332 214 321 208 310 C208 224 208 123 195 80 Q192 74 187 78 Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.8" stroke-linejoin="round"/></g>
+<g data-part="pulp"><path d="M190 76 C185 119 179 163 174 205 C168 250 160 293 158 332 C155 367 143 412 142 448 Q147 458 153 449 C165 422 175 397 179 374 C180 357 190 345 190 332 C190 292 188 250 188 207 C188 155 194 104 193 76 Z" fill="#E4575F" stroke="#B83A44" stroke-width="1.5" stroke-linejoin="round"/></g>
+<g data-part="cementum"><path d="M187 78 C172 99 162 150 151 192 C139 237 138 281 132 314 M195 80 C208 123 208 224 208 310" fill="none" stroke="#C9A360" stroke-width="2.6" stroke-linecap="round"/></g>
+<g data-part="enamel">
+<path d="M132 314 C119 355 108 420 111 468 Q112 488 135 503 Q153 514 174 507 C196 482 202 447 208 416 C212 390 220 366 220 346 C220 332 214 321 208 310 C206 327 204 337 202 348 C202 367 197 388 190 408 C182 435 177 463 157 484 Q149 490 141 485 Q128 477 127 464 C125 420 136 349 132 314 Z" fill="#F4F7FA" fill-rule="evenodd" stroke="#C9D4E2" stroke-width="1.8" stroke-linejoin="round"/>
+</g>
+</g><g data-part="gingiva">
+<path d="M48 300 C69 301 86 307 100 315 C111 321 119 320 128 313 C133 325 127 338 118 344 C107 355 91 354 76 346 L48 338 Z" fill="#E08A9A" stroke="#C26A7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M212 301 C219 315 230 320 241 314 C267 302 291 300 312 300 L312 338 C287 339 265 349 248 352 C235 357 226 350 224 337 C224 323 219 311 212 301 Z" fill="#E08A9A" stroke="#C26A7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g><g data-part="lesion">
+<path d="M118 70 L108 91 L99 103 M99 126 L108 143 L116 137 M158 92 L148 106 L140 99" fill="none" stroke="#FF4D4F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</g><g data-part="arrow" fill="#4DA3FF" stroke="#4DA3FF"/>
+</svg>
