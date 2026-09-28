@@ -92,6 +92,12 @@ async function reset(p){
       names[0].startsWith('牛奶') && names[1].startsWith('HBSS') &&
       names[2].startsWith('唾液') && names[3].startsWith('生理食鹽水'), names.join(' → '));
     ok('自來水標示為禁止', /✗/.test(names[4]) && await p.$('#storageRow .media.no') !== null);
+    await p.waitForFunction(() =>
+      [...document.querySelectorAll('#storageRow .fig img')].every(i => i.complete));
+    const media = await p.$$eval('#storageRow .fig img',
+      ns => ns.map(i => [i.getAttribute('src'), i.naturalWidth > 0]));
+    ok('★ 五張保存液插圖全部載得到', media.length === 5 && media.every(m => m[1]),
+      media.filter(m => !m[1]).map(m => m[0]).join() || '5/5');
 
     const rows = await p.$$eval('#tblFirstAid tr', ns => ns.length);
     ok('現場急救速查表有表頭＋6 列', rows === 7, rows + ' 列');
@@ -107,8 +113,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v1.2', /v1\.2/.test(await p.title()) &&
-      /v1\.2/.test(await p.textContent('footer')));
+    ok('版本號是 v1.3', /v1\.3/.test(await p.title()) &&
+      /v1\.3/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -296,9 +302,9 @@ async function reset(p){
       (await p.textContent('#dxDentition')) === '乳牙');
   }
 
-  /* ── 7b. 示意圖機制（v1.2）：圖沒到就整塊隱藏、圖到了自動長出來 ──
-     插圖是 CODEX 一張一張補進來的，所以這兩種狀態都要測。
-     只斷言「現在沒有圖」不夠——那樣圖到了才發現版面壞掉就太晚。 */
+  /* ── 7b. 示意圖機制：圖在就顯示、載不到就整塊隱藏 ──
+     兩種狀態都要測。缺圖那一側**不能靠「repo 裡剛好沒有圖」來測**——
+     圖補齊之後那種斷言會反過來永遠等不到（踩過）。改成攔截請求。 */
   {
     const toFractureSurface = async () => {
       await reset(p);
@@ -310,38 +316,51 @@ async function reset(p){
         document.getElementById('treeQ').textContent.includes('斷面看得到什麼'));
     };
 
-    await toFractureSurface();
-    await p.waitForFunction(() =>
-      document.querySelectorAll('#treeOpts .opt-fig').length === 0);
-    ok('★ 插圖還沒進 repo：選項不留佔位空框',
-      (await p.$$('#treeOpts .opt.has-fig')).length === 0 &&
-      (await p.$$eval('#treeOpts .opt', ns => ns.length)) === 5);
-
-    // 換成「圖已經到了」：攔截 dx/*.svg 回一張最小的 SVG
-    const STUB = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
-               + '<rect width="10" height="10" fill="#6FD3C2"/></svg>';
-    await p.route('**/assets/dx/*.svg', r =>
-      r.fulfill({ status:200, contentType:'image/svg+xml', body:STUB }));
-
+    // (1) 插圖已在 repo 裡 → 五個選項各自長出縮圖
     await toFractureSurface();
     await p.waitForFunction(() =>
       document.querySelectorAll('#treeOpts .opt-fig img').length === 5);
-    ok('★ 插圖到了：五個選項各自長出縮圖', true);
+    ok('★ 五個選項各自長出縮圖', true);
+    // img.complete 在「載好」與「載失敗」都會變 true，所以先等它，再看 naturalWidth。
+    // 直接看 naturalWidth 會在還沒載完時誤判成失敗（踩過）。
+    await p.waitForFunction(() =>
+      [...document.querySelectorAll('#treeOpts .opt-fig img')].every(i => i.complete));
+    const real = await p.$$eval('#treeOpts .opt-fig img',
+      ns => ns.every(i => i.naturalWidth > 0));
+    ok('縮圖是真的載進來的（naturalWidth > 0）', real);
     const boxed = await p.$eval('#treeOpts .opt-fig', n => n.getBoundingClientRect().width > 20);
     ok('縮圖有實際寬度（不是 0 × 0）', boxed);
+
+    // 每個選項掛的是不同的圖——掛成同一張就失去分辨的意義
+    const srcs = await p.$$eval('#treeOpts .opt-fig img', ns => ns.map(i => i.getAttribute('src')));
+    ok('★ 五個選項掛的是五張不同的圖', new Set(srcs).size === 5, srcs.length + ' 張 / ' + new Set(srcs).size + ' 種');
 
     await p.click('#btnBrowse');
     await p.waitForSelector('#screenBrowse:not([hidden])');
     await p.waitForFunction(() =>
       document.querySelectorAll('#browseList .dx-card-fig img').length === 26);
-    ok('★ 查閱卡片的插圖也跟著出現（26 張）', true);
+    await p.waitForFunction(() =>
+      [...document.querySelectorAll('#browseList .dx-card-fig img')].every(i => i.complete));
+    const bad = await p.$$eval('#browseList .dx-card-fig img',
+      ns => ns.filter(i => !i.naturalWidth).map(i => i.getAttribute('src')));
+    ok('★ 查閱 26 張卡片的插圖全部載得到（檔名沒拼錯）', bad.length === 0,
+      bad.join() || '26/26');
 
-    await p.unroute('**/assets/dx/*.svg');
+    // (2) 圖載不到 → 整塊拿掉、退回純文字，不留佔位空框
+    await p.route('**/assets/dx/*.svg', r => r.abort());
+    await toFractureSurface();
+    await p.waitForFunction(() =>
+      document.querySelectorAll('#treeOpts .opt-fig').length === 0);
+    ok('★ 圖載不到時選項不留佔位空框',
+      (await p.$$('#treeOpts .opt.has-fig')).length === 0 &&
+      (await p.$$eval('#treeOpts .opt', ns => ns.length)) === 5);
+
     await p.click('#btnBrowse');
     await p.waitForFunction(() =>
       document.querySelectorAll('#browseList .dx-card-fig').length === 0);
-    ok('★ 插圖不存在時查閱卡片退回純文字，不留空框',
+    ok('★ 圖載不到時查閱卡片退回純文字，不留空框',
       (await p.$$('#browseList .dx-card')).length === 26);
+    await p.unroute('**/assets/dx/*.svg');
   }
 
   /* ── 8. 查閱模式與搜尋 ── */
@@ -486,12 +505,29 @@ async function reset(p){
     ok('不需追蹤時隱藏日期計算器', !(await p.isVisible('#cardSchedule .calc')));
   }
 
-  /* ── 15. 缺圖時版面不壞 ── */
+  /* ── 15. 診斷頁的插圖：有圖就顯示，載不到才顯示佔位文字 ── */
   {
-    const ph = await p.$$eval('.dx-fig .ph', ns => ns.map(n => n.textContent.trim()));
-    ok('插圖未上傳時顯示佔位文字', ph.length === 1 && ph[0] === '插圖尚未上傳', ph.join());
+    await p.waitForFunction(() => {
+      const i = document.querySelector('.dx-fig img');
+      return i && i.naturalWidth > 0;
+    });
+    ok('診斷頁顯示插圖', true);
     const h = await p.$eval('.dx-fig', n => n.getBoundingClientRect().height);
-    ok('佔位框仍撐出版面高度（版面不塌）', h > 100, h + 'px');
+    ok('插圖框撐出版面高度（版面不塌）', h > 100, h + 'px');
+
+    // 載不到時（檔案還沒補、或被擋掉）要退成佔位文字，不能留空洞
+    await p.route('**/assets/dx/*.svg', r => r.abort());
+    await p.reload();
+    await p.waitForSelector('#screenTree');
+    await p.click('#btnBrowse');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    await p.click('#browseList .dx-card >> nth=0');
+    await p.waitForSelector('#screenDx:not([hidden])');
+    const ph = await p.$$eval('.dx-fig .ph', ns => ns.map(n => n.textContent.trim()));
+    ok('★ 插圖載不到時顯示佔位文字', ph.length === 1 && ph[0] === '插圖尚未上傳', ph.join());
+    const h2 = await p.$eval('.dx-fig', n => n.getBoundingClientRect().height);
+    ok('佔位狀態下版面高度仍在', h2 > 100, h2 + 'px');
+    await p.unroute('**/assets/dx/*.svg');
   }
 
   /* ── 16. hidden 屬性沒有被自訂 class 蓋掉（別的 App 踩過兩次）── */
@@ -521,7 +557,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.2/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v1\.3/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();

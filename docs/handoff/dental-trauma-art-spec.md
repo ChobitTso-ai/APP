@@ -265,6 +265,14 @@ convenient storage mediums.」牛奶排第一、不是 HBSS。
 |---|---|---|
 | 22 | `icon-master.svg` | 1024×1024 的 App 圖示主檔：一顆牙加急救十字，深色圓角底，重要元素都在中央 60% 安全區內。**只要給 SVG**，PNG 各尺寸由 Claude 轉。目前主畫面先用 🚑 emoji 算出來的過渡圖示頂著，這張到了就整批換掉 |
 
+## 交付進度（2026-09-28）
+
+| 狀態 | 檔案 |
+|---|---|
+| ✅ 已上架、可用 | `care/` 全部 12 張（保存液五張在 App 裡表現最好）；`dx/` 的 `base-*`、`fx-root-thirds`、`fx-alveolar`、`lux-concussion`、`lux-subluxation`、`lux-extrusive`、`lux-lateral`、`lux-intrusive`、`avulsion` |
+| ⚠️ 已上架、**待照 v3 重畫** | `dx/fx-infraction`、`fx-enamel`、`fx-enamel-dentin`、`fx-complicated-crown`、`fx-crown-root-uncomp`、`fx-crown-root-comp` —— 六張是 v2 取景，縮到 54×68 彼此分不出來 |
+| ❌ 還沒畫 | `dx/intrusion-apex-labial`、`dx/intrusion-apex-germ`、`icon-master.svg` |
+
 ## 完成前自我檢查
 
 在本機專案資料夾底下跑過這幾項，全部要通過：

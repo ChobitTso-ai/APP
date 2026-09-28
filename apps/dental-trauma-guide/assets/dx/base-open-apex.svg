@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 560" width="360" height="560" role="img" version="1.1">
+<!-- © 2026 Tso KY - All Rights Reserved
+Protected against reverse engineering and unauthorized modification
+插圖版本 v2.0（分期評估樣稿） -->
+<title>Cvek Stage III 上顎中門齒唇舌向剖面</title>
+<desc>v2.0。分期評估樣稿，尚待使用者確認。根尖朝上、切端朝下，左唇側、右腭側。約三分之二根長；牙根外形向根尖變窄，薄壁末端與管腔呈適度外張；開口未閉合。牙冠與牙齦沿用成熟根母版；牙骨質貼覆牙本質。形態依 Cvek 分期概念自行繪製，非定量標準、非文獻描摹。</desc>
+<g data-part="bone">
+<path d="M48 50 Q180 38 312 50 L312 329 Q280 340 240 339 L220 326 L122 326 Q86 342 48 329 Z M123 321 C132 279 145 225 163 170 C166 159 168 149 179 148 C193 145 210 147 213 160 C217 208 216 267 218 320 Z" fill="#A89478" fill-rule="evenodd" stroke="#87755C" stroke-width="2.2" stroke-linejoin="round"/>
+<path d="M60 74 L80 84 L105 74 L124 89 M80 84 L77 109 L55 122 M77 109 L102 124 L124 111 M102 124 L97 150 L73 161 L53 150 M73 161 L80 186 L106 192 L122 175 M80 186 L56 205 M106 192 L100 218 L77 231 L55 222 M77 231 L83 256 L111 267 M83 256 L58 278 M111 267 L106 295 L85 307 M246 72 L264 87 L288 78 L305 92 M264 87 L257 113 L278 128 L303 117 M278 128 L273 153 L247 164 M273 153 L301 168 M247 164 L251 191 L277 204 L303 190 M277 204 L272 229 L247 239 M272 229 L301 247 M247 239 L248 270 L272 285 L300 275 M272 285 L272 308 M133 62 L147 76 M218 62 L231 84" fill="none" stroke="#87755C" stroke-width="2" opacity=".43" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M60 94 L66 96 M105 97 L111 99 M58 179 L64 183 M104 242 L109 246 M286 100 L292 98 M291 218 L296 216 M259 294 L265 297" fill="none" stroke="#87755C" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+</g>
+<g data-part="pdl"><path d="M132 314 C154 244 164 188 174 158 L166 153 C154 188 145 244 123 321 Z M205 159 C205 193 208 249 208 310 L218 320 C217 245 215 190 214 154 Z" fill="#6FD3C2"/></g>
+<g data-part="dentin"><path d="M174 158 C164 188 154 244 132 314 C119 355 108 420 111 468 Q112 488 135 503 Q153 514 174 507 C196 482 202 447 208 416 C212 390 220 366 220 346 C220 332 214 321 208 310 C208 249 205 193 205 159 Q205 155 202 155 Q189 152 177 155 Q175 155 174 158 Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.8" stroke-linejoin="round"/></g>
+<g data-part="pulp"><path d="M169 153 Q191 140 212 154 L200 160 L179 160 Z" fill="#E4575F" opacity=".22"/><path d="M179 154 C184 170 181 190 173 218 C161 262 152 302 151 335 C148 372 137 410 137 452 Q143 465 153 455 C167 428 178 404 180 379 C181 358 190 346 189 332 C189 295 187 257 190 223 C193 190 196 170 200 154 Q189 149 179 154 Z" fill="#E4575F" stroke="#B83A44" stroke-width="1.5" stroke-linejoin="round"/></g>
+<g data-part="cementum"><path d="M174 158 C164 188 154 244 132 314 M205 159 C205 193 208 249 208 310" fill="none" stroke="#C9A360" stroke-width="2.6" stroke-linecap="round"/></g>
+<g data-part="enamel">
+<path d="M132 314 C119 355 108 420 111 468 Q112 488 135 503 Q153 514 174 507 C196 482 202 447 208 416 C212 390 220 366 220 346 C220 332 214 321 208 310 C206 327 204 337 202 348 C202 367 197 388 190 408 C182 435 177 463 157 484 Q149 490 141 485 Q128 477 127 464 C125 420 136 349 132 314 Z" fill="#F4F7FA" fill-rule="evenodd" stroke="#C9D4E2" stroke-width="1.8" stroke-linejoin="round"/>
+</g>
+<g data-part="gingiva">
+<path d="M48 300 C69 301 86 307 100 315 C111 321 121 317 128 304 C130 319 126 335 118 344 C107 355 91 354 76 346 L48 338 Z" fill="#E08A9A" stroke="#C26A7C" stroke-width="2"/>
+<path d="M212 301 C219 315 230 320 241 314 C267 302 291 300 312 300 L312 338 C287 339 265 349 248 352 C235 357 226 350 224 337 C224 323 219 311 212 301 Z" fill="#E08A9A" stroke="#C26A7C" stroke-width="2"/>
+<path d="M58 312 C85 315 104 335 122 319 M228 322 C245 335 272 314 302 313" fill="none" stroke="#C26A7C" stroke-width="1.5" opacity=".55" stroke-linecap="round"/>
+</g>
+<g data-part="lesion" fill="none" stroke="#FF4D4F" stroke-width="4"/>
+<g data-part="arrow" fill="#4DA3FF" stroke="#4DA3FF"/>
+</svg>

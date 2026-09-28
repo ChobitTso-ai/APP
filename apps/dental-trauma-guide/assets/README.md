@@ -4,7 +4,24 @@
 完整繪圖規格見 `docs/handoff/dental-trauma-art-spec.md`（那份是唯一權威，
 要改規格改那份，不要只改這裡）。
 
+## 目前狀態（2026-09-28）
+
+| 資料夾 | 已到 | 還缺 |
+|---|---|---|
+| `dx/` | 16 / 18 | `intrusion-apex-labial.svg`、`intrusion-apex-germ.svg`（規格 v3 新增的乳牙內縮方向對照） |
+| `care/` | 12 / 12 | — |
+| 本資料夾 | 0 / 1 | `icon-master.svg`（主畫面圖示目前用 🚑 emoji 頂著） |
+
+**已到的 16 張 `dx/` 仍是規格 v2 的取景**，牙冠折斷那一族（`fx-infraction`、
+`fx-enamel`、`fx-enamel-dentin`、`fx-complicated-crown`、`fx-crown-root-*`）
+縮到選項縮圖 54×68 時彼此分不出來。規格 v3 已改成近景取景並要求病灶放大，
+**這六張待重畫**。脫位族（`lux-*`、`avulsion`）因為位移會改變輪廓，
+小尺寸分得出來，不用重畫。
+
 ## 上傳位置
+
+實測 `.svg` 單檔在對話與 GitHub 網頁都上傳失敗，**整批壓成 zip** 才過得去
+（zip 可以直接丟進 Claude 對話，或上傳到下表的資料夾再由 Claude 解開刪除）。
 
 | CODEX 本機資料夾 | 上傳到這裡 | 放什麼 |
 |---|---|---|

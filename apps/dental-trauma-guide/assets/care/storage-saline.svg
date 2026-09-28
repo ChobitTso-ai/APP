@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" version="1.1">
+<!-- © 2026 Tso KY - All Rights Reserved
+Protected against reverse engineering and unauthorized modification
+插圖版本 v2.0 -->
+<title>生理食鹽水</title>
+<desc>v2.0。細長塑膠醫用液體瓶，藍色旋蓋、無字標籤及液滴圖案。名稱與濃度資訊由 App 雙語標籤呈現。</desc>
+<g data-object="saline-bottle"><path d="M104 52 L104 66 C104 75 84 78 84 97 L84 197 Q84 214 100 214 L144 214 Q160 214 160 197 L160 97 C160 78 140 75 140 66 L140 52 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="100" y="28" width="44" height="30" rx="6" fill="#C9D4E2" stroke="#4DA3FF" stroke-width="2"/><path d="M108 34 V51 M117 34 V51 M126 34 V51 M135 34 V51" fill="none" stroke="#4DA3FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M89 166 Q122 172 155 166 L155 197 Q155 209 144 209 L100 209 Q89 209 89 197 Z" fill="#4DA3FF" opacity=".35"/>
+<rect x="96" y="102" width="52" height="55" rx="7" fill="#C9D4E2"/><g transform="translate(122 112) scale(0.75)"><path d="M0 0 C-5 10 -14 17 -14 26 A14 14 0 0 0 14 26 C14 17 5 10 0 0 Z" fill="#4DA3FF"/></g>
+<path d="M91 93 L96 93 M91 176 L99 176 M91 187 L97 187 M91 198 L99 198" fill="none" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" version="1.1">
+<!-- © 2026 Tso KY - All Rights Reserved
+Protected against reverse engineering and unauthorized modification
+插圖版本 v2.0 -->
+<title>唾液保存容器</title>
+<desc>v2.0。寬口容器內收集唾液，液滴及少量氣泡表現液體。名稱由 App 雙語標籤標示。</desc>
+<g data-object="saliva-container"><path d="M61 97 L73 199 Q75 211 90 211 L154 211 Q169 211 171 199 L183 97 Z" fill="#C9D4E2" opacity=".12"/>
+<path d="M67 146 Q122 156 177 146 L170 199 Q167 208 154 208 L90 208 Q77 208 74 199 Z" fill="#E9C98C" opacity=".6"/>
+<path d="M61 97 L73 199 Q75 211 90 211 L154 211 Q169 211 171 199 L183 97" fill="none" stroke="#C9D4E2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="122" cy="97" rx="61" ry="12" fill="none" stroke="#C9D4E2" stroke-width="3"/>
+<g transform="translate(121 32) scale(1)"><path d="M0 0 C-5 10 -14 17 -14 26 A14 14 0 0 0 14 26 C14 17 5 10 0 0 Z" fill="#E9C98C"/></g><circle cx="97" cy="164" r="4" fill="none" stroke="#F4F7FA" stroke-width="1.5"/><circle cx="139" cy="176" r="3" fill="none" stroke="#F4F7FA" stroke-width="1.5"/><circle cx="146" cy="155" r="2" fill="#F4F7FA"/><path d="M80 118 L85 144" fill="none" stroke="#F4F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>
