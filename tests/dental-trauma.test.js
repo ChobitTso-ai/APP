@@ -120,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v1.4', /v1\.4/.test(await p.title()) &&
-      /v1\.4/.test(await p.textContent('footer')));
+    ok('版本號是 v1.5', /v1\.5/.test(await p.title()) &&
+      /v1\.5/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -368,6 +368,47 @@ async function reset(p){
     ok('★ 圖載不到時查閱卡片退回純文字，不留空框',
       (await p.$$('#browseList .dx-card')).length === 26);
     await p.unroute('**/assets/dx/*.svg');
+  }
+
+  /* ── 7c. 乳牙內縮方向：兩張 X 光示意圖（v1.5 新到）──
+     這一題只靠文字很難懂（影像表現跟直覺相反），圖是重點。 */
+  {
+    await reset(p);
+    await p.click('#treeOpts .opt >> nth=1');          // 乳牙
+    await p.click('#treeOpts .opt >> nth=2');          // 還在嘴裡
+    await p.click('#treeOpts .opt >> nth=1');          // 單顆牙
+    await p.click('#treeOpts .opt >> nth=1');          // 牙冠完整
+    await p.click('#treeOpts .opt >> nth=2');          // 變短甚至看不到
+    await p.waitForFunction(() =>
+      document.getElementById('treeQ').textContent.includes('根尖往哪個方向'));
+    await p.waitForFunction(() =>
+      document.querySelectorAll('#treeOpts .opt-fig img').length === 2);
+    await p.waitForFunction(() =>
+      [...document.querySelectorAll('#treeOpts .opt-fig img')].every(i => i.complete));
+    const got = await p.$$eval('#treeOpts .opt-fig img',
+      ns => ns.map(i => [i.getAttribute('src'), i.naturalWidth > 0]));
+    ok('★ 乳牙內縮方向兩個選項都有圖且載得到',
+      got.length === 2 && got.every(g => g[1]),
+      got.map(g => g[0] + (g[1] ? '' : ' ✗')).join(' / '));
+    ok('★ 兩張是不同的圖（朝唇側骨板 vs 朝恆牙牙胚）',
+      got[0][0] !== got[1][0] &&
+      /intrusion-apex-labial/.test(got[0][0]) && /intrusion-apex-germ/.test(got[1][0]));
+    ok('★ 題目提示講明影像表現跟直覺相反',
+      /跟直覺相反/.test(await p.textContent('#treeHint')));
+  }
+
+  /* ── 7d. 縮圖要夠大才分得出斷面顏色（54×68 實測不夠）── */
+  {
+    await reset(p);
+    await p.click('#treeOpts .opt >> nth=0');
+    await p.click('#treeOpts .opt >> nth=2');
+    await p.click('#treeOpts .opt >> nth=1');
+    await p.click('#treeOpts .opt >> nth=0');
+    await p.waitForFunction(() =>
+      document.getElementById('treeQ').textContent.includes('斷面看得到什麼'));
+    const box = await p.$eval('#treeOpts .opt-fig',
+      n => { const r = n.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; });
+    ok('★ 選項縮圖至少 72×92', box[0] >= 72 && box[1] >= 92, box.join('×'));
   }
 
   /* ── 8. 查閱模式與搜尋 ── */
@@ -617,7 +658,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.4/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v1\.5/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();

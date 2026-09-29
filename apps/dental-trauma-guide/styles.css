@@ -144,7 +144,10 @@ details.card > summary + *{margin-top:12px}
    不留空框——見 app.js 的 optThumb()。 */
 .opt.has-fig{display:flex;align-items:center;gap:13px}
 .opt-fig{
-  width:54px;height:68px;flex:none;border-radius:9px;
+  /* 72×92 是實測出來的下限：54×68 時「缺白色琺瑯質／露黃色牙本質／露紅色牙髓」
+     三個選項的斷面顏色太小看不出差別，放到 72 才分得出來，又還能讓五個選項
+     一屏放得下（86×110 也清楚，但要捲畫面）。 */
+  width:72px;height:92px;flex:none;border-radius:9px;
   background:rgba(255,255,255,.05);border:1px solid var(--line);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }

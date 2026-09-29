@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" version="1.1">
+<!-- © 2026 Tso KY - All Rights Reserved
+Protected against reverse engineering and unauthorized modification
+插圖版本 v3.0 -->
+<title>牙外傷處置指南 App 圖示</title>
+<desc>v3.0。深色圓角底，單顆牙及急救十字。牙與十字的重要輪廓皆位於中央百分之六十安全區內。此為簡化 App 圖示，非解剖診斷圖。</desc>
+<rect x="0" y="0" width="1024" height="1024" rx="220" fill="#0F1524"/><g data-icon="tooth"><path d="M322 265 Q356 247 389 261 Q430 272 467 260 Q514 241 549 267 C584 310 571 374 553 421 C541 450 528 470 518 513 L464 729 Q455 760 437 759 Q421 756 416 729 L380 526 Q372 486 354 460 C330 428 305 378 304 323 Q303 286 322 265 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M340 302 Q344 283 372 287 M334 327 Q335 374 356 405" fill="none" stroke="#C9D4E2" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></g><g data-icon="first-aid"><circle cx="663" cy="416" r="104" fill="#4DA3FF"/><path d="M639 352 H687 V392 H727 V440 H687 V480 H639 V440 H599 V392 H639 Z" fill="#F4F7FA"/></g>
+</svg>
