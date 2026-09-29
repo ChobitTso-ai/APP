@@ -77,6 +77,7 @@ const UI = {
   refTitle:     { zh: '參考文獻',                 en: 'References' },
   reviewedThru: { zh: '臨床內容核對至',           en: 'Clinical content reviewed through' },
 
+  faStepsTitle: { zh: '脫落的恆牙：現場四步驟', en: 'Avulsed permanent tooth: four steps at the scene' },
   installTitle: { zh: '把這個指南放到手機主畫面',  en: 'Add this guide to your phone’s home screen' },
   installNote:  { zh: '加好之後主畫面會多一個專屬圖示，點它就直接進來，**收訊不好或離線也開得起來**。',
                   en: 'You then get its own icon on the home screen. Tapping it opens the guide directly, **and it still works with a poor signal or offline**.' },
@@ -98,6 +99,59 @@ const INSTALL_STEPS = [
   { zh: '往下捲，選**「加入主畫面」**',
     en: 'Scroll down and choose **Add to Home Screen**' }
 ];
+
+/* ---- 脫落恆牙的現場急救四步驟（圖示列）----
+   這四張圖本來就是為了這個流程畫的，規格書 19a–19d。
+   刻意不寫「沖幾秒」「幾分鐘內」的數字：IADT 的沖洗只表達「沖掉污染」，
+   寫成秒數會被當成標準；時間門檻在脫落診斷頁另外講。 */
+const FIRST_AID_STEPS = [
+  { img:'care/step1-pick-up.svg',
+    title:{ zh:'撿起來，只捏牙冠', en:'Pick it up by the crown' },
+    text: { zh:'**不要碰牙根**，牙根表面的牙周韌帶細胞決定成敗。',
+            en:'**Do not touch the root** — the periodontal ligament cells on its surface decide the outcome.' } },
+  { img:'care/step2-rinse.svg',
+    title:{ zh:'髒了就沖一下', en:'Rinse if dirty' },
+    text: { zh:'用牛奶或生理食鹽水沖掉污染；**不要刷、不要擦、不要泡消毒水**。',
+            en:'Rinse off contamination with milk or saline; **do not scrub, wipe or soak in disinfectant**.' } },
+  { img:'care/step3-replant-or-milk.svg',
+    title:{ zh:'放回去，或泡牛奶', en:'Replant, or put it in milk' },
+    text: { zh:'能安全放回齒槽窩就立刻放回去；不行就泡在**牛奶**裡帶著走。',
+            en:'Replant into the socket at once if it can be done safely; otherwise carry it in **milk**.' } },
+  { img:'care/step4-go-now.svg',
+    title:{ zh:'立刻就醫', en:'Go now' },
+    text: { zh:'牙根乾燥的時間就是牙周韌帶的存活時間，**不要等**。',
+            en:'Dry time on the root is the survival clock for the ligament — **do not wait**.' } }
+];
+
+/* ---- 根尖成熟度（首屏參考區）----
+   成熟／未成熟的處置差很多（牙髓能不能自行血管再生、要不要根尖成形術），
+   但 App 各處原本只有「未成熟牙」「成熟牙」的文字。 */
+const APEX_BLOCK = {
+  title:{ zh:'根尖成熟了沒？為什麼它決定處置', en:'Open or closed apex — and why it changes everything' },
+  figs:[
+    { img:'dx/base-closed-apex.svg', cap:{ zh:'成熟根：根尖孔窄小', en:'Closed apex: narrow apical foramen' } },
+    { img:'dx/base-open-apex.svg',   cap:{ zh:'未成熟根：牙根較短、根尖呈喇叭狀開口', en:'Open apex: shorter root, wide funnel-shaped opening' } }
+  ],
+  zoom:{ img:'care/apex-open-vs-closed.svg',
+         cap:{ zh:'兩顆牙並排：左為未成形的喇叭狀根尖，右為成形的窄小根尖孔',
+               en:'Side by side: flared open apex on the left, closed narrow apex on the right' } },
+  body:{ zh:'**未成熟根**的根尖孔寬、血流豐富，牙髓有機會自行血管再生，所以外傷後**先觀察、不要急著抽神經**；壞死時走根尖成形術或活髓再生治療。\n\n**成熟根**的根尖孔窄，血管再生的機會很低，脫位與脫落後牙髓多半會壞死，該做根管治療就要準時做。\n\n判斷不確定時看年齡與牙齒大小：上顎門齒約 7–8 歲萌發，牙根還要再 2–3 年才發育完成。',
+         en:'An **open apex** has a wide foramen and a rich blood supply, so the pulp may revascularize on its own — **observe rather than rushing into endodontics**; if it does become necrotic, use apexification or regenerative endodontic treatment.\n\nA **closed apex** has a narrow foramen and little chance of revascularization: after luxation or avulsion the pulp usually becomes necrotic, so start root canal treatment on schedule.\n\nIf unsure, use age and tooth size: maxillary incisors erupt at about 7–8 years and the root takes another 2–3 years to complete.' }
+};
+
+/* ---- 固定裝置示意圖 ---- */
+const SPLINT_FIG = {
+  img:'care/splint-flexible.svg',
+  cap:{ zh:'被動柔性固定裝置：患牙加左右鄰牙，細軟線以複合樹脂小點固定',
+        en:'Passive flexible splint: the injured tooth plus one neighbour each side, a thin wire bonded with small composite points' }
+};
+
+/* ---- 只捏牙冠（脫落家屬版）---- */
+const HOLD_CROWN_FIG = {
+  img:'care/hold-crown.svg',
+  cap:{ zh:'只能捏牙冠。牙根不可觸碰、不可刷洗。',
+        en:'Hold the crown only. Never touch or scrub the root.' }
+};
 
 /* ---- 現場急救：家屬版速查（首屏）---- */
 const EMERGENCY = {

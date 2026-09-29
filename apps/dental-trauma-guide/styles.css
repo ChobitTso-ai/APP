@@ -384,3 +384,59 @@ footer p{max-width:700px;margin:0 auto}
   border-radius:999px;padding:9px 20px;font-size:.86rem;z-index:50;
   backdrop-filter:blur(10px);
 }
+
+/* ===== 現場急救四步驟（首屏參考區）===== */
+.fa-steps-title{
+  font-size:.84rem;color:var(--muted);letter-spacing:.04em;
+  margin:2px 0 10px;
+}
+.fa-steps{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+@media(min-width:620px){ .fa-steps{grid-template-columns:repeat(4,1fr)} }
+.fa-step{
+  position:relative;text-align:center;padding:12px 9px 11px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;
+}
+.fa-step-n{
+  position:absolute;top:7px;left:8px;
+  width:19px;height:19px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.66rem;font-weight:700;color:#cbd6f5;
+  background:rgba(91,140,255,.22);border:1px solid var(--line);
+}
+.fa-step-fig{
+  height:62px;margin-bottom:8px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.fa-step-fig img{max-width:100%;max-height:100%}
+.fa-step-fig .ph{color:var(--muted);font-size:.62rem;text-align:center;padding:4px;line-height:1.4}
+.fa-step b{display:block;font-size:.82rem;line-height:1.45}
+.fa-step small{display:block;color:var(--muted);font-size:.72rem;line-height:1.6;margin-top:4px}
+
+/* ===== 根尖成熟度 ===== */
+.apex-figs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.apex-fig{
+  text-align:center;padding:10px 8px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:11px;
+}
+.apex-fig.wide{grid-column:1 / -1}
+.apex-fig-img{
+  height:116px;margin-bottom:7px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.apex-fig.wide .apex-fig-img{height:130px}
+.apex-fig-img img{max-width:100%;max-height:100%}
+.apex-fig-img .ph{color:var(--muted);font-size:.64rem;text-align:center;padding:5px;line-height:1.5}
+.apex-fig small{display:block;color:var(--muted);font-size:.72rem;line-height:1.55}
+
+/* ===== 圖＋說明（固定裝置、只捏牙冠）===== */
+.cap-fig{margin-top:11px;text-align:center}
+.cap-fig-img{
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:11px;padding:9px;margin-bottom:7px;
+}
+.cap-fig-img img{max-width:100%;max-height:100%}
+.cap-fig-img .ph{color:var(--muted);font-size:.66rem;padding:14px;line-height:1.5}
+.cap-fig small{display:block;color:var(--muted);font-size:.74rem;line-height:1.6}
+.splint-fig .cap-fig-img{height:150px}
+.hold-fig .cap-fig-img{height:180px}
