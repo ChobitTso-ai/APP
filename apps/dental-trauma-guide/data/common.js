@@ -10,7 +10,7 @@
 /* ---- 介面文字（zh 繁體中文 / en English）---- */
 const UI = {
   appName:      { zh: '牙外傷處置指南',           en: 'Dental Trauma Guide' },
-  appTagline:   { zh: '依 IADT 2020 指引整理',     en: 'Based on the IADT 2020 Guidelines' },
+  appTagline:   { zh: '依 IADT 2020 ＋ AAE 2026 指引', en: 'IADT 2020 + AAE 2026 guidelines' },
 
   /* 右上角兩顆 */
   navHints:     { zh: '提示',                      en: 'Hints' },
@@ -82,8 +82,8 @@ const UI = {
                   en: 'You then get its own icon on the home screen. Tapping it opens the guide directly, **and it still works with a poor signal or offline**.' },
 
   disclaimer: {
-    zh: '本工具整理自 IADT 2020 指引，僅供牙科專業人員參考，不能取代臨床判斷、親自檢查與影像診斷。緊急狀況請直接就醫。',
-    en: 'This tool summarizes the IADT 2020 guidelines for reference by dental professionals. It does not replace clinical judgment, direct examination or imaging. In an emergency, seek care immediately.'
+    zh: '本工具以 IADT 2020 指引為主幹，兩份指引建議不同之處另以 AAE 2026 附註並列。僅供牙科專業人員參考，不能取代臨床判斷、親自檢查與影像診斷。緊急狀況請直接就醫。',
+    en: 'This tool follows the IADT 2020 guidelines, with AAE 2026 shown alongside wherever the two differ. For reference by dental professionals; it does not replace clinical judgment, direct examination or imaging. In an emergency, seek care immediately.'
   },
 };
 
@@ -220,6 +220,13 @@ const PRIMARY_REFERRAL_NOTE = {
 };
 
 // 乳牙的影像原則：不是每個診斷都要照，追蹤更不是例行照
+/* 乳牙頁固定顯示：AAE 2026 只寫恆牙，沒有乳牙章節。
+   不講的話，「這一頁沒有 AAE 附註」會被誤讀成兩份指引一致。 */
+const PRIMARY_NO_AAE = {
+  zh: '指引只涵蓋**恆牙**，沒有乳牙章節。本頁內容單一來源為 IADT-3。',
+  en: 'This guideline covers **permanent teeth only** and has no primary dentition section. This page has a single source: IADT-3.'
+};
+
 const PRIMARY_IMAGING_NOTE = {
   zh: '乳牙的影像追蹤**不是例行的**：只有在臨床發現暗示病變（也就是出現不良結果）時才加照。例外是斷髓術或根管治療後的 1 年追蹤，以及齒槽骨骨折的 4 週與 1 年。',
   en: 'Radiographic follow-up in the primary dentition is **not routine**: take further films only when clinical findings suggest pathosis (that is, an unfavorable outcome). The exceptions are the one-year review after a pulpotomy or root canal treatment, and the 4-week and 1-year films after an alveolar fracture.'
@@ -674,12 +681,13 @@ const TREE_RESULTS = {
 };
 
 /* ---- 參考文獻 ---- */
-const REVIEWED_THROUGH = '2026-09-23';
+const REVIEWED_THROUGH = '2026-09-29';
 const REFERENCES = [
   { tag:'IADT-1', text:'Bourguignon C, Cohenca N, Lauridsen E, et al. International Association of Dental Traumatology guidelines for the management of traumatic dental injuries: 1. Fractures and luxations. Dent Traumatol. 2020;36(4):314–330.', doi:'10.1111/edt.12578' },
   { tag:'IADT-2', text:'Fouad AF, Abbott PV, Tsilingaridis G, et al. International Association of Dental Traumatology guidelines for the management of traumatic dental injuries: 2. Avulsion of permanent teeth. Dent Traumatol. 2020;36(4):331–342.', doi:'10.1111/edt.12573' },
   { tag:'IADT-3', text:'Day PF, Flores MT, O’Connell AC, et al. International Association of Dental Traumatology guidelines for the management of traumatic dental injuries: 3. Injuries in the primary dentition. Dent Traumatol. 2020;36(4):343–359.', doi:'10.1111/edt.12576' },
-  { tag:'IADT-0', text:'Levin L, Day PF, Hicks L, et al. International Association of Dental Traumatology guidelines for the management of traumatic dental injuries: General introduction. Dent Traumatol. 2020;36(4):309–313.', doi:'10.1111/edt.12574' }
+  { tag:'IADT-0', text:'Levin L, Day PF, Hicks L, et al. International Association of Dental Traumatology guidelines for the management of traumatic dental injuries: General introduction. Dent Traumatol. 2020;36(4):309–313.', doi:'10.1111/edt.12574' },
+  { tag:'AAE 2026', text:'Sigurdsson A, et al. Recommended Guidelines of the American Association of Endodontists for the Treatment of Traumatic Dental Injuries. J Endod. 2026;52(8):1237–1253.（以 IADT 2020 為基礎發展，僅涵蓋恆牙）', doi:'10.1016/j.joen.2026.04.002' }
 ];
 
 /* ---- 證據標章的說明 ---- */

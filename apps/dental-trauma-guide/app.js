@@ -546,6 +546,7 @@ function renderClinical(d){
   } else {
     sp.appendChild(el('div', 'splint-box none', esc(L(UI.noSplint))));
   }
+  if (c.aaeSplint) sp.appendChild(aaeNote(c.aaeSplint));
   sp.appendChild(el('div', 'caveat', md(L(SPLINT_PRINCIPLE))));
   host.appendChild(section(L(UI.secSplint), sp));
 
@@ -668,9 +669,20 @@ function renderFollowUp(d){
   }
   if (d.yearlyNote) host.appendChild(el('p', 'muted small', md(L(d.yearlyNote))));
   if (d.ageFollowUp) host.appendChild(el('p', 'muted small', md(L(d.ageFollowUp))));
+  if (d.aaeFollowUp) host.appendChild(aaeNote(d.aaeFollowUp));
   if (d.dentition === 'primary'){
     host.appendChild(el('p', 'muted small', md(L(PRIMARY_IMAGING_NOTE))));
+    host.appendChild(aaeNote(PRIMARY_NO_AAE));
   }
+}
+
+/* 兩份指引不一致的地方並列。App 主幹是 IADT 2020（只有它涵蓋乳牙），
+   AAE 2026 的不同建議用這個附註標出來，一致的地方不加，免得整頁都是註。 */
+function aaeNote(txt){
+  const box = el('div', 'aae-note');
+  box.appendChild(el('span', 'aae-tag', 'AAE 2026'));
+  box.appendChild(el('span', null, md(L(txt))));
+  return box;
 }
 
 function drawFuList(ul, list, d){
@@ -760,7 +772,8 @@ function noteText(){
   out.push(base ? scheduleText() : (lang === 'en' ? 'Follow-up: see guideline' : '追蹤計畫：見指引'));
   out.push('');
   out.push((lang === 'en' ? 'Source: ' : '出處：') + d.source +
-           ' (IADT 2020) | ' + L(UI.reviewedThru) + ' ' + REVIEWED_THROUGH);
+           (d.dentition === 'primary' ? ' (IADT 2020)' : ' (IADT 2020; cf. AAE 2026)') +
+           ' | ' + L(UI.reviewedThru) + ' ' + REVIEWED_THROUGH);
   return out.join('\n');
 }
 
