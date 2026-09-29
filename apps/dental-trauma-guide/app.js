@@ -98,6 +98,16 @@ function figure(src, alt, phText){
   return box;
 }
 
+/* 圖片加一行說明文字。圖載不到時 figure() 會顯示佔位文字，版面不塌。 */
+function capFigure(spec, cls){
+  const box = el('div', 'cap-fig' + (cls ? ' ' + cls : ''));
+  const f = figure(spec.img, L(spec.cap), L(spec.cap));
+  f.className = 'cap-fig-img';
+  box.appendChild(f);
+  box.appendChild(el('small', null, esc(L(spec.cap))));
+  return box;
+}
+
 /* ---------- 畫面切換 ---------- */
 
 const SCREENS = ['screenTree','screenImaging','screenPending','screenResult','screenBrowse','screenDx'];
@@ -196,6 +206,40 @@ function renderRefBlocks(){
       '<tr><td>' + md(L(r.look)) + '</td><td>' + md(L(r.doNow)) +
       '</td><td>' + md(L(r.dont)) + '</td><td>' + md(L(r.when)) + '</td></tr>'
     ).join('');
+
+  // 脫落恆牙的現場四步驟（規格書 19a–19d 就是為這裡畫的）
+  const fa = $('faSteps');
+  fa.innerHTML = '';
+  FIRST_AID_STEPS.forEach((st, i) => {
+    const box = el('div', 'fa-step');
+    box.appendChild(el('span', 'fa-step-n', String(i + 1)));
+    const f = figure(st.img, L(st.title), L(st.title));
+    f.className = 'fa-step-fig';
+    box.appendChild(f);
+    box.appendChild(el('b', null, esc(L(st.title))));
+    box.appendChild(el('small', null, md(L(st.text))));
+    fa.appendChild(box);
+  });
+
+  // 根尖成熟度：成熟／未成熟並排，加根尖區放大對照
+  $('txtApexTitle').textContent = L(APEX_BLOCK.title);
+  const ax = $('apexFigs');
+  ax.innerHTML = '';
+  APEX_BLOCK.figs.forEach(g => {
+    const box = el('div', 'apex-fig');
+    const f = figure(g.img, L(g.cap), L(g.cap));
+    f.className = 'apex-fig-img';
+    box.appendChild(f);
+    box.appendChild(el('small', null, esc(L(g.cap))));
+    ax.appendChild(box);
+  });
+  const z = el('div', 'apex-fig wide');
+  const zf = figure(APEX_BLOCK.zoom.img, L(APEX_BLOCK.zoom.cap), L(APEX_BLOCK.zoom.cap));
+  zf.className = 'apex-fig-img';
+  z.appendChild(zf);
+  z.appendChild(el('small', null, esc(L(APEX_BLOCK.zoom.cap))));
+  ax.appendChild(z);
+  $('apexBody').innerHTML = md(L(APEX_BLOCK.body));
 
   const row = $('storageRow');
   row.innerHTML = '';
@@ -547,6 +591,7 @@ function renderClinical(d){
     sp.appendChild(el('div', 'splint-box none', esc(L(UI.noSplint))));
   }
   if (c.aaeSplint) sp.appendChild(aaeNote(c.aaeSplint));
+  if (c.splint) sp.appendChild(capFigure(SPLINT_FIG, 'splint-fig'));
   sp.appendChild(el('div', 'caveat', md(L(SPLINT_PRINCIPLE))));
   host.appendChild(section(L(UI.secSplint), sp));
 
@@ -595,6 +640,13 @@ function renderPublic(d){
   };
   host.appendChild(mk(L(UI.secWhat),    p.what));
   host.appendChild(mk(L(UI.secDoNow),   p.doNow));
+  // 「只捏牙冠」是脫落急救最關鍵的一條，家屬版光靠文字不夠。
+  // 乳牙不再植，這張圖的用意（保住牙根表面的牙周韌帶細胞）不適用，所以只掛恆牙。
+  if (d.id === 'p-avulsion'){
+    const c = el('div', 'card glass');
+    c.appendChild(capFigure(HOLD_CROWN_FIG, 'hold-fig'));
+    host.appendChild(c);
+  }
   host.appendChild(mk(L(UI.secDontDo),  p.dontDo));
   host.appendChild(mk(L(UI.secUrgency), p.urgency));
 

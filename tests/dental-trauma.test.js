@@ -120,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v1.5', /v1\.5/.test(await p.title()) &&
-      /v1\.5/.test(await p.textContent('footer')));
+    ok('版本號是 v1.6', /v1\.6/.test(await p.title()) &&
+      /v1\.6/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -411,6 +411,54 @@ async function reset(p){
     ok('★ 選項縮圖至少 72×92', box[0] >= 72 && box[1] >= 92, box.join('×'));
   }
 
+  /* ── 7e. 畫了的圖都要被用到（v1.6 補）──
+     先前只斷言「有引用的圖都載得到」，沒斷言反向，結果 care/ 有 7 張、
+     dx/base-open-apex 共 8 張畫好了卻從來沒顯示過，一路閒置到 v1.5 才發現。
+     這條掃 assets/ 的實際檔案，逐一比對程式碼裡的引用。 */
+  {
+    const fs = require('fs');
+    const path = require('path');
+    const root = path.join(__dirname, '..', 'apps', 'dental-trauma-guide');
+    const walk = d => fs.readdirSync(path.join(root, 'assets', d))
+      .filter(f => f.endsWith('.svg')).map(f => d + '/' + f);
+    const have = [...walk('dx'), ...walk('care'), ...walk('misc')];
+    const code = ['app.js', 'data/common.js', 'data/permanent.js', 'data/primary.js']
+      .map(f => fs.readFileSync(path.join(root, f), 'utf8')).join('\n');
+    const unused = have.filter(f => !code.includes(f));
+    ok('★ assets/ 底下每一張圖都有被程式碼引用',
+      unused.length === 0, unused.join(', ') || have.length + ' 張全部有用到');
+
+    // icon-master.svg 是 PNG 的來源檔，不該被頁面引用，但必須存在
+    ok('icon-master.svg 存在（PWA 圖示的來源檔）',
+      fs.existsSync(path.join(root, 'assets', 'icon-master.svg')));
+  }
+
+  /* ── 7f. 新接進來的四處插圖實際顯示得出來 ── */
+  {
+    await reset(p);
+    await p.click('details:has(#faSteps) summary');
+    await p.waitForFunction(() =>
+      [...document.querySelectorAll('#faSteps .fa-step-fig img')].every(i => i.complete));
+    const steps = await p.$$eval('#faSteps .fa-step-fig img',
+      ns => ns.map(i => [i.getAttribute('src'), i.naturalWidth > 0]));
+    ok('★ 現場急救四步驟四張圖都在且載得到',
+      steps.length === 4 && steps.every(x => x[1]),
+      steps.filter(x => !x[1]).map(x => x[0]).join() || '4/4');
+    ok('四步驟有編號 1–4',
+      (await p.$$eval('#faSteps .fa-step-n', ns => ns.map(n => n.textContent))).join('') === '1234');
+
+    await p.click('details:has(#apexFigs) summary');
+    await p.waitForFunction(() =>
+      [...document.querySelectorAll('#apexFigs img')].every(i => i.complete));
+    const apex = await p.$$eval('#apexFigs img',
+      ns => ns.map(i => [i.getAttribute('src'), i.naturalWidth > 0]));
+    ok('★ 根尖成熟度三張圖都在且載得到（成熟／未成熟／放大對照）',
+      apex.length === 3 && apex.every(x => x[1]),
+      apex.map(x => x[0].split('/').pop()).join(' '));
+    ok('說明講到未成熟根可能自行血管再生',
+      /血管再生/.test(await p.textContent('#apexBody')));
+  }
+
   /* ── 8. 查閱模式與搜尋 ── */
   {
     await p.click('#btnBrowse');
@@ -658,7 +706,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.5/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v1\.6/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
