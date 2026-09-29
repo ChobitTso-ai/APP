@@ -203,6 +203,8 @@ const PERMANENT_DX = [
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'牙髓狀態與牙根發育', en:'Pulp status and root development' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'牙髓狀態、根尖變化、修復體', en:'Pulp status, apical changes, restoration' } }
   ],
+  aaeFollowUp:{ zh:'（Table 2）：6–8 週、6 個月、1 年，之後**每年至少 5 年**；受傷當下牙髓測試即無反應者另外考慮 4 週回診。AAE **沒有** 3 個月那一次。',
+                en:'(Table 2): 6–8 wk, 6 mo, 1 y, then **yearly for at least 5 y**; an extra 4-wk visit is considered when the pulp was unresponsive immediately after the trauma. The AAE has **no** 3-month visit.' },
   yearlyTo:null,
   evidence:{ g:true, e:'E3', certainty:{ zh:'低', en:'Low' } }
 },
@@ -253,6 +255,8 @@ const PERMANENT_DX = [
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'同上', en:'As above' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'牙髓、牙周、修復體整體評估', en:'Overall pulpal, periodontal and restorative review' } }
   ],
+  aaeFollowUp:{ zh:'（Table 2）：1 週、6–8 週、**4 個月**、6 個月、1 年，之後每年至少 5 年。IADT 的 3 個月那一次，AAE 排在 **4 個月**。',
+                en:'(Table 2): 1 wk, 6–8 wk, **4 mo**, 6 mo, 1 y, then yearly for at least 5 y. What the IADT schedules at 3 months the AAE schedules at **4 months**.' },
   yearlyTo:5,
   evidence:{ g:true, e:'E3/E4', certainty:{ zh:'低', en:'Low' } }
 },
@@ -303,6 +307,8 @@ const PERMANENT_DX = [
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'同上', en:'As above' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'整體評估', en:'Overall review' } }
   ],
+  aaeFollowUp:{ zh:'（Table 2）：1 週、6–8 週、**4 個月**、6 個月、1 年，之後每年至少 5 年。IADT 的 3 個月那一次，AAE 排在 **4 個月**。',
+                en:'(Table 2): 1 wk, 6–8 wk, **4 mo**, 6 mo, 1 y, then yearly for at least 5 y. What the IADT schedules at 3 months the AAE schedules at **4 months**.' },
   yearlyTo:5,
   evidence:{ g:true, e:'E3/E4', certainty:{ zh:'低', en:'Low' } }
 },
@@ -454,6 +460,8 @@ const PERMANENT_DX = [
     { d:28,  label:{ zh:'4 週', en:'4 wk' }, purpose:{ zh:'牙髓狀態、症狀是否緩解', en:'Pulp status, resolution of symptoms' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'牙髓狀態、變色、根尖變化', en:'Pulp status, discoloration, apical changes' } }
   ],
+  aaeFollowUp:{ zh:'**對震盪的追蹤密集得多**（Table 5）：2 週、4 週、6–8 週、6 個月、1 年，之後每年至少 5 年；6–8 週牙髓測試仍無反應但沒有其他壞死徵象時，另考慮 3 個月回診。IADT 只排 4 週與 1 年兩次。',
+                en:'**Follows concussion much more closely** (Table 5): 2 wk, 4 wk, 6–8 wk, 6 mo, 1 y, then yearly for at least 5 y; a 3-month visit is considered when the pulp is still unresponsive at 6–8 wk without other signs of necrosis. The IADT schedules only 4 wk and 1 y.' },
   yearlyTo:null,
   evidence:{ g:true, e:'E2', certainty:{ zh:'預後證據中等、治療介入證據低', en:'Moderate for prognosis, low for intervention' } }
 },
@@ -500,6 +508,8 @@ const PERMANENT_DX = [
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'同上', en:'As above' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'牙髓狀態、變色、根尖變化', en:'Pulp status, discoloration, apical changes' } }
   ],
+  aaeFollowUp:{ zh:'（Table 5）：2 週（拆固定）、4 週、6–8 週、6 個月、1 年，之後**每年至少 5 年**；6–8 週仍無牙髓反應時另考慮 3 個月。IADT 沒有 4 週、6–8 週與每年追蹤，但有 12 週那一次。',
+                en:'(Table 5): 2 wk (splint removal), 4 wk, 6–8 wk, 6 mo, 1 y, then **yearly for at least 5 y**; a 3-month visit is considered if the pulp is still unresponsive at 6–8 wk. The IADT has no 4-wk, 6–8-wk or yearly visits, but does schedule 12 wk.' },
   yearlyTo:null,
   evidence:{ g:true, e:'E2', certainty:{ zh:'低至中', en:'Low to moderate' } }
 },
@@ -554,6 +564,8 @@ const PERMANENT_DX = [
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'牙髓、牙周、吸收', en:'Pulp, periodontium, resorption' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'整體評估', en:'Overall review' } }
   ],
+  aaeFollowUp:{ zh:'脫位追蹤時程四類共用（Table 5）：**2 週、4 週、6–8 週、3 個月、6 個月、1 年，之後每年至少 5 年**。與 IADT 的差別在 IADT 用 8 週＋12 週，AAE 用 6–8 週＋3 個月。',
+                en:'One regimen for all four luxation types (Table 5): **2 wk, 4 wk, 6–8 wk, 3 mo, 6 mo, 1 y, then yearly for at least 5 y**. The IADT uses 8 wk + 12 wk where the AAE uses 6–8 wk + 3 mo.' },
   yearlyTo:5,
   evidence:{ g:true, e:'E2', certainty:{ zh:'低至中', en:'Low to moderate' } }
 },
@@ -609,6 +621,8 @@ const PERMANENT_DX = [
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'牙髓與牙周癒合、吸收', en:'Pulpal and periodontal healing, resorption' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'整體評估', en:'Overall review' } }
   ],
+  aaeFollowUp:{ zh:'脫位追蹤時程四類共用（Table 5）：**2 週、4 週、6–8 週、3 個月、6 個月、1 年，之後每年至少 5 年**。與 IADT 的差別在 IADT 用 8 週＋12 週，AAE 用 6–8 週＋3 個月。',
+                en:'One regimen for all four luxation types (Table 5): **2 wk, 4 wk, 6–8 wk, 3 mo, 6 mo, 1 y, then yearly for at least 5 y**. The IADT uses 8 wk + 12 wk where the AAE uses 6–8 wk + 3 mo.' },
   yearlyTo:5,
   evidence:{ g:true, e:'E2', certainty:{ zh:'低至中', en:'Low to moderate' } }
 },
@@ -643,7 +657,9 @@ const PERMANENT_DX = [
       { zh:'成熟牙撞入 3–7 mm：手術復位（首選）或矯正復位', en:'Mature teeth intruded 3–7 mm: reposition surgically (preferably) or orthodontically' },
       { zh:'成熟牙撞入 >7 mm：手術復位', en:'Mature teeth intruded beyond 7 mm: reposition surgically' }
     ],
-    splint:{ zh:'手術復位後以被動柔性固定裝置固定 4 週。（注意：坊間整理常誤寫成 2 週，IADT 原文是 4 週。）', en:'Passive flexible splint for 4 weeks after surgical repositioning. (Note: secondary summaries often state 2 weeks; the IADT text says 4 weeks.)' },
+    splint:{ zh:'手術復位後以被動柔性固定裝置固定 4 週。', en:'Passive flexible splint for 4 weeks after surgical repositioning.' },
+    aaeSplint:{ zh:'**兩處寫法不一致**：Table 3 寫「復位後固定 2 週，位移大則 4 週」，但 Table 5 把拆固定列在 **4 週**（與 IADT 相同）。採 4 週較保守。',
+                en:'**Internally inconsistent here**: Table 3 says "splint for 2 wk after repositioning, 4 wk if displacement is extensive", while Table 5 lists splint removal at **4 wk** (matching the IADT). Four weeks is the more conservative reading.' },
     pulp:[
       { zh:'未成熟牙可能自行血管再生，應監測；一旦牙髓壞死並感染，或出現發炎性外吸收，就儘快在牙齒位置允許時開始根管治療，採用適合未成熟牙的術式', en:'Immature teeth may revascularize spontaneously and should be monitored; if the pulp becomes necrotic and infected, or inflammatory external resorption appears, begin endodontic treatment as soon as the tooth’s position allows, using techniques suitable for immature teeth' },
       { zh:'成熟牙牙髓幾乎一定壞死：根管治療應在約 2 週、或牙齒位置一允許操作時就開始，以皮質類固醇加抗生素或氫氧化鈣作為根管內藥劑，目的是預防發炎性外吸收', en:'In mature teeth the pulp almost always becomes necrotic: start root canal treatment at about 2 weeks, or as soon as the tooth’s position allows, using a corticosteroid-antibiotic or calcium hydroxide intracanal medication to prevent inflammatory external resorption' }
@@ -668,6 +684,8 @@ const PERMANENT_DX = [
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'同上；邊緣骨高度', en:'As above; marginal bone level' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'整體評估；兒童注意咬合過低', en:'Overall review; watch for infraocclusion in growing patients' } }
   ],
+  aaeFollowUp:{ zh:'脫位追蹤時程四類共用（Table 5）：**2 週、4 週、6–8 週、3 個月、6 個月、1 年，之後每年至少 5 年**。與 IADT 的差別在 IADT 用 8 週＋12 週，AAE 用 6–8 週＋3 個月。',
+                en:'One regimen for all four luxation types (Table 5): **2 wk, 4 wk, 6–8 wk, 3 mo, 6 mo, 1 y, then yearly for at least 5 y**. The IADT uses 8 wk + 12 wk where the AAE uses 6–8 wk + 3 mo.' },
   yearlyTo:5,
   evidence:{ g:true, e:'E2', certainty:{ zh:'預後證據中等；復位方式的比較證據低', en:'Moderate for prognosis; low for comparing repositioning methods' } }
 },
@@ -701,6 +719,8 @@ const PERMANENT_DX = [
       { zh:'以被動柔性固定裝置固定 2 週；合併齒槽骨或顎骨斷裂時採較剛性的固定約 4 週', en:'Stabilize with a passive flexible splint for 2 weeks; with an associated alveolar or jaw fracture, use more rigid stabilization for about 4 weeks' }
     ],
     splint:{ zh:'被動柔性固定裝置 2 週。合併齒槽骨或顎骨斷裂時改用較剛性的固定約 4 週。', en:'Passive flexible splint for 2 weeks; more rigid stabilization for about 4 weeks with an associated alveolar or jaw fracture.' },
+    aaeSplint:{ zh:'柔性被動固定 **1–2 週**（合併齒槽骨或顎骨斷裂同樣改用較硬固定約 4 週）。',
+                en:'Flexible passive splint for **1–2 wk** (also about 4 wk with a more rigid splint when there is an associated alveolar or jaw fracture).' },
     pulp:[
       { zh:'根尖閉鎖（成熟牙）：根管治療應在再植後 2 週內開始。氫氧化鈣作為根管內藥劑最多放置 1 個月後再封填；若選用皮質類固醇或皮質類固醇加抗生素的抗發炎、抗吸收藥劑，應在再植後立即或很快放入，並停留至少 6 週。', en:'Closed apex: start root canal treatment within 2 weeks of replantation. Calcium hydroxide is recommended as an intracanal medicament for up to 1 month before filling; if a corticosteroid or corticosteroid-antibiotic anti-inflammatory and anti-resorptive medicament is chosen, place it immediately or shortly after replantation and leave it in situ for at least 6 weeks.' },
       { zh:'根尖開放（未成熟牙）：可能自行血管再生，因此不可預防性做根管治療。只有在追蹤時出現牙髓壞死與根管系統感染的臨床或影像證據時才治療。兒童的發炎性吸收進展非常快，要把「等待血管再生的機會」與「發炎性吸收的風險」放在一起權衡。', en:'Open apex: spontaneous revascularization may occur, so root canal treatment must be avoided unless follow-up shows clinical or radiographic evidence of pulp necrosis and canal infection. Inflammatory resorption progresses very rapidly in children, so weigh that risk against the chance of revascularization.' },
@@ -734,6 +754,8 @@ const PERMANENT_DX = [
     { d:180, label:{ zh:'6 個月', en:'6 mo' }, purpose:{ zh:'同上', en:'As above' } },
     { d:365, label:{ zh:'1 年', en:'1 y' }, purpose:{ zh:'整體評估', en:'Overall review' } }
   ],
+  aaeFollowUp:{ zh:'（Table 8）：2 週（拆固定）、4 週、**6–8 週**、3 個月、6 個月、1 年，之後每年至少 5 年——比 IADT 多一次 6–8 週。另外 AAE 明訂**再植後 7–14 天、拆固定之前**開始根管治療。',
+                en:'(Table 8): 2 wk (splint removal), 4 wk, **6–8 wk**, 3 mo, 6 mo, 1 y, then yearly for at least 5 y — one more visit (6–8 wk) than the IADT. The AAE also specifies starting endodontic treatment **7–14 days after replantation, before splint removal**.' },
   yearlyTo:5,
   evidence:{ g:true, e:'E1／E2／E3 混合', certainty:{ zh:'依問題而異：固定天數有系統性回顧（E1），時間與保存液的預後主要來自長期觀察性研究（E2/E3）', en:'Varies by question: splinting duration is supported by a systematic review (E1), while timing and storage medium prognosis rests mainly on long-term observational studies (E2/E3)' } }
 }

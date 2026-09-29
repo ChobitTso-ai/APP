@@ -101,8 +101,15 @@ async function reset(p){
 
     const rows = await p.$$eval('#tblFirstAid tr', ns => ns.length);
     ok('現場急救速查表有表頭＋6 列', rows === 7, rows + ' 列');
-    const refs = await p.$$eval('#listRefs li', ns => ns.length);
-    ok('參考文獻列出 4 篇 IADT 2020', refs === 4, refs + ' 篇');
+    const refs = await p.$$eval('#listRefs li', ns => ns.map(n => n.textContent));
+    ok('參考文獻列出 4 篇 IADT 2020 ＋ 1 篇 AAE 2026', refs.length === 5, refs.length + ' 篇');
+    ok('★ AAE 2026 的出處完整（J Endod 52(8) ＋ DOI）',
+      refs.some(t => /J Endod\. 2026;52\(8\):1237–1253/.test(t)
+                  && /10\.1016\/j\.joen\.2026\.04\.002/.test(t)));
+    ok('★ 並註明 AAE 只涵蓋恆牙', refs.some(t => /僅涵蓋恆牙/.test(t)));
+    ok('★ 副標題反映兩份指引',
+      /IADT 2020/.test(await p.textContent('#txtAppTagline')) &&
+      /AAE 2026/.test(await p.textContent('#txtAppTagline')));
     ok('頁尾有免責聲明', /不能取代臨床判斷/.test(await p.textContent('#txtDisclaimer')));
 
     // v1.2：加到手機主畫面的三步驟。用瀏覽器開的時候要看得到。
@@ -113,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v1.3', /v1\.3/.test(await p.title()) &&
-      /v1\.3/.test(await p.textContent('footer')));
+    ok('版本號是 v1.4', /v1\.4/.test(await p.title()) &&
+      /v1\.4/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -416,6 +423,59 @@ async function reset(p){
     ok('成熟牙根管治療約 2 週開始', /約 2 週、或牙齒位置一允許操作時就開始/.test(clin));
     ok('脫位頁附牙髓測試判讀警告',
       /第一次敏感性測試陰性，不等於牙髓壞死/.test(clin));
+
+    /* ── 9b. 兩份指引並列（v1.4）──
+       主幹仍是 IADT，AAE 只是附註；如果哪天有人把主值換成 AAE 的 2 週，
+       上面那條「固定 4 週」的斷言會先擋下來。 */
+    const notes = await p.$$eval('#paneClinical .aae-note', ns => ns.map(n => n.textContent));
+    ok('★ 內縮性脫位有 AAE 附註', notes.length === 1, notes.length + ' 則');
+    ok('★ 附註誠實交代 AAE 自身兩表不一致（Table 3 寫 2 週、Table 5 拆在 4 週）',
+      /Table 3/.test(notes[0]) && /2 週/.test(notes[0]) &&
+      /Table 5/.test(notes[0]) && /4 週/.test(notes[0]), notes[0] || '');
+    ok('★ 附註有 AAE 2026 標籤，跟 IADT 主文區隔得開',
+      (await p.textContent('#paneClinical .aae-tag')).trim() === 'AAE 2026');
+    const fu = await p.textContent('#dxFollowUp');
+    ok('★ 追蹤時程也列出 AAE 的版本', /脫位追蹤時程四類共用/.test(fu) && /6–8 週/.test(fu));
+  }
+
+  /* ── 9c. 一致的地方不要加註（不然整頁都是註，反而看不到真正的差異）── */
+  {
+    await p.click('#btnBack');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    await p.fill('#dxSearch', '齒槽骨骨折');
+    await p.waitForTimeout(150);
+    await p.click('#browseList .dx-card >> nth=0');
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('開到恆牙齒槽骨骨折', (await p.textContent('#dxNameZh')) === '齒槽骨骨折');
+    ok('★ 兩份指引一致的診斷完全沒有 AAE 附註',
+      (await p.$$('#screenDx .aae-note')).length === 0);
+  }
+
+  /* ── 9d. 乳牙要明講 AAE 沒有涵蓋，不能讓「沒附註」被讀成「兩份一致」── */
+  {
+    await p.click('#btnBack');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    await p.fill('#dxSearch', '');
+    await p.fill('#dxSearch', '震盪');
+    await p.waitForTimeout(150);
+    const names = await p.$$eval('#browseList .dx-card .nm', ns => ns.map(x => x.textContent.trim()));
+    await p.click('#browseList .dx-card >> nth=' + (names.length - 1));   // 最後一筆是乳牙
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('開到乳牙震盪', (await p.textContent('#dxDentition')) === '乳牙');
+    const note = await p.textContent('#dxFollowUp .aae-note');
+    ok('★ 乳牙頁明講 AAE 2026 只涵蓋恆牙、本頁單一來源是 IADT-3',
+      /只涵蓋/.test(note) && /恆牙/.test(note) && /IADT-3/.test(note), note);
+
+    // 後面的區段（醫師版／家屬版、回診日期）預期停在恆牙內縮性脫位，交還畫面
+    await p.click('#btnBack');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    await p.fill('#dxSearch', '內縮性');
+    await p.waitForTimeout(150);
+    await p.click('#browseList .dx-card >> nth=0');
+    await p.waitForSelector('#screenDx:not([hidden])');
+    ok('回到恆牙內縮性脫位（交還給後續區段）',
+      (await p.textContent('#dxNameZh')) === '內縮性脫位' &&
+      (await p.textContent('#dxDentition')) === '恆牙');
   }
 
   /* ── 10. 醫師版／家屬版 ── */
@@ -557,7 +617,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.3/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v1\.4/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();

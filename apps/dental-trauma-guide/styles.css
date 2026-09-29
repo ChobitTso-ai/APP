@@ -334,6 +334,20 @@ th{color:var(--muted);font-weight:600;white-space:nowrap;font-size:.78rem}
   border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-bottom:4px;
 }
 
+/* 兩份指引不一致時的並列附註（見 app.js 的 aaeNote()）。
+   顏色刻意與 IADT 主文區隔，一眼看得出這一段是另一份指引的建議。 */
+.aae-note{
+  display:flex; gap:9px; align-items:flex-start; margin-top:10px;
+  font-size:.84rem; line-height:1.75;
+  padding:10px 13px; border-radius:10px;
+  background:rgba(180,140,255,.09); border:1px solid rgba(180,140,255,.26);
+}
+.aae-tag{
+  flex:none; font-size:.66rem; font-weight:700; letter-spacing:.03em;
+  color:#e3d4ff; background:rgba(180,140,255,.22);
+  border-radius:6px; padding:2px 7px; margin-top:2px; white-space:nowrap;
+}
+
 /* 加到主畫面的三步驟 */
 .steps{list-style:none;counter-reset:step;display:grid;gap:9px;margin-bottom:10px}
 .steps li{
