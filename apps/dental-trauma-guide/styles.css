@@ -459,3 +459,39 @@ footer p{max-width:700px;margin:0 auto}
 .cap-fig small{display:block;color:var(--muted);font-size:.74rem;line-height:1.6}
 .splint-fig .cap-fig-img{height:150px}
 .hold-fig .cap-fig-img{height:180px}
+
+/* ===== 寬螢幕診斷頁：左右兩欄 =====
+   電腦上原本就是手機版拉寬：內容卡在 860px，1440px 螢幕左右各空約 290px，
+   診斷頁一長條要捲到底才找得到回診計算器。
+   ≥1024px 時：左欄放醫師版／家屬版內容，右欄固定放追蹤時程與計算器，
+   捲左欄時右欄一直看得到。手機與平板直向（834px）完全不受影響。
+   不需要改 HTML——DOM 順序本來就是「標題 → 橫幅 → 版本切換 → 內容 → 時程」，
+   用 grid-template-areas 把時程搬到右欄即可。
+   [hidden] 全域規則有 !important，所以這裡的 display:grid 不會把隱藏的畫面叫出來。 */
+@media(min-width:1024px){
+  body[data-screen="screenDx"] .wrap{max-width:1200px}
+  #screenDx{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 380px;
+    grid-template-areas:
+      "head   head"
+      "urgent urgent"
+      "aud    side"
+      "main   side"
+      "foot   foot";
+    column-gap:20px;
+    align-items:start;
+  }
+  #screenDx > .dx-head{grid-area:head}
+  #dxUrgentBanner{grid-area:urgent}
+  #screenDx > .aud-toggle{grid-area:aud}
+  #paneClinical, #panePublic{grid-area:main;min-width:0}
+  #screenDx > .row-btns{grid-area:foot}
+  #cardSchedule{
+    grid-area:side;
+    position:sticky; top:84px;
+    /* 算出時程之後卡片會變長；比視窗還長時自己捲，不然底部的
+       「複製病歷草稿」會落在視窗外、要捲過整個左欄才按得到 */
+    max-height:calc(100vh - 100px); overflow-y:auto;
+  }
+}
