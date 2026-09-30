@@ -32,7 +32,6 @@ const UI = {
   secDoNow:     { zh: '現在要做什麼',             en: 'What to do now' },
   secDontDo:    { zh: '不要做什麼',               en: 'What not to do' },
   secUrgency:   { zh: '多久內就醫',               en: 'How soon to be seen' },
-  secWarning:   { zh: '危險警訊',                 en: 'Warning signs' },
 
   secCriteria:  { zh: '診斷標準',                 en: 'Diagnostic criteria' },
   secImaging:   { zh: '建議影像',                 en: 'Recommended imaging' },
@@ -55,7 +54,11 @@ const UI = {
   visitDate:    { zh: '回診日',                   en: 'Visit date' },
   visitPurpose: { zh: '該次重點',                 en: 'Focus of visit' },
 
+  /* 下面三個是給 aria-label／title 用的。介面上看不到，但螢幕閱讀器會讀，
+     而且先前寫死在 index.html 裡，切英文也不會變。 */
   back:         { zh: '返回',                     en: 'Back' },
+  langToggle:   { zh: '切換語言',                 en: 'Switch language' },
+  browseTitle:  { zh: '依診斷查閱',               en: 'Browse by diagnosis' },
   restart:      { zh: '重新開始',                 en: 'Start over' },
 
   imgStep:      { zh: '影像檢查',                 en: 'Imaging' },

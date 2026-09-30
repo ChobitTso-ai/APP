@@ -160,6 +160,10 @@ function applyUiText(){
   $('txtAppName').textContent    = L(UI.appName);
   $('txtAppTagline').textContent = L(UI.appTagline);
   $('dxSearch').placeholder = L(UI.search);
+  // 無障礙屬性也要換語言。先前寫死在 index.html，切英文螢幕閱讀器仍讀中文。
+  $('btnBack').setAttribute('aria-label', L(UI.back));
+  $('btnLang').setAttribute('aria-label', L(UI.langToggle));
+  $('btnBrowse').title = L(UI.browseTitle);
   $('txtDisclaimer').textContent = L(UI.disclaimer);
   $('txtReviewedThru').textContent = L(UI.reviewedThru);
   $('txtRefTitle').textContent = L(UI.refTitle);
