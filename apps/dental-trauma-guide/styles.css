@@ -492,7 +492,6 @@ footer p{max-width:700px;margin:0 auto}
     grid-template-areas:
       "head   head"
       "urgent urgent"
-      "aud    side"
       "main   side"
       "foot   foot";
     column-gap:20px;
@@ -500,8 +499,7 @@ footer p{max-width:700px;margin:0 auto}
   }
   #screenDx > .dx-head{grid-area:head}
   #dxUrgentBanner{grid-area:urgent}
-  #screenDx > .aud-toggle{grid-area:aud}
-  #paneClinical, #panePublic{grid-area:main;min-width:0}
+  #screenDx > .dx-main{grid-area:main;min-width:0}
   #screenDx > .row-btns{grid-area:foot}
   #cardSchedule{
     grid-area:side;
@@ -510,4 +508,60 @@ footer p{max-width:700px;margin:0 auto}
        「複製病歷草稿」會落在視窗外、要捲過整個左欄才按得到 */
     max-height:calc(100vh - 100px); overflow-y:auto;
   }
+}
+
+/* ===== 診斷頁章節目錄 =====
+   手機與 <1280px：黏在頂列正下方、可以橫向滑動的一排章節，點了跳過去，
+   捲動時自動標示目前讀到哪一節（診斷頁在手機上很長，這是主要的導覽）。
+   ≥1280px：改成左側直向目錄欄，版面變成「目錄｜內容｜追蹤時程」三欄。
+   --topbar-h 由 app.js 量出來（iOS 瀏海的安全區會讓頂列變高）。 */
+.dx-nav{
+  position:sticky; top:var(--topbar-h, 64px); z-index:10;
+  display:flex; flex-direction:row; gap:2px;
+  overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+  margin:0 -16px 14px; padding:0 10px;          /* 手機上滿版，貼齊螢幕兩側 */
+  background:var(--surface); border-bottom:1px solid var(--line);
+  box-shadow:0 2px 4px rgba(16,24,40,.04);
+}
+.dx-nav::-webkit-scrollbar{display:none}
+.dx-nav-item{
+  flex:none; min-height:44px; padding:0 11px;
+  display:inline-flex; align-items:center;
+  font:inherit; font-size:.84rem; color:var(--text-2); cursor:pointer;
+  background:none; border:0; border-bottom:2px solid transparent;
+  white-space:nowrap;
+}
+.dx-nav-item:hover{color:var(--accent)}
+.dx-nav-item.on{color:var(--accent); border-bottom-color:var(--accent); font-weight:600}
+.dx-nav-item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+@media(min-width:1024px){
+  /* 兩欄時章節列在左欄裡，不再滿版 */
+  .dx-nav{margin:0 0 14px;border:1px solid var(--line);border-radius:8px}
+  /* 追蹤時程已經固定在右欄、一直看得到，目錄裡不必再列 */
+  .dx-nav .nav-sched{display:none}
+}
+
+@media(min-width:1280px){
+  body[data-screen="screenDx"] .wrap{max-width:1360px}
+  /* 目錄要跨整段內容的高度才黏得住（grid 裡的 sticky 只能在自己那格裡黏），
+     所以佔第 1、2 列：版本切換那列加內容那列。 */
+  .dx-main{
+    display:grid; grid-template-columns:176px minmax(0,1fr);
+    grid-template-rows:auto 1fr; column-gap:20px; align-items:start;
+  }
+  .dx-main > .aud-toggle{grid-column:2;grid-row:1}
+  .dx-main > #paneClinical, .dx-main > #panePublic{grid-column:2;grid-row:2;min-width:0}
+  .dx-nav{
+    grid-column:1; grid-row:1 / 3;
+    top:calc(var(--topbar-h, 64px) + 20px);
+    flex-direction:column; gap:0; overflow:visible;
+    margin:0; padding:6px 0;
+    border-radius:var(--r); box-shadow:var(--shadow);
+  }
+  .dx-nav-item{
+    text-align:left; white-space:normal; line-height:1.4;
+    padding:8px 14px; border-bottom:0; border-left:3px solid transparent;
+  }
+  .dx-nav-item.on{border-left-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
 }
