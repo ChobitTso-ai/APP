@@ -27,6 +27,8 @@ let curDx = null;        // 目前開啟的診斷
 let curSchedule = null;  // 目前採用的追蹤時程（可能是替代版本）
 let treePath = [];       // 決策樹走過的節點與選項
 let fromBrowse = false;  // 這個診斷是從查閱列表開的，還是從問答走到的
+let browseView = 'cards'; // 查閱頁目前的看法：cards 插圖卡片／tree 決策樹總覽
+let browseScrollY = 0;   // 從查閱頁開診斷前捲到哪裡，返回時捲回來
 
 /* ---------- 小工具 ---------- */
 
@@ -145,7 +147,7 @@ function goBack(){
       break;
     case 'screenDx':
       curDx = null;
-      if (fromBrowse){ renderBrowse($('dxSearch').value); show('screenBrowse'); }
+      if (fromBrowse) openBrowse(true);      // 回到原本的看法與捲動位置
       else if (!backToLastNode()) startTree();
       break;
     case 'screenBrowse':
@@ -340,6 +342,7 @@ function crumbsInto(host){
 // 選了某個出口之後往下走；o 可能帶 next / dx / result
 function takeOption(o){
   treePath[treePath.length - 1].pick = L(o.label);
+  treePath[treePath.length - 1].opt = o;     // 決策樹總覽靠它標出走過的路（不受切換語言影響）
   if (o.dx) { fromBrowse = false; openDx(o.dx); }
   else if (o.result) renderResult(o.result);
   else goNode(o.next);
@@ -459,6 +462,7 @@ function backToLastNode(){
   if (!treePath.length) return false;
   const last = treePath[treePath.length - 1];
   delete last.pick;
+  delete last.opt;
   goNode(last.node, true);
   return true;
 }
@@ -473,7 +477,33 @@ const GROUP_LABEL = {
   avulsion: { zh:'完全脫落',         en:'Avulsion' }
 };
 
+/* 查閱頁：開啟（restoreScroll＝從診斷頁返回，捲回原位）與兩種看法的切換 */
+function openBrowse(restoreScroll){
+  renderBrowse($('dxSearch').value);
+  show('screenBrowse');
+  if (restoreScroll) window.scrollTo(0, browseScrollY);
+}
+
+function setBrowseView(v){
+  if (v === browseView) return;
+  browseView = v;
+  renderBrowse($('dxSearch').value);
+  window.scrollTo(0, 0);
+}
+
 function renderBrowse(filter){
+  const tree = (browseView === 'tree');
+  [['btnViewCards', !tree], ['btnViewTree', tree]].forEach(([id, on]) => {
+    $(id).classList.toggle('active', on);
+    $(id).setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  $('dxSearch').hidden = tree;               // 搜尋只對卡片有意義
+  $('browseCardsPane').hidden = tree;
+  $('browseTreePane').hidden = !tree;
+  document.body.dataset.view = browseView;   // 寬螢幕的總覽要放寬（見 styles.css「決策樹總覽」）
+  $('browseLegend').innerHTML = '⚡ ' + md(L(UI.urgentLegend));
+  if (tree){ renderPathfinder(); return; }
+
   const q = (filter || '').trim().toLowerCase();
   const host = $('browseList');
   host.innerHTML = '';
@@ -498,7 +528,6 @@ function renderBrowse(filter){
     secs.forEach(n => host.appendChild(n));
   });
 
-  $('browseLegend').innerHTML = '⚡ ' + md(L(UI.urgentLegend));
   $('browseEmpty').textContent = L(UI.noResult);
   $('browseEmpty').hidden = (total > 0);
 }
@@ -520,7 +549,134 @@ function dxCard(d){
     esc(L(d.name)) +
     (d.timeCritical ? ' <span class="urgent-dot" title="' + esc(L(UI.urgentLegend)) + '">⚡</span>' : '')));
   b.appendChild(el('span', 'en', esc(lang === 'en' ? d.name.zh : d.name.en)));
-  b.addEventListener('click', () => { fromBrowse = true; openDx(d.id); });
+  b.addEventListener('click', () => { browseScrollY = window.scrollY; fromBrowse = true; openDx(d.id); });
+  return b;
+}
+
+/* ---------- 決策樹總覽 ----------
+   整棵決策樹一次攤開：題目一層層往下分支，最底下是診斷（附縮圖），點了直接開診斷頁。
+   從 TREE 資料即時產生——題目改了這裡自己跟著變，不會跟問答對不上。
+   刻意做成縮排的樹狀清單，不是橫向流程圖：恆牙這棵有 17 個出口，
+   橫向攤開要 2000px 以上，手機上看不了。
+   影像關卡照一般模式的走法：gate:true（非看 X 光不可）接到影像所見那一題，
+   那一題標 🩻；gate:false（臨床上已確定）直接當成診斷。紅旗那一題不畫，說明文字有交代。
+   從問答中途打開時，走過的選項與目前停著的那一題會標出來。 */
+let pfDent = 0;          // 手機上一次只放一棵：dentition 那一題的第幾個選項
+
+// 選項實際通往哪裡（跳過影像關卡）：{ dx } / { result } / { next, xray }
+function pfResolve(o){
+  if (o.dx) return { dx: o.dx };
+  if (o.result) return { result: o.result };
+  let next = o.next, xray = false;
+  for (let guard = 0; guard < 8; guard++){
+    const n = TREE.nodes[next];
+    if (!n || n.type !== 'imaging') break;
+    if (!n.gate) return { dx: n.dx };
+    xray = true;
+    next = n.next;
+  }
+  return { next, xray };
+}
+
+function renderPathfinder(){
+  const roots = TREE.nodes.dentition.opts;
+  if (!roots[pfDent]) pfDent = 0;
+  $('pfIntro').innerHTML = md(L(UI.pfIntro));
+
+  // 問答走到哪了：選過的選項（比對物件本身）、還沒作答而停著的那一題
+  const last = treePath[treePath.length - 1];
+  const ctx = {
+    trail: new Set(treePath.map(p => p.opt).filter(Boolean)),
+    here: (last && !last.opt) ? last.node : null
+  };
+
+  const tabs = $('pfTabs'), host = $('pfTree');
+  tabs.innerHTML = '';
+  host.innerHTML = '';
+  roots.forEach((o, i) => {
+    const b = el('button', 'aud-btn', esc(L(o.label)));
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.addEventListener('click', () => { pfDent = i; syncPfTabs(); });
+    tabs.appendChild(b);
+
+    ctx.seen = new Set();
+    const col = el('div', 'card glass pf-col');
+    const head = el('div', 'pf-head');
+    head.appendChild(el('h2', null, esc(L(o.label))));
+    const count = el('span', 'pf-count');
+    head.appendChild(count);
+    col.appendChild(head);
+    col.appendChild(pfBranch(o.next, false, ctx, 0));
+    count.textContent = L(UI.pfCount).replace('{n}', ctx.seen.size);
+    host.appendChild(col);
+  });
+  syncPfTabs();
+}
+
+// 手機上用分頁切恆牙／乳牙；寬螢幕兩棵並排，分頁由 CSS 藏起來
+function syncPfTabs(){
+  [...$('pfTabs').children].forEach((b, i) => {
+    b.classList.toggle('active', i === pfDent);
+    b.setAttribute('aria-selected', i === pfDent ? 'true' : 'false');
+  });
+  [...$('pfTree').children].forEach((c, i) => c.classList.toggle('on', i === pfDent));
+}
+
+function pfBranch(nodeId, xray, ctx, depth){
+  const node = TREE.nodes[nodeId];
+  const box = el('div', 'pf-branch');
+  if (!node || !node.opts || depth > 12) return box;     // 資料寫錯成迴圈也不會當掉
+
+  const q = el('p', 'pf-q');
+  q.dataset.node = nodeId;
+  if (xray){
+    const x = el('span', 'pf-xray', '🩻');
+    x.setAttribute('role', 'img');
+    x.setAttribute('aria-label', L(UI.pfXray));
+    x.title = L(UI.pfXray);
+    q.appendChild(x);
+  }
+  q.appendChild(document.createTextNode(L(node.q)));
+  if (nodeId === ctx.here){
+    q.classList.add('here');
+    q.appendChild(el('span', 'pf-here', esc(L(UI.pfHere))));
+  }
+  box.appendChild(q);
+
+  const ul = el('ul', 'pf-ul');
+  node.opts.forEach(o => {
+    const li = el('li', 'pf-li' + (ctx.trail.has(o) ? ' trail' : ''));
+    const row = el('div', 'pf-row');
+    row.appendChild(el('span', 'pf-opt', md(L(o.label))));
+    li.appendChild(row);
+    const to = pfResolve(o);
+    if (to.dx){ row.appendChild(pfLeaf(to.dx)); ctx.seen.add(to.dx); }
+    else if (to.result) row.appendChild(el('span', 'pf-result', esc(L((TREE_RESULTS[to.result] || {}).title))));
+    else li.appendChild(pfBranch(to.next, to.xray, ctx, depth + 1));
+    ul.appendChild(li);
+  });
+  box.appendChild(ul);
+  return box;
+}
+
+// 樹的末端：診斷（縮圖＋名稱＋⚡）。縮圖載不到就拿掉，只留文字——同 dxCard()。
+function pfLeaf(id){
+  const d = DX_BY_ID[id];
+  if (!d) return el('span', 'pf-result', esc(id));
+  const b = el('button', 'pf-leaf');
+  b.type = 'button';
+  b.dataset.dx = id;
+  const fig = el('span', 'pf-fig');
+  const img = new Image();
+  img.alt = '';                         // 名稱就在旁邊，圖只是輔助辨識
+  img.addEventListener('error', () => fig.remove());
+  img.src = 'assets/' + d.img;
+  fig.appendChild(img);
+  b.appendChild(fig);
+  b.appendChild(el('span', 'pf-name', esc(L(d.name)) +
+    (d.timeCritical ? ' <span class="urgent-dot" title="' + esc(L(UI.urgentLegend).replace(/\*\*/g, '')) + '">⚡</span>' : '')));
+  b.addEventListener('click', () => { browseScrollY = window.scrollY; fromBrowse = true; openDx(id); });
   return b;
 }
 
@@ -964,9 +1120,18 @@ $('btnLang').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'
 // 右上角兩顆：影像提示開關、依診斷查閱
 $('btnHints').addEventListener('click', () =>
   setTreeMode(treeMode === 'normal' ? 'hints' : 'normal'));
-$('btnBrowse').addEventListener('click', () => {
-  renderBrowse($('dxSearch').value);
-  show('screenBrowse');
+$('btnBrowse').addEventListener('click', () => openBrowse());
+$('btnViewCards').addEventListener('click', () => setBrowseView('cards'));
+$('btnViewTree').addEventListener('click',  () => setBrowseView('tree'));
+
+// 問答中途打開總覽：切到正在走的那一棵（恆牙／乳牙），捲到目前這一題
+$('btnTreeOverview').addEventListener('click', () => {
+  browseView = 'tree';
+  const dent = treePath.find(p => p.node === 'dentition' && p.opt);
+  if (dent) pfDent = Math.max(0, TREE.nodes.dentition.opts.indexOf(dent.opt));
+  openBrowse();
+  const here = document.querySelector('#pfTree .pf-q.here');
+  if (here) here.scrollIntoView({ block: 'center' });
 });
 
 $('btnTreeRestart').addEventListener('click', () => startTree());

@@ -120,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v2.1', /v2\.1/.test(await p.title()) &&
-      /v2\.1/.test(await p.textContent('footer')));
+    ok('版本號是 v2.2', /v2\.2/.test(await p.title()) &&
+      /v2\.2/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -673,6 +673,23 @@ async function reset(p){
     bad = await scanContrast(p);
     ok('查閱頁所有文字對比度達標', bad.length === 0, bad.slice(0, 5).join(' ｜ '));
 
+    // 決策樹總覽（v2.2）：走兩題再打開，讓「目前在這題」與走過的選項的配色也一起量到
+    await p.click('#btnBack');
+    await p.waitForSelector('#screenTree:not([hidden])');
+    await p.click('#treeOpts .opt >> nth=0');                   // 恆牙
+    await p.click('#treeOpts .opt >> nth=2');                   // 還在嘴裡
+    await p.click('#btnTreeOverview');
+    await p.waitForSelector('#browseTreePane:not([hidden])');
+    bad = await scanContrast(p);
+    await p.click('#pfTabs .aud-btn >> nth=1');
+    bad = bad.concat(await scanContrast(p));
+    ok('★ 決策樹總覽（含目前這一題、走過的選項，恆牙乳牙兩棵）所有文字對比度達標',
+      bad.length === 0 && await p.$$eval('#pfTree .pf-q.here, #pfTree .pf-li.trail', ns => ns.length === 2),
+      bad.slice(0, 5).join(' ｜ '));
+    await reset(p);                                             // 回到乾淨的第一題與卡片看法
+    await p.click('#btnBrowse');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+
     await p.fill('#dxSearch', '內縮性');
     await p.waitForTimeout(150);
     await p.click('#browseList .dx-card >> nth=0');
@@ -800,6 +817,243 @@ async function reset(p){
       (await visibleItems(q))[0] === 'Diagnostic criteria' &&
       await q.$eval('#dxNav', n => n.getAttribute('aria-label')) === 'On this page');
     await q.evaluate(() => localStorage.setItem('dtg_lang', 'zh'));
+    await c.close();
+  }
+
+  /* ── 7k. 決策樹總覽（v2.2）──
+     查閱頁的第二種看法：整棵決策樹攤開。它是從 TREE 資料即時產生的，所以要驗的是
+     「每個診斷都掛得上去、每一題都跟資料一致」「點了開得到、返回回得來」，
+     以及從問答中途打開時，走過的路與目前這一題有沒有標對。
+     連接線對齊與 44px 觸控下限畫面上看不出對錯，只能量。 */
+  {
+    const pfCase = async (w, h, mobile, mode) => {
+      const c = await browser.newContext({ viewport:{ width:w, height:h }, isMobile:mobile, hasTouch:mobile,
+                                           deviceScaleFactor: mobile ? 2 : 1, serviceWorkers:'block' });
+      await stubStats(c);
+      const q = await c.newPage();
+      await q.goto(LOGIN);
+      await q.evaluate(m => {
+        localStorage.setItem('nckuh_endo_authed', '1');
+        localStorage.setItem('dtg_mode', m);
+        localStorage.setItem('dtg_lang', 'zh');
+      }, mode || 'normal');
+      await q.goto(APP);
+      await q.waitForSelector('#treeQ');
+      return { c, q };
+    };
+    const openTree = async q => {
+      await q.click('#btnViewTree');
+      await q.waitForSelector('#browseTreePane:not([hidden])');
+      await q.waitForFunction(() => [...document.querySelectorAll('#pfTree .pf-fig img')].every(i => i.complete));
+    };
+    const visibleCols = q => q.$$eval('#pfTree .pf-col', ns => ns.filter(n => n.getClientRects().length).length);
+
+    // ── 手機 ──
+    let { c, q } = await pfCase(375, 740, true);
+    await q.click('#btnBrowse');
+    await q.waitForSelector('#screenBrowse:not([hidden])');
+    ok('查閱頁預設仍是插圖卡片', await q.isVisible('#browseList') && !(await q.isVisible('#browseTreePane')));
+    await openTree(q);
+    ok('★ 切到總覽：樹出現、搜尋框與卡片藏起來',
+      await q.isVisible('#pfTree') && !(await q.isVisible('#dxSearch')) && !(await q.isVisible('#browseList')));
+
+    const data = await q.evaluate(() => {
+      const ids = [...document.querySelectorAll('#pfTree .pf-leaf')].map(b => b.dataset.dx);
+      const all = ALL_DX.map(d => d.id);
+      // 每一題的選項數要跟資料一致（不能漏畫分支）
+      const mismatch = [...document.querySelectorAll('#pfTree .pf-q')].filter(qn => {
+        const ul = qn.nextElementSibling;
+        return !ul || ul.children.length !== TREE.nodes[qn.dataset.node].opts.length;
+      }).map(qn => qn.dataset.node);
+      const roots = [...document.querySelectorAll('#pfTree .pf-col')].map(col => col.querySelector('.pf-q').dataset.node);
+      const rendered = [...document.querySelectorAll('#pfTree .pf-q')].map(qn => qn.dataset.node);
+      const marked = rendered.filter(id => document.querySelector(`#pfTree .pf-q[data-node="${id}"] .pf-xray`));
+      const xrayQs = rendered.filter(id => TREE.nodes[id].q.zh.includes('X 光片'));
+      return {
+        missing: all.filter(id => !ids.includes(id)), extra: ids.filter(id => !all.includes(id)),
+        total: all.length, mismatch, roots, rendered: rendered.length,
+        dentRoots: TREE.nodes.dentition.opts.map(o => o.next),
+        marked: marked.sort().join(' '), xrayQs: xrayQs.sort().join(' '),
+        counts: [...document.querySelectorAll('.pf-count')].map(n => n.textContent)
+      };
+    });
+    ok('★ 每個診斷都掛在樹上，沒有多也沒有少',
+      !data.missing.length && !data.extra.length && data.total === 26,
+      data.missing.length ? '漏了 ' + data.missing.join(' ') : data.total + ' 個');
+    ok('兩棵樹的計數：恆牙 14、乳牙 12', data.counts.join('｜') === '14 個診斷｜12 個診斷', data.counts.join('｜'));
+    ok('★ 每一題的分支數都跟決策樹資料一致', !data.mismatch.length && data.rendered > 0,
+      data.mismatch.join(' ') || data.rendered + ' 題');
+    ok('兩棵樹的起點就是「恆牙／乳牙」那一題的兩個出口', data.roots.join() === data.dentRoots.join(), data.roots.join('｜'));
+    ok('★ 🩻 剛好標在「要看 X 光片」的題目上（6 題），不多不少',
+      data.marked === data.xrayQs && data.marked.split(' ').length === 6, data.marked);
+
+    ok('手機一次只放一棵', await visibleCols(q) === 1);
+    const lay = await q.evaluate(() => {
+      const vis = [...document.querySelectorAll('#pfTree .pf-leaf')].filter(b => b.getClientRects().length);
+      let worst = 0;
+      document.querySelectorAll('#pfTree .pf-li').forEach(li => {
+        if (!li.getClientRects().length) return;
+        const stub = li.getBoundingClientRect().top + parseFloat(getComputedStyle(li, '::after').top) + 1;
+        const opt = li.querySelector(':scope > .pf-row > .pf-opt').getBoundingClientRect();
+        worst = Math.max(worst, Math.abs(stub - (opt.top + 22)));          // 文字第一行的中線
+        const leaf = li.querySelector(':scope > .pf-row > .pf-leaf');
+        if (leaf){
+          const r = leaf.getBoundingClientRect();
+          if (Math.abs(r.top - opt.top) < 2) worst = Math.max(worst, Math.abs(stub - (r.top + r.height / 2)));
+        }
+      });
+      return {
+        minH: Math.min(...vis.map(b => b.getBoundingClientRect().height)),
+        overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        worst, imgs: [...document.querySelectorAll('#pfTree .pf-fig img')].every(i => i.naturalWidth > 0)
+      };
+    });
+    ok('★ 手機沒有橫向溢出（最深一層也放得下）', !lay.overflow);
+    ok('★ 診斷按鈕 ≥44px（觸控下限）', lay.minH >= 44, Math.round(lay.minH) + 'px');
+    ok('連接線對準選項文字與診斷按鈕的中線（誤差 ≤1px）', lay.worst <= 1, lay.worst.toFixed(1) + 'px');
+    ok('樹上的縮圖全部載入', lay.imgs);
+
+    // 切到乳牙分頁，點一個診斷再返回：要回到總覽、同一分頁、同一捲動位置
+    await q.click('#pfTabs .aud-btn >> nth=1');
+    ok('分頁切到乳牙，看到的是乳牙那一棵',
+      await visibleCols(q) === 1 &&
+      await q.$eval('#pfTree .pf-col.on .pf-head h2', n => n.textContent) === '乳牙');
+    await q.$eval('#pfTree .pf-col.on .pf-leaf[data-dx="d-concussion"]', n => n.scrollIntoView({ block:'center' }));
+    await q.waitForTimeout(100);
+    const y0 = await q.evaluate(() => window.scrollY);
+    await q.click('#pfTree .pf-col.on .pf-leaf[data-dx="d-concussion"]');
+    await q.waitForSelector('#screenDx:not([hidden])');
+    ok('★ 點樹上的診斷，開到對的診斷頁', await q.textContent('#dxNameZh') === '震盪' &&
+      await q.textContent('#dxDentition') === '乳牙');
+    await q.click('#btnBack');
+    await q.waitForSelector('#screenBrowse:not([hidden])');
+    const back = await q.evaluate(() => ({
+      tree: !document.getElementById('browseTreePane').hidden,
+      tab: document.querySelector('#pfTabs .aud-btn.active').textContent, y: window.scrollY }));
+    ok('★ 返回：回到總覽、同一分頁、同一捲動位置',
+      back.tree && back.tab === '乳牙' && Math.abs(back.y - y0) <= 1, '捲動 ' + y0 + ' → ' + back.y);
+    // 分頁切回恆牙：下面「從問答打開會自動切到乳牙」才不是沿用這裡留下的狀態
+    await q.click('#pfTabs .aud-btn >> nth=0');
+
+    // 卡片看法：一樣要捲回原位（先前一律回到頂端）
+    await q.click('#btnViewCards');
+    await q.$eval('#browseList .dx-card:nth-child(4)', n => n.scrollIntoView({ block:'center' }));
+    await q.waitForTimeout(100);
+    const y1 = await q.evaluate(() => window.scrollY);
+    await q.click('#browseList .dx-card >> nth=3');
+    await q.waitForSelector('#screenDx:not([hidden])');
+    await q.click('#btnBack');
+    await q.waitForSelector('#screenBrowse:not([hidden])');
+    ok('卡片看法返回也捲回原位',
+      await q.isVisible('#browseList') && Math.abs(await q.evaluate(() => window.scrollY) - y1) <= 1);
+
+    // 問答中途打開：乳牙 → 還在嘴裡 → 單顆牙 → 牙冠完整 → 停在「牙齒的位置有變嗎？」
+    await q.click('#btnBack');
+    await q.waitForSelector('#screenTree:not([hidden])');
+    await q.click('#treeOpts .opt >> nth=1');
+    await q.click('#treeOpts .opt >> nth=2');
+    await q.click('#treeOpts .opt >> nth=1');
+    await q.click('#treeOpts .opt >> nth=1');
+    await q.waitForFunction(() => document.getElementById('treeQ').textContent === '牙齒的位置有變嗎？');
+    ok('問答畫面有「決策樹總覽」按鈕', await q.isVisible('#btnTreeOverview'));
+    await q.click('#btnTreeOverview');
+    await q.waitForSelector('#browseTreePane:not([hidden])');
+    await q.waitForTimeout(150);
+    const tr = await q.evaluate(() => {
+      const here = [...document.querySelectorAll('#pfTree .pf-q.here')];
+      const r = here[0] && here[0].getBoundingClientRect();
+      return {
+        tab: document.querySelector('#pfTabs .aud-btn.active').textContent,
+        here: here.map(n => n.dataset.node).join(' '),
+        badge: here[0] && here[0].querySelector('.pf-here') && here[0].querySelector('.pf-here').textContent,
+        inView: !!r && r.top >= document.querySelector('.topbar').getBoundingClientRect().bottom && r.bottom <= innerHeight,
+        trail: [...document.querySelectorAll('#pfTree .pf-li.trail > .pf-row > .pf-opt')].map(n => n.textContent)
+      };
+    });
+    ok('★ 從問答打開：自動切到正在走的那一棵（乳牙）', tr.tab === '乳牙');
+    ok('★ 標出目前這一題，而且只標一題、捲到看得到的地方',
+      tr.here === 'd_position' && tr.badge === '目前在這題' && tr.inView, tr.here);
+    ok('★ 走過的選項依序標出來', tr.trail.join('→') === '還在嘴裡→不是，單顆牙→牙冠完整', tr.trail.join('→'));
+    await q.click('#btnBack');
+    await q.waitForSelector('#screenTree:not([hidden])');
+    ok('從總覽返回，回到原本停著的那一題', await q.textContent('#treeQ') === '牙齒的位置有變嗎？');
+
+    // 英文
+    await q.click('#btnLang');
+    await q.click('#btnBrowse');
+    await q.waitForSelector('#browseTreePane:not([hidden])');
+    const en = await q.evaluate(() => ({
+      view: document.getElementById('btnViewTree').textContent,
+      tabs: [...document.querySelectorAll('#pfTabs .aud-btn')].map(n => n.textContent).join('|'),
+      q: document.querySelector('#pfTree .pf-col.on .pf-q').textContent,
+      count: document.querySelector('#pfTree .pf-col.on .pf-count').textContent,
+      here: document.querySelector('#pfTree .pf-here') && document.querySelector('#pfTree .pf-here').textContent,
+      xray: document.querySelector('#pfTree .pf-xray').getAttribute('aria-label')
+    }));
+    ok('切英文：總覽的分頁、題目、計數、標示都換語言',
+      en.view === 'Tree overview' && en.tabs === 'Permanent|Primary' && en.q === 'Is the tooth still in its socket?' &&
+      en.count === '12 diagnoses' && en.here === 'You are here' && en.xray === 'Needs the radiograph to answer',
+      JSON.stringify(en));
+    await c.close();
+
+    // 提示模式：路徑中間夾著影像關卡，一樣要標得對
+    ({ c, q } = await pfCase(375, 740, true, 'hints'));
+    await q.click('#treeOpts .opt >> nth=1');                    // 紅旗都沒有
+    await q.click('#treeOpts .opt >> nth=0');                    // 恆牙
+    await q.click('#treeOpts .opt >> nth=2');                    // 還在嘴裡
+    await q.click('#treeOpts .opt >> nth=1');                    // 單顆牙
+    await q.click('#treeOpts .opt >> nth=1');                    // 牙冠完整
+    await q.click('#treeOpts .opt >> nth=3');                    // 位置正常
+    await q.click('#treeOpts .opt >> nth=0');                    // 會搖
+    await q.waitForSelector('#screenImaging:not([hidden])');
+    await q.click('#imgOpts .opt >> nth=0');                     // 我拍好了
+    await q.waitForSelector('#screenTree:not([hidden])');
+    await q.click('#btnTreeOverview');
+    await q.waitForSelector('#browseTreePane:not([hidden])');
+    const hr = await q.evaluate(() => ({
+      tab: document.querySelector('#pfTabs .aud-btn.active').textContent,
+      here: [...document.querySelectorAll('#pfTree .pf-q.here')].map(n => n.dataset.node).join(' '),
+      xray: !!document.querySelector('#pfTree .pf-q.here .pf-xray'),
+      trail: [...document.querySelectorAll('#pfTree .pf-li.trail > .pf-row > .pf-opt')].map(n => n.textContent)
+    }));
+    ok('★ 提示模式（中間經過影像關卡）：目前這一題與走過的路一樣標得對',
+      hr.tab === '恆牙' && hr.here === 'p_film_loose' && hr.xray &&
+      hr.trail.join('→') === '還在嘴裡→不是，單顆牙→牙冠完整→位置看起來正常→會搖，齦溝有出血',
+      hr.here + '｜' + hr.trail.join('→'));
+    await c.close();
+
+    // 插圖載不到：縮圖整塊拿掉、診斷名稱還在（同 7b 的規則）
+    ({ c, q } = await pfCase(375, 740, true));
+    await q.route('**/assets/dx/**', r => r.abort());
+    await q.reload();
+    await q.waitForSelector('#treeQ');
+    await q.click('#btnBrowse');
+    await q.waitForSelector('#screenBrowse:not([hidden])');
+    await q.click('#btnViewTree');
+    await q.waitForSelector('#browseTreePane:not([hidden])');
+    await q.waitForFunction(() => !document.querySelector('#pfTree .pf-fig'));
+    ok('插圖載不到時縮圖整塊拿掉，診斷名稱照樣顯示',
+      await q.$$eval('#pfTree .pf-leaf .pf-name', ns => ns.length === 32 && ns.every(n => n.textContent.trim())));
+    await c.close();
+
+    // ── 寬螢幕 ──
+    ({ c, q } = await pfCase(1440, 900, false));
+    await q.click('#btnBrowse');
+    await q.waitForSelector('#screenBrowse:not([hidden])');
+    const cardsW = await q.$eval('.wrap', n => n.getBoundingClientRect().width);
+    await openTree(q);
+    const wide = await q.evaluate(() => {
+      const cols = [...document.querySelectorAll('#pfTree .pf-col')].map(n => n.getBoundingClientRect());
+      return {
+        n: cols.filter(r => r.width).length, side: cols.length === 2 && cols[0].right <= cols[1].left && Math.abs(cols[0].top - cols[1].top) < 1,
+        tabs: !!document.getElementById('pfTabs').getClientRects().length,
+        w: document.querySelector('.wrap').getBoundingClientRect().width,
+        overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+      };
+    });
+    ok('★ 寬螢幕：恆牙、乳牙兩棵並排，分頁藏起來', wide.n === 2 && wide.side && !wide.tabs);
+    ok('寬螢幕總覽放寬到 1200、卡片看法維持原寬', wide.w === 1200 && cardsW === 860, cardsW + ' → ' + wide.w);
+    ok('寬螢幕總覽沒有橫向溢出', !wide.overflow);
     await c.close();
   }
 
@@ -1050,7 +1304,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v2\.1/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v2\.2/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
