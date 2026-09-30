@@ -120,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v1.6', /v1\.6/.test(await p.title()) &&
-      /v1\.6/.test(await p.textContent('footer')));
+    ok('版本號是 v1.7', /v1\.7/.test(await p.title()) &&
+      /v1\.7/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -133,6 +133,13 @@ async function reset(p){
     ok('右上角兩顆也換語言',
       /Hints/.test(await p.textContent('#btnHints')) &&
       /List/.test(await p.textContent('#btnBrowse')));
+    // 無障礙屬性也要跟著換。先前寫死在 HTML，切英文螢幕閱讀器仍讀中文。
+    ok('★ 返回鍵的 aria-label 切成英文',
+      (await p.getAttribute('#btnBack', 'aria-label')) === 'Back');
+    ok('★ 語言鍵的 aria-label 切成英文',
+      (await p.getAttribute('#btnLang', 'aria-label')) === 'Switch language');
+    ok('★ 查閱鍵的 title 切成英文',
+      (await p.getAttribute('#btnBrowse', 'title')) === 'Browse by diagnosis');
     ok('英文的保存液第一項是 Milk',
       (await p.textContent('#storageRow .media b')).trim().startsWith('Milk'));
     ok('語言偏好存進 localStorage',
@@ -706,7 +713,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.6/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v1\.7/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
