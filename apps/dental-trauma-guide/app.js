@@ -115,6 +115,9 @@ let curScreen = 'screenTree';
 function show(id){
   curScreen = id;
   SCREENS.forEach(s => { $(s).hidden = (s !== id); });
+  // 寬螢幕的診斷頁要改兩欄，內容區也要跟著放寬；其他畫面維持原寬度。
+  // CSS 靠這個屬性判斷目前在哪一頁（見 styles.css 的「寬螢幕診斷頁」）。
+  document.body.dataset.screen = id;
   // 決策樹的第一題底下才掛參考資料（急救速查、保存液、文獻），
   // 往下走之後收起來，免得每一題都拖一長條。
   $('refBlocks').hidden = !(id === 'screenTree' && treePath.length <= 1);
@@ -561,6 +564,9 @@ function openDx(id, keepScroll){
   renderFollowUp(d);
 
   $('scheduleOut').hidden = true;
+  // 寬螢幕兩欄時右欄卡片會自己捲，而且是同一個元素重複使用——
+  // 不歸零的話，換到下一個診斷時卡片會停在上一個診斷捲到的位置。
+  $('cardSchedule').scrollTop = 0;
   show('screenDx');
   if (keepScroll) window.scrollTo(0, 0);
 }
@@ -785,6 +791,20 @@ function calcSchedule(){
       '</td><td>' + esc(r.date) + '</td><td>' + md(r.purpose) + '</td></tr>'
     ).join('');
   $('scheduleOut').hidden = false;
+  revealSchedule();
+}
+
+/* 寬螢幕兩欄時，右欄卡片高度有上限、會自己捲。結果表出現在卡片下半部時，
+   使用者按了按鈕卻看不到任何變化——所以把卡片內部捲到「日期輸入列」，
+   剛輸入的日期與結果開頭一起出現。
+   手機單欄時卡片不會自己捲（那條 CSS 在 ≥1024px 的 media query 裡），
+   結果本來就接在按鈕正下方，這裡不動它。 */
+function revealSchedule(){
+  const card = $('cardSchedule');
+  if (getComputedStyle(card).overflowY !== 'auto') return;
+  if (card.scrollHeight <= card.clientHeight) return;
+  const calcRow = card.querySelector('.calc');
+  card.scrollTo({ top: Math.max(0, calcRow.offsetTop - 12), behavior: 'smooth' });
 }
 
 function scheduleText(){

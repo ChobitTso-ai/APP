@@ -120,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v1.8', /v1\.8/.test(await p.title()) &&
-      /v1\.8/.test(await p.textContent('footer')));
+    ok('版本號是 v1.9', /v1\.9/.test(await p.title()) &&
+      /v1\.9/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -533,6 +533,101 @@ async function reset(p){
     await mob.close();
   }
 
+  /* ── 7h. 寬螢幕診斷頁兩欄（v1.9）──
+     ≥1024px：左欄醫師版／家屬版，右欄固定放追蹤時程與計算器。
+     最容易出事的四個地方：
+       ① display:grid 蓋掉 [hidden]，隱藏中的診斷頁跑出來（CLAUDE.md 記過這個坑）
+       ② 右欄卡片會自己捲——按了「產生回診時程」結果卻落在看不到的地方
+       ③ 右欄是同一個元素重複使用，換診斷時停在上一個診斷捲到的位置
+       ④ 平板直向（834）與手機不該受影響 */
+  {
+    const wide = await browser.newContext({ viewport:{ width:1280, height:800 }, serviceWorkers:'block' });
+    await stubStats(wide);
+    const wp = await wide.newPage();
+    await wp.goto(LOGIN);
+    await wp.evaluate(() => localStorage.setItem('nckuh_endo_authed','1'));
+    await wp.evaluate(() => localStorage.setItem('dtg_mode','normal'));
+    await wp.goto(APP);
+    await wp.waitForSelector('#treeQ');
+
+    ok('★ 寬螢幕停在決策樹時，診斷頁仍是隱藏的（grid 沒有蓋掉 [hidden]）',
+      await wp.evaluate(() => getComputedStyle(document.getElementById('screenDx')).display) === 'none');
+
+    const openW = async q => {
+      await wp.click('#btnBrowse');
+      await wp.waitForSelector('#screenBrowse:not([hidden])');
+      await wp.fill('#dxSearch', q);
+      await wp.waitForTimeout(200);
+      await wp.click('#browseList .dx-card >> nth=0');
+      await wp.waitForSelector('#screenDx:not([hidden])');
+      await wp.waitForTimeout(250);
+    };
+    ok('查閱頁的內容區維持原寬度（只有診斷頁放寬）',
+      await wp.evaluate(() => { document.getElementById('btnBrowse').click();
+        return Math.round(document.querySelector('.wrap').getBoundingClientRect().width); }) <= 860);
+
+    await openW('內縮性');
+    const g = await wp.evaluate(() => {
+      const c = document.getElementById('paneClinical').getBoundingClientRect();
+      const s = document.getElementById('cardSchedule').getBoundingClientRect();
+      return { side: s.left >= c.right - 1, pos: getComputedStyle(document.getElementById('cardSchedule')).position,
+               overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 };
+    });
+    ok('★ 1280px：追蹤時程在醫師版的右邊（兩欄）', g.side);
+    ok('右欄是 sticky', g.pos === 'sticky', g.pos);
+    ok('兩欄版面沒有橫向溢出', !g.overflow);
+
+    await wp.evaluate(() => window.scrollTo(0, 1400));
+    await wp.waitForTimeout(250);
+    const stay = await wp.evaluate(() => {
+      const s = document.getElementById('cardSchedule').getBoundingClientRect();
+      const bar = document.querySelector('.topbar').getBoundingClientRect();
+      return { top: Math.round(s.top), bar: Math.round(bar.bottom), vh: innerHeight };
+    });
+    ok('★ 捲左欄時右欄一直看得到，而且沒有鑽到頂列底下',
+      stay.top >= stay.bar - 1 && stay.top < stay.vh, '右欄頂 ' + stay.top + ' ／ 頂列底 ' + stay.bar);
+
+    // ② 算出時程後，結果開頭要在右欄可見範圍內
+    await wp.evaluate(() => window.scrollTo(0, 0));
+    await wp.fill('#injuryDate', '2026-03-01');
+    await wp.click('#btnCalc');
+    await wp.waitForSelector('#scheduleOut:not([hidden])');
+    await wp.waitForTimeout(700);                     // 等 smooth 捲動結束
+    const seen = await wp.evaluate(() => {
+      const c = document.getElementById('cardSchedule').getBoundingClientRect();
+      const r1 = document.querySelector('#tblSchedule tr:nth-child(2)').getBoundingClientRect();
+      return r1.top >= c.top - 1 && r1.bottom <= c.bottom + 1;
+    });
+    ok('★ 按「產生回診時程」後，第一次回診那一列在右欄裡看得到', seen);
+
+    // ③ 換診斷時右欄要回到頂端
+    await wp.evaluate(() => { document.getElementById('cardSchedule').scrollTop = 400; });
+    await openW('側向');
+    ok('★ 換到另一個診斷，右欄從頂端開始（不會停在上一個診斷捲到的地方）',
+      await wp.$eval('#cardSchedule', c => c.scrollTop) === 0);
+    await wide.close();
+
+    // ④ 平板直向：維持單欄
+    const tab = await browser.newContext({ viewport:{ width:834, height:1000 }, serviceWorkers:'block' });
+    await stubStats(tab);
+    const tp = await tab.newPage();
+    await tp.goto(LOGIN);
+    await tp.evaluate(() => localStorage.setItem('nckuh_endo_authed','1'));
+    await tp.goto(APP);
+    await tp.waitForSelector('#treeQ');
+    await tp.click('#btnBrowse');
+    await tp.waitForSelector('#screenBrowse:not([hidden])');
+    await tp.click('#browseList .dx-card >> nth=0');
+    await tp.waitForSelector('#screenDx:not([hidden])');
+    const single = await tp.evaluate(() => {
+      const c = document.getElementById('paneClinical').getBoundingClientRect();
+      const s = document.getElementById('cardSchedule').getBoundingClientRect();
+      return s.top >= c.bottom - 1 && getComputedStyle(document.getElementById('cardSchedule')).position !== 'sticky';
+    });
+    ok('★ 平板直向 834px 維持單欄（追蹤時程在內容下方、不 sticky）', single);
+    await tab.close();
+  }
+
   /* ── 8. 查閱模式與搜尋 ── */
   {
     await p.click('#btnBrowse');
@@ -780,7 +875,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.8/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v1\.9/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
