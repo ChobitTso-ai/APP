@@ -127,7 +127,7 @@ async function reset(p){
   /* ── 3. 中英文切換 ── */
   {
     await p.click('#btnLang');
-    await p.waitForFunction(() => document.getElementById('txtAppName').textContent === 'Dental Trauma Guide');
+    await p.waitForFunction(() => document.getElementById('txtAppName').textContent === 'NCKUH Dental Trauma Guide');
     ok('切到英文：標題與題目都換語言',
       (await p.textContent('#treeQ')).toLowerCase().includes('permanent or primary'));
     ok('右上角兩顆也換語言',
@@ -147,7 +147,7 @@ async function reset(p){
 
     await p.reload();
     await p.waitForSelector('#treeQ');
-    ok('重新載入後仍是英文', (await p.textContent('#txtAppName')) === 'Dental Trauma Guide');
+    ok('重新載入後仍是英文', (await p.textContent('#txtAppName')) === 'NCKUH Dental Trauma Guide');
     await p.click('#btnLang');
     await p.waitForFunction(() => document.getElementById('txtAppName').textContent === '牙外傷處置指南');
     ok('切回中文', true);
