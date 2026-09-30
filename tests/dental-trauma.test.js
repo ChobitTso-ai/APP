@@ -120,14 +120,14 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v1.9', /v1\.9/.test(await p.title()) &&
-      /v1\.9/.test(await p.textContent('footer')));
+    ok('版本號是 v2.0', /v2\.0/.test(await p.title()) &&
+      /v2\.0/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
   {
     await p.click('#btnLang');
-    await p.waitForFunction(() => document.getElementById('txtAppName').textContent === 'Dental Trauma Guide');
+    await p.waitForFunction(() => document.getElementById('txtAppName').textContent === 'NCKUH Dental Trauma Guide');
     ok('切到英文：標題與題目都換語言',
       (await p.textContent('#treeQ')).toLowerCase().includes('permanent or primary'));
     ok('右上角兩顆也換語言',
@@ -147,7 +147,7 @@ async function reset(p){
 
     await p.reload();
     await p.waitForSelector('#treeQ');
-    ok('重新載入後仍是英文', (await p.textContent('#txtAppName')) === 'Dental Trauma Guide');
+    ok('重新載入後仍是英文', (await p.textContent('#txtAppName')) === 'NCKUH Dental Trauma Guide');
     await p.click('#btnLang');
     await p.waitForFunction(() => document.getElementById('txtAppName').textContent === '牙外傷處置指南');
     ok('切回中文', true);
@@ -628,6 +628,73 @@ async function reset(p){
     await tab.close();
   }
 
+  /* ── 7i. 文字對比度（v2.0 改成淺色之後加）──
+     逐一量畫面上每一段可見文字的實際對比度：一般文字 ≥4.5:1、大字 ≥3:1（WCAG AA）。
+     深色改淺色時最容易出事的是「寫死的白字」——例如舊版的 .sec-list strong{color:#fff}，
+     換成白底後所有粗體臨床重點會直接消失。以後改顏色改到看不清楚，這條會紅。 */
+  {
+    const scanContrast = pg => pg.evaluate(() => {
+      const lum = ([r, g, b]) => {
+        const f = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      const parse = t => { const m = t.match(/[\d.]+/g); return m ? m.map(Number) : null; };
+      const bgOf = el => {
+        for (let e = el; e; e = e.parentElement){
+          const c = parse(getComputedStyle(e).backgroundColor);
+          if (c && (c.length < 4 || c[3] > 0.5)) return c.slice(0, 3);
+        }
+        return [244, 246, 249];
+      };
+      const bad = [];
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()){
+        const t = n.textContent.trim();
+        const el = n.parentElement;
+        if (!t || !el || !el.getClientRects().length) continue;
+        const cs = getComputedStyle(el);
+        if (cs.visibility === 'hidden' || +cs.opacity === 0) continue;
+        const L1 = lum(parse(cs.color).slice(0, 3)), L2 = lum(bgOf(el));
+        const ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+        const fs = parseFloat(cs.fontSize), big = fs >= 24 || (fs >= 18.66 && +cs.fontWeight >= 700);
+        if (ratio < (big ? 3 : 4.5)) bad.push(ratio.toFixed(2) + '「' + t.slice(0, 12) + '」');
+      }
+      return [...new Set(bad)];
+    });
+
+    await reset(p);
+    await p.click('details:has(#faSteps) summary');
+    await p.click('details:has(#storageRow) summary');
+    let bad = await scanContrast(p);
+    ok('★ 首頁（含急救四步驟、保存液）所有文字對比度達 WCAG AA', bad.length === 0, bad.slice(0, 5).join(' ｜ '));
+
+    await p.click('#btnBrowse');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    bad = await scanContrast(p);
+    ok('查閱頁所有文字對比度達標', bad.length === 0, bad.slice(0, 5).join(' ｜ '));
+
+    await p.fill('#dxSearch', '內縮性');
+    await p.waitForTimeout(150);
+    await p.click('#browseList .dx-card >> nth=0');
+    await p.waitForSelector('#screenDx:not([hidden])');
+    await p.fill('#injuryDate', '2026-03-01');
+    await p.click('#btnCalc');
+    await p.waitForSelector('#scheduleOut:not([hidden])');
+    bad = await scanContrast(p);
+    ok('★ 診斷頁醫師版（含 AAE 附註、回診表）所有文字對比度達標', bad.length === 0, bad.slice(0, 5).join(' ｜ '));
+
+    await p.click('#btnAudPublic');
+    await p.waitForSelector('#panePublic:not([hidden])');
+    bad = await scanContrast(p);
+    ok('診斷頁家屬版所有文字對比度達標', bad.length === 0, bad.slice(0, 5).join(' ｜ '));
+    await p.click('#btnAudClinical');
+    // 搜尋框在診斷頁上是隱藏的，要回到查閱頁才清得掉（9c 踩過同一個坑）。
+    // 不清的話下一段查閱測試只會看到「內縮性」那 2 筆。
+    await p.click('#btnBack');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    await p.fill('#dxSearch', '');
+  }
+
   /* ── 8. 查閱模式與搜尋 ── */
   {
     await p.click('#btnBrowse');
@@ -875,7 +942,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.9/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v2\.0/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();

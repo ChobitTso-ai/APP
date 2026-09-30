@@ -1,16 +1,32 @@
 /* =========================================================
    牙外傷處置指南 —— 樣式
-   沿用 App 中心的深色玻璃擬態；手機優先。
+   v2.0 起改成淺色專業風格：白底、清爽、層次分明，去掉玻璃擬態與漸層。
+   （App 中心其他工具仍是深色；這一支是臨床參考工具，照 Dr.Tso 的要求
+   走臨床文獻網站常見的淺色版面。）手機優先。
+   配色原則：文字與互動色對白底一律 ≥4.5:1（WCAG AA），
+   顏色只拿來傳達意義（急迫＝紅、提示＝琥珀、AAE＝紫、拆固定＝綠），不做裝飾。
    ©Tso KY - All Rights Reserved
    ========================================================= */
 
 :root{
-  --bg-0:#0a0e1a; --bg-1:#0f1524;
-  --text:#eaf0ff; --muted:#93a0bd;
-  --glass:rgba(22,30,52,.55); --line:rgba(140,165,255,.16);
-  --accent:#5b8cff; --accent-2:#a56bff;
-  --ok:#3ddc97; --warn:#ffc86b; --danger:#ff6b8a; --urgent:#ff4d4f;
-  --r:14px;
+  --bg-0:#F4F6F9;                 /* 頁面底 */
+  --surface:#FFFFFF;              /* 卡片 */
+  --surface-2:#F7F9FC;            /* 卡片裡的次要底（選項、清單列） */
+  --well:#EAEFF5;                 /* 插圖底：白色琺瑯質要靠它襯出來 */
+  --text:#1A2233;                 /* 15:1 */
+  --text-2:#334155;               /* 10:1 */
+  --muted:#5B6B82;                /* 5.4:1 */
+  --line:#E2E8F0;
+  --line-2:#CBD5E1;
+  --accent:#1D5FD1;               /* 5.8:1 臨床藍 */
+  --accent-ink:#1747A6;
+  --accent-soft:#EAF1FD;
+  --ok:#15803D;      --ok-soft:#ECFDF3;     --ok-line:#A7E3BF;      /* 5.0:1 */
+  --warn:#B45309;    --warn-soft:#FFF8EB;   --warn-line:#F5C77E;    /* 5.0:1 */
+  --danger:#B91C1C;  --danger-soft:#FEF2F2; --danger-line:#F5B5B5;  /* 6.5:1 */
+  --aae:#6D28D9;     --aae-soft:#F5F3FF;    --aae-line:#DDD6FE;     /* 7.1:1 */
+  --r:10px;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.04);
   --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
 }
 
@@ -19,23 +35,19 @@
 /* hidden 屬性一定要贏過自訂 class 的 display（這個坑在別的 App 踩過兩次） */
 [hidden]{display:none !important}
 
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;color-scheme:light}
 
 body{
   font-family:var(--font); color:var(--text); min-height:100vh;
   padding:0 0 48px;
   line-height:1.75;
-  background:
-    radial-gradient(1200px 800px at 15% -10%,#16204a 0%,transparent 55%),
-    radial-gradient(1000px 700px at 110% 20%,#2a1a4d 0%,transparent 50%),
-    linear-gradient(160deg,var(--bg-1),var(--bg-0));
-  background-attachment:fixed;
+  background:var(--bg-0);
 }
 
+/* .glass 這個 class 名稱沿用（HTML 裡到處都是），內容改成淺色卡片 */
 .glass{
-  background:var(--glass); border:1px solid var(--line); border-radius:var(--r);
-  backdrop-filter:blur(18px) saturate(140%);
-  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow);
 }
 
 .wrap{max-width:860px;margin:0 auto;padding:16px}
@@ -49,37 +61,37 @@ body{
   display:flex; align-items:center; gap:7px;
   padding:9px 12px; border-radius:0; border-left:0; border-right:0; border-top:0;
   padding-top:calc(10px + env(safe-area-inset-top));
-  /* 內容會從頂列底下捲過去。站台通用的 --glass（.55）當背景沒問題，
-     當固定頂列就太透，後面的字讀得出來很吵。這裡調到幾乎不透。 */
-  background:rgba(13,19,36,.92);
+  background:var(--surface);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(16,24,40,.03);
 }
 .topbar-title{flex:1;min-width:0;line-height:1.3}
-.topbar-title strong{display:block;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-title strong{display:block;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
 .topbar-title small{display:block;color:var(--muted);font-size:.72rem}
 /* 手機上頂列要塞下返回、標題與三顆按鈕，副標讓位 */
 @media(max-width:520px){ .topbar-title small{display:none} }
 .icon-btn{
-  background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);
+  background:var(--surface);border:1px solid var(--line-2);color:var(--text);
   font-size:1.1rem;line-height:1;cursor:pointer;flex:none;
-  padding:7px 11px;border-radius:10px;
+  padding:7px 11px;border-radius:8px;
   /* 44×44 是 Apple HIG 的觸控下限。這幾顆先前只有 34–36px，手指按不準——
      返回鍵又是全站按最多次的。 */
   min-width:44px;min-height:44px;
   display:inline-flex;align-items:center;justify-content:center;
 }
-.icon-btn:hover{background:rgba(255,255,255,.12)}
+.icon-btn:hover{background:var(--surface-2);border-color:var(--muted)}
 
 /* 右上角：影像提示開關、依診斷查閱 */
 .chip-btn{
   display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:none;
-  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--muted);
-  border-radius:999px;padding:5px 11px;font:inherit;font-size:.78rem;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line-2);color:var(--text-2);
+  border-radius:8px;padding:5px 11px;font:inherit;font-size:.78rem;cursor:pointer;
   min-height:44px;
 }
-.chip-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.chip-btn:hover{background:var(--surface-2);color:var(--text);border-color:var(--muted)}
 .chip-btn.on{
-  background:rgba(111,211,194,.2);border-color:rgba(111,211,194,.5);
-  color:#d6fff7;font-weight:600;
+  background:var(--ok-soft);border-color:var(--ok-line);
+  color:var(--ok);font-weight:600;
 }
 /* 文字只在極窄的舊機型（<=340px）才收起來。先前設 400px，結果 iPhone SE
    之類的 375px 機型上「提示」「查閱」只剩 emoji——看不出是什麼，而且觸控
@@ -89,22 +101,22 @@ body{
   .chip-btn{padding:6px 9px;min-width:44px}
 }
 .lang-btn{
-  background:rgba(91,140,255,.14); border:1px solid var(--line); color:var(--text);
-  border-radius:999px; padding:5px 14px; font:inherit; font-size:.82rem;
-  font-weight:600; cursor:pointer; letter-spacing:.04em;
+  background:var(--accent-soft); border:1px solid transparent; color:var(--accent-ink);
+  border-radius:8px; padding:5px 14px; font:inherit; font-size:.82rem;
+  font-weight:700; cursor:pointer; letter-spacing:.04em;
   min-height:44px;
   display:inline-flex;align-items:center;justify-content:center;
 }
-.lang-btn:hover{background:rgba(91,140,255,.26)}
+.lang-btn:hover{border-color:var(--accent)}
 
 /* ===== 卡片 ===== */
 .card{padding:16px;margin-bottom:14px}
-.card h2{font-size:1rem;margin-bottom:10px;letter-spacing:.02em}
-.card h3{font-size:.92rem;margin:14px 0 6px;color:#cbd6f5}
+.card h2{font-size:1rem;margin-bottom:10px;letter-spacing:.02em;color:var(--text)}
+.card h3{font-size:.92rem;margin:14px 0 6px;color:var(--text-2)}
 
 details.card > summary{
   cursor:pointer; font-weight:600; font-size:.95rem; list-style:none;
-  display:flex; align-items:center; gap:8px;
+  display:flex; align-items:center; gap:8px; color:var(--text);
   /* 先前只有 27px 高，手機上太細。負邊距讓它維持原本的視覺位置，
      只把可點範圍往上下撐開到 44。 */
   min-height:44px; margin:-8px 0; padding:8px 0;
@@ -117,45 +129,34 @@ details.card > summary + *{margin-top:12px}
 /* ===== 提示框 ===== */
 .alert{
   padding:16px; margin-bottom:14px;
-  border-color:rgba(255,77,79,.4);
-  background:linear-gradient(180deg,rgba(255,77,79,.14),rgba(22,30,52,.55));
+  background:var(--danger-soft); border-color:var(--danger-line);
+  box-shadow:none;
 }
-.alert-head{font-weight:700;font-size:.9rem;letter-spacing:.04em;margin-bottom:6px}
-.headline{font-size:.98rem;line-height:1.8}
-
-
-
-
-
-
-
-
-
+.alert-head{font-weight:700;font-size:.9rem;letter-spacing:.04em;margin-bottom:6px;color:var(--danger)}
+.headline{font-size:.98rem;line-height:1.8;color:var(--text)}
 
 /* ===== 決策樹 ===== */
-
-
-
-
 .crumbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;font-size:.78rem}
 .crumbs span{
-  background:rgba(91,140,255,.12); border:1px solid var(--line);
-  border-radius:999px; padding:2px 10px; color:var(--muted);
+  background:var(--surface); border:1px solid var(--line-2);
+  border-radius:6px; padding:2px 10px; color:var(--text-2);
 }
 .question h2{font-size:1.08rem;line-height:1.6;margin-bottom:8px}
 .hint{
-  font-size:.82rem; color:var(--warn); line-height:1.7;
-  background:rgba(255,200,107,.08); border-left:3px solid var(--warn);
-  padding:8px 12px; border-radius:0 8px 8px 0; margin-bottom:12px;
+  font-size:.84rem; color:var(--text-2); line-height:1.7;
+  background:var(--warn-soft); border-left:3px solid var(--warn-line);
+  padding:8px 12px; border-radius:0 6px 6px 0; margin-bottom:12px;
 }
+.hint strong{color:var(--warn)}
 .opts{display:grid;gap:8px;margin-top:12px}
 .opt{
   text-align:left; font:inherit; color:var(--text); cursor:pointer;
-  background:rgba(255,255,255,.04); border:1px solid var(--line);
-  border-radius:12px; padding:13px 15px; line-height:1.6;
-  transition:background .12s, border-color .12s;
+  background:var(--surface); border:1px solid var(--line-2);
+  border-radius:8px; padding:13px 15px; line-height:1.6;
+  transition:background .12s, border-color .12s, box-shadow .12s;
 }
-.opt:hover{background:rgba(91,140,255,.16);border-color:var(--accent)}
+.opt:hover{background:var(--accent-soft);border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* 帶示意圖的選項。圖載入失敗時 has-fig 會被拿掉，版面退回純文字，
    不留空框——見 app.js 的 optThumb()。 */
 .opt.has-fig{display:flex;align-items:center;gap:13px}
@@ -163,15 +164,15 @@ details.card > summary + *{margin-top:12px}
   /* 72×92 是實測出來的下限：54×68 時「缺白色琺瑯質／露黃色牙本質／露紅色牙髓」
      三個選項的斷面顏色太小看不出差別，放到 72 才分得出來，又還能讓五個選項
      一屏放得下（86×110 也清楚，但要捲畫面）。 */
-  width:72px;height:92px;flex:none;border-radius:9px;
-  background:rgba(255,255,255,.05);border:1px solid var(--line);
+  width:72px;height:92px;flex:none;border-radius:6px;
+  background:var(--well);border:1px solid var(--line);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .opt-fig img{width:100%;height:100%;object-fit:contain}
 .opt-label{flex:1;min-width:0}
 
 /* ===== 影像節點 ===== */
-.imaging{border-color:rgba(111,211,194,.32)}
+.imaging{border-color:var(--ok-line)}
 .img-step{
   font-size:1.05rem;letter-spacing:.02em;
   padding-bottom:10px;margin-bottom:12px;
@@ -180,14 +181,14 @@ details.card > summary + *{margin-top:12px}
 .imaging h3{font-size:.86rem;color:var(--ok);margin:14px 0 6px;letter-spacing:.04em}
 .imaging .sec-list li::before{background:var(--ok)}
 .why{
-  font-size:.9rem;line-height:1.8;
-  background:rgba(111,211,194,.08);border-left:3px solid var(--ok);
-  border-radius:0 10px 10px 0;padding:11px 14px;
+  font-size:.9rem;line-height:1.8;color:var(--text-2);
+  background:var(--ok-soft);border-left:3px solid var(--ok);
+  border-radius:0 6px 6px 0;padding:11px 14px;
 }
 .opt.ghost-opt{
   background:transparent;color:var(--muted);border-style:dashed;
 }
-.opt.ghost-opt:hover{background:rgba(255,255,255,.05);border-color:var(--muted);color:var(--text)}
+.opt.ghost-opt:hover{background:var(--surface-2);border-color:var(--muted);color:var(--text)}
 
 /* ===== 時間急迫的橫幅 ===== */
 .urgent-banner{
@@ -195,23 +196,24 @@ details.card > summary + *{margin-top:12px}
   padding:12px 14px;margin-bottom:14px;
 }
 .urgent-banner .alert-head{margin:0;font-size:1.1rem;line-height:1.5}
-.urgent-banner p{font-size:.88rem;line-height:1.7}
+.urgent-banner p{font-size:.88rem;line-height:1.7;color:var(--text)}
 #screenResult .headline{margin-bottom:12px}
 #screenResult .headline:last-child{margin-bottom:0}
 
 /* ===== 查閱列表 ===== */
 .search{
   width:100%; padding:12px 16px; margin-bottom:14px;
-  color:var(--text); font:inherit; border-radius:999px;
+  color:var(--text); font:inherit; border-radius:8px;
 }
 .search::placeholder{color:var(--muted)}
+.search:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .browse-sec{
   font-size:1rem; letter-spacing:.02em; margin:22px 0 2px;
-  padding-bottom:8px; border-bottom:1px solid var(--line);
+  padding-bottom:8px; border-bottom:2px solid var(--line);
 }
 .browse-sec:first-child{margin-top:0}
 .group-title{
-  font-size:.86rem; color:var(--muted); letter-spacing:.06em;
+  font-size:.86rem; color:var(--muted); letter-spacing:.06em; font-weight:600;
   margin:16px 0 8px; padding-left:4px;
 }
 /* 插圖卡片：兩欄，圖在上、中文名、英文副標。手機也維持兩欄，
@@ -220,13 +222,15 @@ details.card > summary + *{margin-top:12px}
 @media(min-width:720px){ .dx-grid{grid-template-columns:repeat(3,1fr)} }
 .dx-card{
   display:flex; flex-direction:column; align-items:center; text-align:center;
-  font:inherit; color:var(--text); cursor:pointer; padding:14px 10px 12px;
-  background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:14px;
-  transition:background .12s, border-color .12s, transform .12s;
+  font:inherit; color:var(--text); cursor:pointer; padding:12px 10px 12px;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--shadow);
+  transition:border-color .12s, box-shadow .12s, transform .12s;
 }
-.dx-card:hover{background:rgba(91,140,255,.16);border-color:var(--accent);transform:translateY(-1px)}
+.dx-card:hover{border-color:var(--accent);box-shadow:0 4px 12px rgba(29,95,209,.12);transform:translateY(-1px)}
 .dx-card-fig{
-  width:74px;height:96px;margin-bottom:10px;
+  width:74px;height:96px;margin-bottom:10px;border-radius:6px;
+  background:var(--well);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .dx-card-fig img{width:100%;height:100%;object-fit:contain}
@@ -234,41 +238,43 @@ details.card > summary + *{margin-top:12px}
 .dx-card .en{font-size:.74rem;color:var(--muted);line-height:1.45;margin-top:3px}
 .urgent-dot{color:var(--warn);font-size:.8rem}
 .legend{
-  margin:-6px 4px 12px; line-height:1.7;
-  padding:7px 12px; border-radius:9px;
-  background:rgba(255,200,107,.08); border:1px solid rgba(255,200,107,.22);
+  margin:-6px 4px 12px; line-height:1.7; color:var(--text-2);
+  padding:7px 12px; border-radius:6px;
+  background:var(--warn-soft); border:1px solid var(--warn-line);
 }
+.legend strong{color:var(--warn)}
 
 /* ===== 診斷頁 ===== */
 .dx-head{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .dx-fig{
-  width:104px;height:150px;flex:none;border-radius:10px;
-  background:rgba(255,255,255,.04); border:1px dashed var(--line);
+  width:104px;height:150px;flex:none;border-radius:6px;
+  background:var(--well); border:1px solid var(--line);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .dx-fig img{width:100%;height:100%;object-fit:contain}
 .dx-fig .ph{color:var(--muted);font-size:.68rem;text-align:center;padding:6px;line-height:1.5}
 .dx-title{flex:1;min-width:190px}
-.dx-title h1{font-size:1.22rem;line-height:1.4;margin:4px 0 2px}
-.dx-title .en{color:var(--muted);font-size:.86rem;font-style:italic}
-.dx-title .short{font-size:.88rem;margin-top:8px;line-height:1.7}
+.dx-title h1{font-size:1.3rem;line-height:1.4;margin:4px 0 2px;color:var(--text)}
+.dx-title .en{color:var(--muted);font-size:.88rem;font-style:italic}
+.dx-title .short{font-size:.9rem;margin-top:8px;line-height:1.7;color:var(--text-2)}
 .chip{
-  display:inline-block; font-size:.72rem; padding:2px 10px; border-radius:999px;
-  background:rgba(91,140,255,.18); border:1px solid var(--line); color:#cbd6f5;
+  display:inline-block; font-size:.72rem; font-weight:600; padding:2px 10px; border-radius:6px;
+  background:var(--accent-soft); border:1px solid transparent; color:var(--accent-ink);
 }
-.chip.urgent{background:rgba(255,77,79,.22);border-color:rgba(255,77,79,.45);color:#ffd9da}
+.chip.urgent{background:var(--danger-soft);border-color:var(--danger-line);color:var(--danger)}
 
 .aud-toggle{display:flex;gap:6px;margin-bottom:14px}
 .aud-btn{
   flex:1; padding:10px; font:inherit; font-size:.88rem; cursor:pointer;
-  color:var(--muted); background:rgba(255,255,255,.04);
-  border:1px solid var(--line); border-radius:11px;
+  color:var(--text-2); background:var(--surface);
+  border:1px solid var(--line-2); border-radius:8px;
 }
-.aud-btn.active{color:var(--text);background:rgba(91,140,255,.22);border-color:var(--accent);font-weight:600}
+.aud-btn:hover{border-color:var(--accent)}
+.aud-btn.active{color:#fff;background:var(--accent);border-color:var(--accent);font-weight:600}
 
 .sec-list{list-style:none;display:grid;gap:7px}
 .sec-list li{
-  position:relative; padding-left:16px; font-size:.9rem; line-height:1.75;
+  position:relative; padding-left:16px; font-size:.92rem; line-height:1.75; color:var(--text);
 }
 .sec-list li::before{
   content:""; position:absolute; left:2px; top:.72em;
@@ -276,119 +282,127 @@ details.card > summary + *{margin-top:12px}
 }
 .sec-list.good li::before{background:var(--ok)}
 .sec-list.bad li::before{background:var(--danger)}
-.sec-list strong{color:#fff}
+/* 粗體是臨床重點。深色版寫的是 color:#fff——換成白底後會直接消失，
+   改用最深的文字色。 */
+.sec-list strong{color:var(--text);font-weight:700}
 
 .splint-box{
-  background:rgba(91,140,255,.1); border:1px solid var(--line);
-  border-left:3px solid var(--accent); border-radius:0 10px 10px 0;
-  padding:11px 14px; font-size:.9rem; line-height:1.75;
+  background:var(--accent-soft); border:1px solid transparent;
+  border-left:3px solid var(--accent); border-radius:0 6px 6px 0;
+  padding:11px 14px; font-size:.92rem; line-height:1.75; color:var(--text);
 }
-.splint-box.none{border-left-color:var(--muted);color:var(--muted)}
+.splint-box.none{background:var(--surface-2);border-left-color:var(--line-2);color:var(--muted)}
 .caveat{
-  background:rgba(255,200,107,.09); border-left:3px solid var(--warn);
-  border-radius:0 10px 10px 0; padding:11px 14px;
-  font-size:.85rem; line-height:1.75; margin-top:10px;
+  background:var(--warn-soft); border-left:3px solid var(--warn-line);
+  border-radius:0 6px 6px 0; padding:11px 14px; color:var(--text-2);
+  font-size:.86rem; line-height:1.75; margin-top:10px;
 }
+.caveat strong{color:var(--warn)}
 .evidence{
   display:flex;flex-wrap:wrap;gap:8px;align-items:center;
-  font-size:.82rem;color:var(--muted);
+  font-size:.84rem;color:var(--text-2);
 }
 .ev-badge{
-  background:rgba(163,107,255,.18); border:1px solid rgba(163,107,255,.35);
-  border-radius:8px; padding:2px 9px; color:#e4d6ff; font-weight:600;
+  background:var(--surface-2); border:1px solid var(--line-2);
+  border-radius:6px; padding:2px 9px; color:var(--text); font-weight:700;
 }
 
 /* ===== 追蹤時程 ===== */
 .fu-list{list-style:none;display:grid;gap:6px;margin-bottom:14px}
 .fu-list li{
   display:flex;gap:10px;align-items:flex-start;
-  font-size:.88rem;line-height:1.7;
-  padding:8px 11px;border-radius:9px;background:rgba(255,255,255,.035);
+  font-size:.88rem;line-height:1.7;color:var(--text);
+  padding:8px 11px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);
 }
-.fu-when{flex:none;min-width:58px;font-weight:600;color:#cbd6f5}
-.fu-list li.off{background:rgba(61,220,151,.1)}
+.fu-when{flex:none;min-width:58px;font-weight:700;color:var(--text)}
+.fu-list li.off{background:var(--ok-soft);border-color:var(--ok-line)}
 .fu-list li.off .fu-when{color:var(--ok)}
 
 .calc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
-.calc label{font-size:.86rem;color:var(--muted)}
+.calc label{font-size:.86rem;color:var(--text-2)}
 input[type=date]{
   font:inherit;font-size:.9rem;color:var(--text);padding:8px 12px;
-  background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:8px;
 }
+input[type=date]:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .btn{
   font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;
-  color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  border:0;border-radius:10px;padding:9px 18px;
+  color:#fff;background:var(--accent);
+  border:1px solid var(--accent);border-radius:8px;padding:9px 18px;
 }
-.btn.ghost{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);font-weight:500}
-.btn:hover{filter:brightness(1.12)}
+.btn:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+.btn.ghost{background:var(--surface);border:1px solid var(--line-2);color:var(--text);font-weight:500}
+.btn.ghost:hover{background:var(--surface-2);border-color:var(--muted)}
 .row-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 
 /* ===== 表格 ===== */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{border-collapse:collapse;width:100%;font-size:.84rem;line-height:1.65}
+table{border-collapse:collapse;width:100%;font-size:.86rem;line-height:1.65;color:var(--text)}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--muted);font-weight:600;white-space:nowrap;font-size:.78rem}
+th{color:var(--muted);font-weight:600;white-space:nowrap;font-size:.78rem;background:var(--surface-2)}
 .fa-table td:first-child{font-weight:600;min-width:140px}
 .sch-table td:first-child{white-space:nowrap;font-variant-numeric:tabular-nums}
 /* 回診日也不要折行——先前在 375px 上「2026-03-15」會斷成兩行，
    臨床上是要快速掃過去的欄位。實測 320px 都還放得下，不需要橫捲。 */
 .sch-table td:nth-child(2){white-space:nowrap;font-variant-numeric:tabular-nums}
-.sch-table tr.off td{color:var(--ok)}
+.sch-table tr.off td{color:var(--ok);font-weight:600}
 
 /* ===== 保存液 ===== */
 .media-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 @media(min-width:560px){ .media-row{grid-template-columns:repeat(5,1fr)} }
 .media{
-  text-align:center;padding:10px 6px;border-radius:11px;
-  background:rgba(255,255,255,.04);border:1px solid var(--line);
+  text-align:center;padding:10px 6px;border-radius:8px;
+  background:var(--surface);border:1px solid var(--line);
 }
 .media .fig{
   height:56px;display:flex;align-items:center;justify-content:center;
   margin-bottom:6px;color:var(--muted);font-size:.66rem;
+  background:var(--well);border-radius:6px;padding:4px;
 }
 .media .fig img{max-width:100%;max-height:100%}
-.media b{display:block;font-size:.8rem;line-height:1.4}
+.media b{display:block;font-size:.8rem;line-height:1.4;color:var(--text)}
 .media small{display:block;color:var(--muted);font-size:.7rem;line-height:1.5;margin-top:3px}
-.media.no{border-color:rgba(255,77,79,.4);background:rgba(255,77,79,.08)}
+.media.no{border-color:var(--danger-line);background:var(--danger-soft)}
+.media.no b{color:var(--danger)}
 .media .rank{
-  display:inline-block;font-size:.66rem;color:var(--muted);
-  border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-bottom:4px;
+  display:inline-block;font-size:.66rem;font-weight:700;color:var(--accent-ink);
+  background:var(--accent-soft);border-radius:999px;padding:0 7px;margin-bottom:4px;
 }
 
 /* 兩份指引不一致時的並列附註（見 app.js 的 aaeNote()）。
    顏色刻意與 IADT 主文區隔，一眼看得出這一段是另一份指引的建議。 */
 .aae-note{
   display:flex; gap:9px; align-items:flex-start; margin-top:10px;
-  font-size:.84rem; line-height:1.75;
-  padding:10px 13px; border-radius:10px;
-  background:rgba(180,140,255,.09); border:1px solid rgba(180,140,255,.26);
+  font-size:.86rem; line-height:1.75; color:var(--text-2);
+  padding:10px 13px; border-radius:6px;
+  background:var(--aae-soft); border:1px solid var(--aae-line);
 }
+.aae-note strong{color:var(--aae)}
 .aae-tag{
   flex:none; font-size:.66rem; font-weight:700; letter-spacing:.03em;
-  color:#e3d4ff; background:rgba(180,140,255,.22);
-  border-radius:6px; padding:2px 7px; margin-top:2px; white-space:nowrap;
+  color:#fff; background:var(--aae);
+  border-radius:4px; padding:2px 7px; margin-top:3px; white-space:nowrap;
 }
 
 /* 加到主畫面的三步驟 */
 .steps{list-style:none;counter-reset:step;display:grid;gap:9px;margin-bottom:10px}
 .steps li{
   counter-increment:step; position:relative; padding-left:34px;
-  font-size:.88rem; line-height:1.75;
+  font-size:.88rem; line-height:1.75; color:var(--text);
 }
 .steps li::before{
   content:counter(step); position:absolute; left:0; top:2px;
   width:23px;height:23px;border-radius:999px;
   display:flex;align-items:center;justify-content:center;
-  font-size:.74rem;font-weight:700;color:#cbd6f5;
-  background:rgba(91,140,255,.2);border:1px solid var(--line);
+  font-size:.74rem;font-weight:700;color:#fff;
+  background:var(--accent);
 }
 
 .refs{list-style:none;display:grid;gap:10px}
-.refs li{font-size:.8rem;line-height:1.7;color:#c3cde8}
+.refs li{font-size:.82rem;line-height:1.7;color:var(--text-2)}
 .refs .tag{
-  display:inline-block;font-size:.7rem;font-weight:700;color:#cbd6f5;
-  background:rgba(91,140,255,.18);border-radius:6px;padding:0 7px;margin-right:6px;
+  display:inline-block;font-size:.7rem;font-weight:700;color:var(--accent-ink);
+  background:var(--accent-soft);border-radius:4px;padding:0 7px;margin-right:6px;
 }
 .refs a{color:var(--accent);text-decoration:none}
 .refs a:hover{text-decoration:underline}
@@ -396,67 +410,69 @@ th{color:var(--muted);font-weight:600;white-space:nowrap;font-size:.78rem}
 footer{text-align:center;padding:24px 16px;line-height:1.9}
 footer p{max-width:700px;margin:0 auto}
 
-/* ===== Toast ===== */
+/* ===== Toast =====
+   淺色介面上的提示用深色膠囊，一眼跳出來（主流做法） */
 .toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
-  background:rgba(20,28,48,.95);border:1px solid var(--line);
+  background:#1A2233;color:#fff;border:0;
   border-radius:999px;padding:9px 20px;font-size:.86rem;z-index:50;
-  backdrop-filter:blur(10px);
+  box-shadow:0 6px 20px rgba(16,24,40,.22);
 }
 
 /* ===== 現場急救四步驟（首屏參考區）===== */
 .fa-steps-title{
-  font-size:.84rem;color:var(--muted);letter-spacing:.04em;
+  font-size:.86rem;color:var(--text-2);font-weight:600;letter-spacing:.04em;
   margin:2px 0 10px;
 }
 .fa-steps{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 @media(min-width:620px){ .fa-steps{grid-template-columns:repeat(4,1fr)} }
 .fa-step{
   position:relative;text-align:center;padding:12px 9px 11px;
-  background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
 }
 .fa-step-n{
-  position:absolute;top:7px;left:8px;
-  width:19px;height:19px;border-radius:999px;
+  position:absolute;top:7px;left:8px;z-index:1;
+  width:20px;height:20px;border-radius:999px;
   display:flex;align-items:center;justify-content:center;
-  font-size:.66rem;font-weight:700;color:#cbd6f5;
-  background:rgba(91,140,255,.22);border:1px solid var(--line);
+  font-size:.68rem;font-weight:700;color:#fff;
+  background:var(--accent);
 }
 .fa-step-fig{
-  height:62px;margin-bottom:8px;
+  height:62px;margin-bottom:8px;border-radius:6px;background:var(--well);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .fa-step-fig img{max-width:100%;max-height:100%}
 .fa-step-fig .ph{color:var(--muted);font-size:.62rem;text-align:center;padding:4px;line-height:1.4}
-.fa-step b{display:block;font-size:.82rem;line-height:1.45}
-.fa-step small{display:block;color:var(--muted);font-size:.72rem;line-height:1.6;margin-top:4px}
+.fa-step b{display:block;font-size:.84rem;line-height:1.45;color:var(--text)}
+.fa-step small{display:block;color:var(--muted);font-size:.74rem;line-height:1.6;margin-top:4px}
+.fa-step small strong{color:var(--text)}
 
 /* ===== 根尖成熟度 ===== */
 .apex-figs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .apex-fig{
   text-align:center;padding:10px 8px;
-  background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:11px;
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
 }
 .apex-fig.wide{grid-column:1 / -1}
 .apex-fig-img{
-  height:116px;margin-bottom:7px;
+  height:116px;margin-bottom:7px;border-radius:6px;background:var(--well);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .apex-fig.wide .apex-fig-img{height:130px}
 .apex-fig-img img{max-width:100%;max-height:100%}
 .apex-fig-img .ph{color:var(--muted);font-size:.64rem;text-align:center;padding:5px;line-height:1.5}
-.apex-fig small{display:block;color:var(--muted);font-size:.72rem;line-height:1.55}
+.apex-fig small{display:block;color:var(--muted);font-size:.74rem;line-height:1.55}
 
 /* ===== 圖＋說明（固定裝置、只捏牙冠）===== */
 .cap-fig{margin-top:11px;text-align:center}
 .cap-fig-img{
   display:flex;align-items:center;justify-content:center;overflow:hidden;
-  background:rgba(255,255,255,.04);border:1px solid var(--line);
-  border-radius:11px;padding:9px;margin-bottom:7px;
+  background:var(--well);border:1px solid var(--line);
+  border-radius:8px;padding:9px;margin-bottom:7px;
 }
 .cap-fig-img img{max-width:100%;max-height:100%}
 .cap-fig-img .ph{color:var(--muted);font-size:.66rem;padding:14px;line-height:1.5}
-.cap-fig small{display:block;color:var(--muted);font-size:.74rem;line-height:1.6}
+.cap-fig small{display:block;color:var(--muted);font-size:.76rem;line-height:1.6}
 .splint-fig .cap-fig-img{height:150px}
 .hold-fig .cap-fig-img{height:180px}
 

@@ -9,7 +9,10 @@
 
 /* ---- 介面文字（zh 繁體中文 / en English）---- */
 const UI = {
-  appName:      { zh: '牙外傷處置指南',           en: 'Dental Trauma Guide' },
+  /* 英文名刻意加 NCKUH：「The Dental Trauma Guide」是哥本哈根大學醫院
+     （Rigshospitalet）與 IADT 合作的官方網站。v2.0 改成淺色風格後外觀也往
+     同方向走，名稱再一樣就容易被誤認成官方版（2026-09-30 Dr.Tso 決定）。 */
+  appName:      { zh: '牙外傷處置指南',           en: 'NCKUH Dental Trauma Guide' },
   appTagline:   { zh: '依 IADT 2020 ＋ AAE 2026 指引', en: 'IADT 2020 + AAE 2026 guidelines' },
 
   /* 右上角兩顆 */

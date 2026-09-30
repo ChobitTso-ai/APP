@@ -1,4 +1,4 @@
-# Dental Trauma Guide — 素材資料夾
+# NCKUH Dental Trauma Guide — 素材資料夾
 
 插圖由 CODEX 繪製、由 Dr.Tso 用 GitHub 網頁上傳到這裡，Claude 負責整合進 App。
 完整繪圖規格見 `docs/handoff/dental-trauma-art-spec.md`（那份是唯一權威，
