@@ -62,25 +62,38 @@ body{
   background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);
   font-size:1.1rem;line-height:1;cursor:pointer;flex:none;
   padding:7px 11px;border-radius:10px;
+  /* 44×44 是 Apple HIG 的觸控下限。這幾顆先前只有 34–36px，手指按不準——
+     返回鍵又是全站按最多次的。 */
+  min-width:44px;min-height:44px;
+  display:inline-flex;align-items:center;justify-content:center;
 }
 .icon-btn:hover{background:rgba(255,255,255,.12)}
 
 /* 右上角：影像提示開關、依診斷查閱 */
 .chip-btn{
-  display:inline-flex;align-items:center;gap:4px;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:none;
   background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--muted);
   border-radius:999px;padding:5px 11px;font:inherit;font-size:.78rem;cursor:pointer;
+  min-height:44px;
 }
 .chip-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
 .chip-btn.on{
   background:rgba(111,211,194,.2);border-color:rgba(111,211,194,.5);
   color:#d6fff7;font-weight:600;
 }
-@media(max-width:400px){ .chip-btn span:last-child{display:none} .chip-btn{padding:6px 9px} }
+/* 文字只在極窄的舊機型（<=340px）才收起來。先前設 400px，結果 iPhone SE
+   之類的 375px 機型上「提示」「查閱」只剩 emoji——看不出是什麼，而且觸控
+   沒有 hover 也看不到 title。實測 360px 以上留著文字，標題也不會被切。 */
+@media(max-width:340px){
+  .chip-btn span:last-child{display:none}
+  .chip-btn{padding:6px 9px;min-width:44px}
+}
 .lang-btn{
   background:rgba(91,140,255,.14); border:1px solid var(--line); color:var(--text);
   border-radius:999px; padding:5px 14px; font:inherit; font-size:.82rem;
   font-weight:600; cursor:pointer; letter-spacing:.04em;
+  min-height:44px;
+  display:inline-flex;align-items:center;justify-content:center;
 }
 .lang-btn:hover{background:rgba(91,140,255,.26)}
 
@@ -92,6 +105,9 @@ body{
 details.card > summary{
   cursor:pointer; font-weight:600; font-size:.95rem; list-style:none;
   display:flex; align-items:center; gap:8px;
+  /* 先前只有 27px 高，手機上太細。負邊距讓它維持原本的視覺位置，
+     只把可點範圍往上下撐開到 44。 */
+  min-height:44px; margin:-8px 0; padding:8px 0;
 }
 details.card > summary::-webkit-details-marker{display:none}
 details.card > summary::before{content:"▸";color:var(--accent);transition:transform .15s}
@@ -315,6 +331,9 @@ th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);verti
 th{color:var(--muted);font-weight:600;white-space:nowrap;font-size:.78rem}
 .fa-table td:first-child{font-weight:600;min-width:140px}
 .sch-table td:first-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+/* 回診日也不要折行——先前在 375px 上「2026-03-15」會斷成兩行，
+   臨床上是要快速掃過去的欄位。實測 320px 都還放得下，不需要橫捲。 */
+.sch-table td:nth-child(2){white-space:nowrap;font-variant-numeric:tabular-nums}
 .sch-table tr.off td{color:var(--ok)}
 
 /* ===== 保存液 ===== */
