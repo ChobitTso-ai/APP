@@ -569,6 +569,8 @@ function openDx(id, keepScroll){
   $('cardSchedule').scrollTop = 0;
   show('screenDx');
   if (keepScroll) window.scrollTo(0, 0);
+  spyActive = -1;
+  spySections();
 }
 
 function section(title, bodyNode){
@@ -675,7 +677,108 @@ function setAudience(a){
   $('panePublic').hidden   = isClin;
   $('btnAudClinical').classList.toggle('active', isClin);
   $('btnAudPublic').classList.toggle('active', !isClin);
+  buildDxNav();
 }
+
+/* ---------- 診斷頁章節目錄 ----------
+   每次開診斷頁、切換醫師版／家屬版時重建。項目直接從畫面上的章節標題（h2）
+   產生，資料檔的章節改了也不用回來改這裡。
+   ≥1024px 時追蹤時程固定在右欄、一直看得到，那一項用 CSS 藏起來。 */
+let navSections = [];
+let spyActive = -1, spyLock = 0, spyTick = false;
+
+function buildDxNav(){
+  const nav = $('dxNav');
+  nav.innerHTML = '';
+  nav.setAttribute('aria-label', L(UI.dxNav));
+  const pane = (aud === 'clinical') ? $('paneClinical') : $('panePublic');
+  navSections = [];
+  [...pane.children].forEach(card => {
+    const h = card.querySelector(':scope > h2');
+    if (h) navSections.push({ el: card, title: h.textContent });
+    // 沒有標題的卡片（例如脫落家屬版那張「只捏牙冠」圖）不列入
+  });
+  navSections.push({ el: $('cardSchedule'), title: L(UI.secFollowUp), sched: true });
+
+  navSections.forEach((sec, i) => {
+    const b = el('button', 'dx-nav-item' + (sec.sched ? ' nav-sched' : ''), esc(sec.title));
+    b.type = 'button';
+    b.addEventListener('click', () => jumpToSection(i));
+    nav.appendChild(b);
+    sec.btn = b;
+  });
+  spyActive = -1;
+  spySections();
+}
+
+// 章節列是橫的（手機、<1280px，黏在頂列下方）還是直的（≥1280px 左側欄）
+function navIsRow(){ return getComputedStyle($('dxNav')).flexDirection === 'row'; }
+// 追蹤時程是不是固定在右欄（≥1024px）——那時它不參與目錄
+function schedPinned(){ return getComputedStyle($('cardSchedule')).position === 'sticky'; }
+
+// 捲過去時章節標題要停在哪：頂列底下；橫向章節列也黏著時再往下讓出它的高度
+function navOffset(){
+  const bar = document.querySelector('.topbar').getBoundingClientRect().height;
+  return bar + (navIsRow() ? $('dxNav').getBoundingClientRect().height : 0) + 10;
+}
+
+function jumpToSection(i){
+  const sec = navSections[i];
+  if (!sec) return;
+  const y = sec.el.getBoundingClientRect().top + window.scrollY - navOffset();
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  // 先標示，不等捲完：捲到頁尾時最後幾節永遠頂不到上緣，等 scroll-spy 會標錯。
+  // smooth 捲動那 0.7 秒內也不讓 scroll-spy 把標示搶走。
+  setNavActive(i);
+  spyLock = Date.now() + 700;
+}
+
+function setNavActive(i){
+  if (i === spyActive) return;
+  spyActive = i;
+  navSections.forEach((sec, k) => {
+    sec.btn.classList.toggle('on', k === i);
+    if (k === i) sec.btn.setAttribute('aria-current', 'true');
+    else sec.btn.removeAttribute('aria-current');
+  });
+  // 手機上章節列比螢幕寬：把目前這一項捲進看得到的範圍
+  const nav = $('dxNav'), b = navSections[i] && navSections[i].btn;
+  if (b && navIsRow()){
+    const l = b.offsetLeft, r = l + b.offsetWidth;
+    if (l < nav.scrollLeft + 8) nav.scrollTo({ left: Math.max(0, l - 16), behavior: 'smooth' });
+    else if (r > nav.scrollLeft + nav.clientWidth - 8) nav.scrollTo({ left: r - nav.clientWidth + 16, behavior: 'smooth' });
+  }
+}
+
+// scroll-spy：標示「最後一個標題已經捲過頂列的章節」
+function spySections(){
+  if (curScreen !== 'screenDx' || !navSections.length) return;
+  if (Date.now() < spyLock) return;
+  const off = navOffset() + 4, pinned = schedPinned();
+  let idx = 0, last = 0;
+  navSections.forEach((sec, i) => {
+    if (sec.sched && pinned) return;
+    if (!sec.el.getClientRects().length) return;
+    last = i;
+    if (sec.el.getBoundingClientRect().top - off <= 0) idx = i;
+  });
+  // 捲到頁尾時最後幾節頂不到上緣，直接標最後一節
+  if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) idx = last;
+  setNavActive(idx);
+}
+
+window.addEventListener('scroll', () => {
+  if (spyTick) return;
+  spyTick = true;
+  requestAnimationFrame(() => { spyTick = false; spySections(); });
+}, { passive: true });
+
+// 頂列高度會因 iOS 安全區（瀏海）而不同，量出來給 CSS 用（章節列黏在它正下方）
+function syncTopbarH(){
+  document.documentElement.style.setProperty('--topbar-h',
+    document.querySelector('.topbar').getBoundingClientRect().height + 'px');
+}
+window.addEventListener('resize', () => { syncTopbarH(); spySections(); });
 
 /* ---------- 追蹤時程 ---------- */
 
@@ -889,6 +992,7 @@ $('btnCopyNote').addEventListener('click', () => copy(noteText()));
 
 /* ---------- 啟動 ---------- */
 
+syncTopbarH();
 applyUiText();
 renderRefBlocks();
 syncHintsBtn();

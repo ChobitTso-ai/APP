@@ -45,6 +45,7 @@ const UI = {
   secGood:      { zh: '理想結果',                 en: 'Favorable outcomes' },
   secBad:       { zh: '不良結果',                 en: 'Unfavorable outcomes' },
   secEvidence:  { zh: '證據等級',                 en: 'Evidence' },
+  dxNav:        { zh: '本頁章節',                 en: 'On this page' },
 
   noSplint:     { zh: '不需固定',                 en: 'No splint required' },
   splintRemoval:{ zh: '拆除固定裝置',             en: 'Splint removal' },

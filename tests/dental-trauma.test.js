@@ -120,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v2.0', /v2\.0/.test(await p.title()) &&
-      /v2\.0/.test(await p.textContent('footer')));
+    ok('版本號是 v2.1', /v2\.1/.test(await p.title()) &&
+      /v2\.1/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -695,6 +695,114 @@ async function reset(p){
     await p.fill('#dxSearch', '');
   }
 
+  /* ── 7j. 診斷頁章節目錄（v2.1）──
+     手機與 <1280px：黏在頂列下的橫向章節列；≥1280px：左側目錄欄。
+     要驗的是「點了真的跳到、而且沒被黏著的頂列／章節列擋住」與
+     「捲動時標示跟著換」——這兩件事畫面上看不出對錯，只能量。 */
+  {
+    const navCase = async (w, h, mobile) => {
+      const c = await browser.newContext({ viewport:{ width:w, height:h }, isMobile:mobile, hasTouch:mobile,
+                                           deviceScaleFactor: mobile ? 2 : 1, serviceWorkers:'block' });
+      await stubStats(c);
+      const q = await c.newPage();
+      await q.goto(LOGIN);
+      await q.evaluate(() => localStorage.setItem('nckuh_endo_authed','1'));
+      await q.goto(APP);
+      await q.waitForSelector('#treeQ');
+      await q.click('#btnBrowse');
+      await q.waitForSelector('#screenBrowse:not([hidden])');
+      await q.fill('#dxSearch', '內縮性');
+      await q.waitForTimeout(150);
+      await q.click('#browseList .dx-card >> nth=0');
+      await q.waitForSelector('#screenDx:not([hidden])');
+      await q.waitForTimeout(200);
+      return { c, q };
+    };
+    const headings = q => q.$$eval('#paneClinical > .card > h2', ns => ns.map(n => n.textContent));
+    const visibleItems = q => q.$$eval('#dxNav .dx-nav-item', ns =>
+      ns.filter(n => n.getClientRects().length).map(n => n.textContent));
+
+    // ── 手機 ──
+    let { c, q } = await navCase(375, 740, true);
+    const hs = await headings(q);
+    const items = await visibleItems(q);
+    ok('★ 手機：目錄列出醫師版每一節＋追蹤時程',
+      items.length === hs.length + 1 && hs.every((t, i) => items[i] === t) && items[items.length - 1] === '追蹤時程',
+      items.join('｜'));
+    ok('手機：目錄是橫向、黏在頂列正下方',
+      await q.$eval('#dxNav', n => getComputedStyle(n).flexDirection === 'row' && getComputedStyle(n).position === 'sticky'));
+
+    await q.click('#dxNav .dx-nav-item >> nth=4');
+    await q.waitForTimeout(900);
+    const j = await q.evaluate(() => {
+      const cover = Math.max(document.querySelector('.topbar').getBoundingClientRect().bottom,
+                             document.getElementById('dxNav').getBoundingClientRect().bottom);
+      const h2 = document.querySelectorAll('#paneClinical > .card > h2')[4].getBoundingClientRect();
+      const on = document.querySelector('#dxNav .dx-nav-item.on');
+      return { ok: h2.top >= cover - 1 && h2.top < cover + 60, top: Math.round(h2.top), cover: Math.round(cover),
+               on: on && on.textContent, cur: on && on.getAttribute('aria-current') };
+    });
+    ok('★ 點目錄第 5 項：該節標題停在章節列正下方，沒有被擋住',
+      j.ok, '標題頂 ' + j.top + '／遮擋到 ' + j.cover);
+    ok('點下去那一項被標示（含 aria-current）', j.on === hs[4] && j.cur === 'true', j.on);
+
+    // scroll-spy：把第 3 節的標題捲過黏著區的下緣，標示要跟著換
+    await q.evaluate(() => {
+      const cover = Math.max(document.querySelector('.topbar').getBoundingClientRect().bottom,
+                             document.getElementById('dxNav').getBoundingClientRect().bottom);
+      const sec = document.querySelectorAll('#paneClinical > .card')[2];
+      window.scrollTo(0, sec.getBoundingClientRect().top + scrollY - cover - 4);
+    });
+    await q.waitForTimeout(400);
+    ok('★ 手動捲到第 3 節，目錄標示跟著換',
+      await q.$eval('#dxNav .dx-nav-item.on', n => n.textContent) === hs[2]);
+
+    await q.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await q.waitForTimeout(400);
+    ok('捲到頁尾時標示最後一節（最後幾節頂不到上緣也不會標錯）',
+      await q.$eval('#dxNav .dx-nav-item.on', n => n.textContent) === '追蹤時程');
+
+    await q.evaluate(() => window.scrollTo(0, 0));
+    await q.click('#btnAudPublic');
+    await q.waitForTimeout(200);
+    const pub = await visibleItems(q);
+    const pubHs = await q.$$eval('#panePublic > .card > h2', ns => ns.map(n => n.textContent));
+    ok('★ 切到家屬版，目錄換成家屬版的章節',
+      pubHs.length > 0 && pubHs.every((t, i) => pub[i] === t), pub.join('｜'));
+    await c.close();
+
+    // ── 寬螢幕 ──
+    ({ c, q } = await navCase(1280, 800, false));
+    const wide = await q.evaluate(() => {
+      const nav = document.getElementById('dxNav').getBoundingClientRect();
+      const main = document.getElementById('paneClinical').getBoundingClientRect();
+      const side = document.getElementById('cardSchedule').getBoundingClientRect();
+      return { col: getComputedStyle(document.getElementById('dxNav')).flexDirection,
+               order: nav.right <= main.left + 1 && main.right <= side.left + 1,
+               sched: [...document.querySelectorAll('#dxNav .nav-sched')].every(n => !n.getClientRects().length),
+               overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 };
+    });
+    ok('★ 1280px：目錄｜內容｜追蹤時程 三欄由左到右', wide.col === 'column' && wide.order);
+    ok('寬螢幕目錄不列追蹤時程（它已固定在右欄）', wide.sched);
+    ok('三欄版面沒有橫向溢出', !wide.overflow);
+
+    await q.evaluate(() => window.scrollTo(0, 1500));
+    await q.waitForTimeout(300);
+    const stuck = await q.evaluate(() => {
+      const n = document.getElementById('dxNav').getBoundingClientRect();
+      return n.top >= document.querySelector('.topbar').getBoundingClientRect().bottom - 1 && n.top < 120;
+    });
+    ok('★ 捲動時左側目錄一直黏在頂列下方', stuck);
+
+    await q.click('#btnLang');
+    await q.waitForTimeout(300);
+    ok('切英文後目錄也換語言',
+      (await visibleItems(q))[0] === 'Diagnostic criteria' &&
+      await q.$eval('#dxNav', n => n.getAttribute('aria-label')) === 'On this page');
+    await q.evaluate(() => localStorage.setItem('dtg_lang', 'zh'));
+    await c.close();
+  }
+
   /* ── 8. 查閱模式與搜尋 ── */
   {
     await p.click('#btnBrowse');
@@ -942,7 +1050,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v2\.0/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v2\.1/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
