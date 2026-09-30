@@ -120,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v1.7', /v1\.7/.test(await p.title()) &&
-      /v1\.7/.test(await p.textContent('footer')));
+    ok('版本號是 v1.8', /v1\.8/.test(await p.title()) &&
+      /v1\.8/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -466,6 +466,73 @@ async function reset(p){
       /血管再生/.test(await p.textContent('#apexBody')));
   }
 
+  /* ── 7g. 手機版面（v1.8）──
+     用最窄的常見機型 375px 跑，檢查兩件在桌機上看不出來的事：
+     頁面會不會橫向溢出、點擊目標夠不夠大。
+     先前頂列四顆只有 34–36px（Apple HIG 下限是 44），而且 <400px 時
+     「提示」「查閱」的文字會被藏掉只剩 emoji，觸控又沒有 hover 看不到 title。 */
+  {
+    const mob = await browser.newContext({
+      viewport:{ width:375, height:667 }, deviceScaleFactor:2,
+      isMobile:true, hasTouch:true, serviceWorkers:'block'
+    });
+    await stubStats(mob);
+    const mp = await mob.newPage();
+    await mp.goto(LOGIN);
+    await mp.evaluate(() => localStorage.setItem('nckuh_endo_authed','1'));
+    await mp.evaluate(() => localStorage.setItem('dtg_mode','normal'));
+    await mp.goto(APP);
+    await mp.waitForSelector('#treeQ');
+
+    const scan = () => mp.evaluate(() => {
+      const vw = document.documentElement.clientWidth;
+      const inScroller = el => {
+        for (let q = el.parentElement; q && q !== document.body; q = q.parentElement){
+          const ox = getComputedStyle(q).overflowX;
+          if (ox === 'auto' || ox === 'scroll') return true;
+        }
+        return false;
+      };
+      const wide = [], small = [];
+      document.querySelectorAll('body *').forEach(el => {
+        if (!el.getClientRects().length || inScroller(el)) return;
+        const b = el.getBoundingClientRect();
+        if (b.width > vw + 1 || b.right > vw + 1)
+          wide.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' w=' + Math.round(b.width));
+      });
+      document.querySelectorAll('button, summary, input').forEach(el => {
+        if (!el.getClientRects().length) return;
+        const b = el.getBoundingClientRect();
+        if (b.height < 44 || b.width < 40)
+          small.push((el.id ? '#' + el.id : '.' + String(el.className).split(' ')[0]) +
+                     ' ' + Math.round(b.width) + '×' + Math.round(b.height));
+      });
+      return { overflow: document.documentElement.scrollWidth > vw + 1,
+               wide: [...new Set(wide)], small: [...new Set(small)] };
+    });
+
+    let r = await scan();
+    ok('★ 375px 下首頁不會橫向溢出', !r.overflow && r.wide.length === 0, r.wide.join(' '));
+    ok('★ 375px 下的按鈕都達到 44px 觸控下限', r.small.length === 0, r.small.join(' ｜ '));
+
+    // <400px 時不可以把「提示」「查閱」的文字藏掉——emoji 看不出是什麼
+    const labels = await mp.$$eval('.chip-btn span:last-child',
+      ns => ns.map(n => [n.textContent.trim(), getComputedStyle(n).display]));
+    ok('★ 375px 下「提示」「查閱」仍看得到文字，不是只剩 emoji',
+      labels.length === 2 && labels.every(l => l[1] !== 'none' && l[0].length > 0),
+      labels.map(l => l[0] + '(' + l[1] + ')').join(' '));
+
+    // 診斷頁是內容最密的一頁，也要掃一次
+    await mp.click('#btnBrowse');
+    await mp.waitForSelector('#screenBrowse:not([hidden])');
+    await mp.click('#browseList .dx-card >> nth=0');
+    await mp.waitForSelector('#screenDx:not([hidden])');
+    r = await scan();
+    ok('★ 375px 下診斷頁不會橫向溢出', !r.overflow && r.wide.length === 0, r.wide.join(' '));
+    ok('診斷頁的按鈕也都達到 44px', r.small.length === 0, r.small.join(' ｜ '));
+    await mob.close();
+  }
+
   /* ── 8. 查閱模式與搜尋 ── */
   {
     await p.click('#btnBrowse');
@@ -713,7 +780,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v1\.7/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v1\.8/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
