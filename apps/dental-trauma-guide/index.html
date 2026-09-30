@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
-<title>牙外傷處置指南 v2.1 · NCKUH Dental Trauma Guide</title>
+<title>牙外傷處置指南 v2.2 · NCKUH Dental Trauma Guide</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -41,6 +41,7 @@
     </div>
     <div class="row-btns">
       <button class="btn ghost" id="btnTreeRestart"><span data-ui="restart">重新開始</span></button>
+      <button class="btn ghost" id="btnTreeOverview"><span aria-hidden="true">🗺️</span> <span data-ui="viewTree">決策樹總覽</span></button>
     </div>
 
     <!-- 只在第一題顯示的參考資料 -->
@@ -121,10 +122,25 @@
 
   <!-- ===== 查閱列表 ===== -->
   <section id="screenBrowse" hidden>
+    <!-- 兩種看法：依診斷的插圖卡片、整棵決策樹的總覽（見 app.js「決策樹總覽」） -->
+    <div class="aud-toggle view-toggle" role="tablist">
+      <button class="aud-btn active" id="btnViewCards" role="tab" data-ui="viewCards">依診斷</button>
+      <button class="aud-btn" id="btnViewTree" role="tab" data-ui="viewTree">決策樹總覽</button>
+    </div>
+
     <input type="search" id="dxSearch" class="search glass" placeholder="搜尋診斷…" autocomplete="off">
     <p class="legend muted small" id="browseLegend"></p>
-    <div id="browseList"></div>
-    <p class="muted center" id="browseEmpty" hidden></p>
+
+    <div id="browseCardsPane">
+      <div id="browseList"></div>
+      <p class="muted center" id="browseEmpty" hidden></p>
+    </div>
+
+    <div id="browseTreePane" hidden>
+      <p class="pf-intro" id="pfIntro"></p>
+      <div class="aud-toggle pf-tabs" id="pfTabs" role="tablist"></div>
+      <div class="pf-cols" id="pfTree"></div>
+    </div>
   </section>
 
   <!-- ===== 診斷頁 ===== -->
@@ -187,7 +203,7 @@
 
 <footer>
   <p class="muted small" id="txtDisclaimer"></p>
-  <p class="muted small">v2.1 · ©Tso KY - All Rights Reserved</p>
+  <p class="muted small">v2.2 · ©Tso KY - All Rights Reserved</p>
 </footer>
 
 <div class="toast" id="toast" hidden></div>

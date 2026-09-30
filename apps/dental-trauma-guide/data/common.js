@@ -80,6 +80,15 @@ const UI = {
   search:       { zh: '搜尋診斷…',                en: 'Search diagnoses…' },
   noResult:     { zh: '找不到符合的診斷',          en: 'No matching diagnosis' },
 
+  /* 查閱頁的兩種看法：插圖卡片、整棵決策樹總覽 */
+  viewCards:    { zh: '依診斷',                   en: 'By diagnosis' },
+  viewTree:     { zh: '決策樹總覽',               en: 'Tree overview' },
+  pfIntro:      { zh: '整棵決策樹一次攤開，點診斷直接開啟。🩻＝要看 X 光片才答得出來的題目。開始之前一律先排除醫療急症（紅旗）。',
+                  en: 'The whole decision tree at a glance — tap a diagnosis to open it. 🩻 = a question that needs the radiograph to answer. Always screen for medical emergencies (red flags) first.' },
+  pfXray:       { zh: '要看 X 光片才答得出來',     en: 'Needs the radiograph to answer' },
+  pfCount:      { zh: '{n} 個診斷',               en: '{n} diagnoses' },
+  pfHere:       { zh: '目前在這題',               en: 'You are here' },
+
   sourceLabel:  { zh: '出處',                     en: 'Source' },
   refTitle:     { zh: '參考文獻',                 en: 'References' },
   reviewedThru: { zh: '臨床內容核對至',           en: 'Clinical content reviewed through' },

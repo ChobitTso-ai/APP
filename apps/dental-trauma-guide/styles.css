@@ -23,6 +23,7 @@
   --accent-soft:#EAF1FD;
   --ok:#15803D;      --ok-soft:#ECFDF3;     --ok-line:#A7E3BF;      /* 5.0:1 */
   --warn:#B45309;    --warn-soft:#FFF8EB;   --warn-line:#F5C77E;    /* 5.0:1 */
+  --warn-ink:#9A4A0A;             /* 淺藍底（--accent-soft）上的 ⚡：--warn 在那裡只有 4.4:1，這個 5.5:1 */
   --danger:#B91C1C;  --danger-soft:#FEF2F2; --danger-line:#F5B5B5;  /* 6.5:1 */
   --aae:#6D28D9;     --aae-soft:#F5F3FF;    --aae-line:#DDD6FE;     /* 7.1:1 */
   --r:10px;
@@ -564,4 +565,77 @@ footer p{max-width:700px;margin:0 auto}
     padding:8px 14px; border-bottom:0; border-left:3px solid transparent;
   }
   .dx-nav-item.on{border-left-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+}
+
+/* ===== 決策樹總覽 =====
+   查閱頁的第二種看法：整棵決策樹攤開成縮排的樹狀圖（見 app.js「決策樹總覽」）。
+   連接線全用 ::before／::after 畫：
+     每個選項左邊一條豎線（上一題往下的主幹），最後一個選項只畫到自己的橫線為止；
+     一條短橫線接到選項文字。
+   橫線高度（top:24px）要對準選項第一行文字與右邊診斷按鈕的中線：
+     列上下留 3px，文字上下各留 11px、行高 22px → 第一行中線在 3+11+11＝25px；
+     診斷按鈕高 44px、靠上對齊 → 中線也在 3+22＝25px。
+   所以不論按鈕跟文字同一行（寬螢幕）還是折到下一行（手機），橫線都對得上。
+   每往下一層縮 22px（主幹 6px＋選項內縮 16px），最深 6 層在 375px 上仍有 ~180px 放診斷。 */
+.view-toggle{max-width:460px;margin-left:auto;margin-right:auto}
+.pf-intro{font-size:.84rem;line-height:1.7;color:var(--text-2);margin:0 4px 12px}
+.pf-col{padding:14px 14px 8px}
+.pf-head{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid var(--line);
+}
+.card .pf-head h2{margin:0}
+.pf-count{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.pf-q{font-size:.88rem;font-weight:700;line-height:1.55;color:var(--text);margin-top:6px}
+.pf-xray{margin-right:5px}
+/* 從問答中途打開時：目前停著的那一題 */
+.pf-q.here{background:var(--accent-soft);border-radius:6px;padding:4px 8px;margin-left:-8px}
+.pf-here{
+  display:inline-block;margin-left:8px;vertical-align:1px;
+  font-size:.68rem;font-weight:700;color:#fff;background:var(--accent);
+  border-radius:999px;padding:1px 9px;line-height:1.6;white-space:nowrap;
+}
+.pf-ul{list-style:none;margin:0 0 0 6px;padding:0}
+.pf-li{position:relative;padding-left:16px}
+.pf-li::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;
+  border-left:2px solid var(--line-2);
+}
+.pf-li:last-child::before{bottom:auto;height:26px}
+.pf-li::after{
+  content:"";position:absolute;left:0;top:24px;width:11px;
+  border-top:2px solid var(--line-2);
+}
+.pf-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:0 10px;padding:3px 0}
+.pf-opt{flex:1 1 120px;min-width:0;font-size:.86rem;line-height:22px;padding:11px 0;color:var(--text-2)}
+/* 走過的選項 */
+.pf-li.trail::after{border-top-color:var(--accent)}
+.pf-li.trail > .pf-row > .pf-opt{color:var(--accent-ink);font-weight:600}
+.pf-leaf{
+  display:inline-flex;align-items:center;gap:8px;flex:none;max-width:100%;
+  /* 縮圖 38＋上下 2＋框線 2＝44：剛好 44 才對得上橫線（46 時中線會低 1px） */
+  min-height:44px;padding:2px 12px 2px 2px;
+  font:inherit;font-size:.86rem;font-weight:600;line-height:1.35;text-align:left;
+  color:var(--accent-ink);background:var(--accent-soft);
+  border:1px solid #C7D8F6;border-radius:8px;cursor:pointer;
+  transition:border-color .12s, box-shadow .12s;
+}
+.pf-leaf:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(29,95,209,.14)}
+.pf-leaf:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pf-fig{
+  width:30px;height:38px;flex:none;border-radius:5px;background:var(--well);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.pf-fig img{width:100%;height:100%;object-fit:contain}
+.pf-name{min-width:0}
+.pf-leaf .urgent-dot{color:var(--warn-ink)}
+.pf-result{font-size:.86rem;line-height:22px;padding:11px 0;color:var(--danger);font-weight:600}
+
+/* 手機與平板：一次一棵，用分頁切 */
+@media(max-width:1023.98px){ .pf-col:not(.on){display:none} }
+/* 寬螢幕：恆牙、乳牙兩棵並排，分頁拿掉；內容區放寬（卡片看法維持原寬） */
+@media(min-width:1024px){
+  body[data-screen="screenBrowse"][data-view="tree"] .wrap{max-width:1200px}
+  .pf-tabs{display:none}
+  .pf-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 }
