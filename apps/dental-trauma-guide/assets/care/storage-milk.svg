@@ -1,20 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" version="1.1">
-<!-- © 2026 Tso KY - All Rights Reserved
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" version="1.1"><!-- © 2026 Tso KY - All Rights Reserved
 Protected against reverse engineering and unauthorized modification
-插圖版本 v2.0 -->
-<title>牛奶保存</title>
-<desc>v2.0。無文字牛奶紙盒。屋頂式摺口、開啟的傾倒口與乳滴圖案用於辨識；牛奶名稱及保存液排列由 App 的雙語標籤呈現。</desc>
-<g data-object="milk-carton">
-<path d="M65 75 L143 75 L174 57 L174 197 L143 218 L65 218 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M143 75 L174 57 L174 197 L143 218 Z" fill="#C9D4E2" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M65 75 L89 43 L153 43 L143 75 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M143 75 L153 43 L174 57 Z" fill="#C9D4E2" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M89 43 L89 29 L153 29 L153 43 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M153 29 L177 20 L177 35 L153 43 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M65 179 Q104 166 143 180 L143 218 L65 218 Z" fill="#4DA3FF"/>
-<path d="M143 180 L174 163 L174 197 L143 218 Z" fill="#4DA3FF" opacity=".7"/>
+插圖版本 v4.0 --><title>牛奶保存</title><desc>v4.0。無文字牛奶紙盒。屋頂式摺口、開啟的傾倒口與乳滴圖案用於辨識；牛奶名稱及保存液排列由 App 的雙語標籤呈現。 本批保留已確認的物件辨識造型。</desc><g data-object="milk-carton">
+<path d="M65 75L143 75L174 57L174 197L143 218L65 218Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M143 75L174 57L174 197L143 218Z" fill="#C9D4E2" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M65 75L89 43L153 43L143 75Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M143 75L153 43L174 57Z" fill="#C9D4E2" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M89 43L89 29L153 29L153 43Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M153 29L177 20L177 35L153 43Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M65 179Q104 166 143 180L143 218L65 218Z" fill="#4DA3FF"/>
+<path d="M143 180L174 163L174 197L143 218Z" fill="#4DA3FF" opacity=".7"/>
 <circle cx="105" cy="126" r="29" fill="#4DA3FF"/>
-<path d="M105 105 C101 113 93 120 93 129 C93 144 117 144 117 129 C117 120 109 113 105 105 Z" fill="#F4F7FA"/>
-<path d="M85 58 L130 58 M153 88 L164 82" fill="none" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M105 105C101 113 93 120 93 129C93 144 117 144 117 129C117 120 109 113 105 105Z" fill="#F4F7FA"/>
+<path d="M85 58L130 58M153 88L164 82" fill="none" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 </svg>

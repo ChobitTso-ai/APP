@@ -4,10 +4,11 @@
 完整繪圖規格見 `docs/handoff/dental-trauma-art-spec.md`（那份是唯一權威，
 要改規格改那份，不要只改這裡）。
 
-## 目前狀態（2026-09-30）
+## 目前狀態（2026-10-01）
 
-**31 張全部到齊並上線**：`dx/` 18 張、`care/` 12 張、`icon-master.svg` 1 張。
-PWA 的 PNG 圖示已由 `icon-master.svg` 轉出，先前的 🚑 emoji 過渡圖示已淘汰。
+**31 張全部上線**：`dx/` 18 張、`care/` 12 張為 CODEX v4.0「立體斜角剖視」版
+（上顎方向：牙根朝上、牙冠朝下）；`icon-master.svg` 沿用 v3.1 版。
+PWA 的 PNG 圖示由 `icon-master.svg` 轉出，先前的 🚑 emoji 過渡圖示已淘汰。
 
 **之後要修改已上線的圖**：流程見 `docs/handoff/README.md` 的「修改已上線的圖」
 （檔名不變、直接換檔，App 程式不用動）。
