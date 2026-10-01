@@ -1,8 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" version="1.1">
-<!-- © 2026 Tso KY - All Rights Reserved
-Protected against reverse engineering and unauthorized modification
-插圖版本 v2.0 -->
-<title>彈性固定裝置</title>
-<desc>v2.0。唇側正面視角，中央患牙與左右各一顆鄰牙。一條細軟線微彎跨過三顆牙，以三個小型複合樹脂固定點黏著於牙冠。未畫成剛性板。牙髓、牙本質及韌帶不在此正面視角暴露。</desc>
-<g data-part="gingiva"><path d="M68 141 Q360 104 652 141 L652 225 Q615 213 603 222 Q581 236 552 222 Q540 207 532 225 Q450 262 443 220 Q428 205 420 223 Q360 247 300 223 Q292 205 277 220 Q270 262 188 225 Q180 207 168 222 Q139 236 117 222 Q105 213 68 225 Z" fill="#E08A9A" stroke="#C26A7C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></g><g data-tooth="1" transform="translate(180 0)"><g data-part="enamel"><path d="M-67 200 C-75 226 -79 300 -76 360 Q-75 397 -67 417 Q0 435 67 417 Q75 397 76 360 C79 300 75 226 67 200 Q38 182 0 196 Q-38 182 -67 200 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M-49 224 C-54 268 -53 314 -51 349" fill="none" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g data-part="dentin"/><g data-part="pulp"/><g data-part="pdl"/></g><g data-tooth="2" transform="translate(360 0)"><g data-part="enamel"><path d="M-67 200 C-75 226 -79 300 -76 360 Q-75 397 -67 417 Q0 435 67 417 Q75 397 76 360 C79 300 75 226 67 200 Q38 182 0 196 Q-38 182 -67 200 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M-49 224 C-54 268 -53 314 -51 349" fill="none" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g data-part="dentin"/><g data-part="pulp"/><g data-part="pdl"/></g><g data-tooth="3" transform="translate(540 0)"><g data-part="enamel"><path d="M-67 200 C-75 226 -79 300 -76 360 Q-75 397 -67 417 Q0 435 67 417 Q75 397 76 360 C79 300 75 226 67 200 Q38 182 0 196 Q-38 182 -67 200 Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M-49 224 C-54 268 -53 314 -51 349" fill="none" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g data-part="dentin"/><g data-part="pulp"/><g data-part="pdl"/></g><g data-device="flexible-splint"><ellipse cx="180" cy="307" rx="17" ry="13" fill="#E9C98C" fill-opacity=".7" stroke="#C9A360" stroke-width="1.5"/><ellipse cx="360" cy="307" rx="17" ry="13" fill="#E9C98C" fill-opacity=".7" stroke="#C9A360" stroke-width="1.5"/><ellipse cx="540" cy="307" rx="17" ry="13" fill="#E9C98C" fill-opacity=".7" stroke="#C9A360" stroke-width="1.5"/><path d="M157 307 C215 299 270 320 330 308 C373 300 421 305 465 310 Q511 315 563 307" fill="none" stroke="#87755C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M157 306 C215 298 270 319 330 307 C373 299 421 304 465 309 Q511 314 563 306" fill="none" stroke="#C9D4E2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><g data-part="lesion"><path d="M327 187 Q360 196 393 187" fill="none" stroke="#FF4D4F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g><g data-part="bone"/><g data-part="arrow"/>
-</svg>
+<svg viewBox="0 0 720 560" role="img" version="1.1" xmlns="http://www.w3.org/2000/svg"><!-- © 2026 Tso KY - All Rights Reserved; Protected against reverse engineering and unauthorized modification; v4.1 --><title>彈性固定裝置</title><desc>v4.1（依規格 v3.2）。同一組唇側牙冠；深灰微彎軟線與三個清楚的實心複合樹脂固定點，供淺灰藍底縮圖辨識。</desc><g data-part="gingiva"><path d="M63 162Q174 120 282 161Q356 136 431 161Q548 119 657 163L657 230Q540 211 431 232Q356 209 282 232Q166 211 63 230Z" fill="#E08A9A" stroke="#C26A7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></g><g data-tooth="1" transform="matrix(1.36 0 0 -1.36 -41 487)"><g data-part="dentin" data-surface="side-thickness">
+<path d="M208 70L230 58Q247 68 247 96L241 167Q239 200 222 217C222.09 219.65 222.17 222.32 222.23 225L204.65 225L205 213L208 70Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M229 73C232.41 118.43 231.66 171.04 227.4 225L232.61 225C237.54 174.5 240 124.66 240 80L229 73Z" fill="#87755C" opacity="0.147" /></g>
+<g data-part="dentin" data-surface="cut-face">
+<path d="M124 73L208 58Q221 67 222 94L217 162Q212 199 205 214C205.71 217.66 206.36 221.33 206.95 225L124.34 225C124.48 220.98 124.7 216.98 125 213Q114 184 112 150L112 92Q113 79 124 73Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M126 85C126 125.96 127.2 174.68 130.69 225L144.45 225C144.49 173.47 148.29 122.54 156 77L126 85Z" fill="#F4F7FA" opacity="0.09" /><path d="M186 74C189.7 121.32 193.94 173.02 196.36 225L212.79 225C214.98 176.06 214.65 125.02 210 76L186 74Z" fill="#C9A360" opacity="0.092" /></g>
+<g data-part="pulp">
+</g>
+<g data-part="cementum">
+<path d="M125 213C124.7 216.98 124.48 220.98 124.34 225M206.95 225C206.36 221.33 205.71 217.66 205 214" fill="none" stroke="#C9A360" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+</g>
+<g data-part="enamel">
+<path d="M210 50L229 45Q246 58 249 81L243 161Q241 195 223 216L209 218L216 183L227 111L225 73Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M133 223C119 209 107 176 102 143L100 93Q101 70 112 61L210 44Q226 49 231 72L228 124Q226 177 209 218Q194.36 223.14 179.41 225L145.24 225Q139.15 224.26 133 223Z" fill="#F4F7FA" fill-rule="evenodd" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M112 64L210 46L228 56L126 78L103 93Q103 74 112 64Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="0.87" stroke-linejoin="round" />
+<path d="M108 99C109 135 116 174 128 196" fill="none" stroke="#F4F7FA" stroke-width="2.2" opacity=".32" stroke-linecap="round" />
+<path d="M134 220L140 209M199 204L209 215" fill="none" stroke="#C9D4E2" stroke-width="3" opacity=".5" stroke-linecap="round" />
+<path d="M230 53C249 88 237 173 222 211L204 210C215 181 225 141 224 84Z" fill="#C9D4E2" opacity="0.138" /></g>
+</g><g data-tooth="2" transform="matrix(1.36 0 0 -1.36 179 487)"><g data-part="dentin" data-surface="side-thickness">
+<path d="M208 70L230 58Q247 68 247 96L241 167Q239 200 222 217C222.09 219.65 222.17 222.32 222.23 225L204.65 225L205 213L208 70Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M229 73C232.41 118.43 231.66 171.04 227.4 225L232.61 225C237.54 174.5 240 124.66 240 80L229 73Z" fill="#87755C" opacity="0.147" /></g>
+<g data-part="dentin" data-surface="cut-face">
+<path d="M124 73L208 58Q221 67 222 94L217 162Q212 199 205 214C205.71 217.66 206.36 221.33 206.95 225L124.34 225C124.48 220.98 124.7 216.98 125 213Q114 184 112 150L112 92Q113 79 124 73Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M126 85C126 125.96 127.2 174.68 130.69 225L144.45 225C144.49 173.47 148.29 122.54 156 77L126 85Z" fill="#F4F7FA" opacity="0.09" /><path d="M186 74C189.7 121.32 193.94 173.02 196.36 225L212.79 225C214.98 176.06 214.65 125.02 210 76L186 74Z" fill="#C9A360" opacity="0.092" /></g>
+<g data-part="pulp">
+</g>
+<g data-part="cementum">
+<path d="M125 213C124.7 216.98 124.48 220.98 124.34 225M206.95 225C206.36 221.33 205.71 217.66 205 214" fill="none" stroke="#C9A360" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+</g>
+<g data-part="enamel">
+<path d="M210 50L229 45Q246 58 249 81L243 161Q241 195 223 216L209 218L216 183L227 111L225 73Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M133 223C119 209 107 176 102 143L100 93Q101 70 112 61L210 44Q226 49 231 72L228 124Q226 177 209 218Q194.36 223.14 179.41 225L145.24 225Q139.15 224.26 133 223Z" fill="#F4F7FA" fill-rule="evenodd" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M112 64L210 46L228 56L126 78L103 93Q103 74 112 64Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="0.87" stroke-linejoin="round" />
+<path d="M108 99C109 135 116 174 128 196" fill="none" stroke="#F4F7FA" stroke-width="2.2" opacity=".32" stroke-linecap="round" />
+<path d="M134 220L140 209M199 204L209 215" fill="none" stroke="#C9D4E2" stroke-width="3" opacity=".5" stroke-linecap="round" />
+<path d="M230 53C249 88 237 173 222 211L204 210C215 181 225 141 224 84Z" fill="#C9D4E2" opacity="0.138" /></g>
+</g><g data-tooth="3" transform="matrix(1.36 0 0 -1.36 399 487)"><g data-part="dentin" data-surface="side-thickness">
+<path d="M208 70L230 58Q247 68 247 96L241 167Q239 200 222 217C222.09 219.65 222.17 222.32 222.23 225L204.65 225L205 213L208 70Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M229 73C232.41 118.43 231.66 171.04 227.4 225L232.61 225C237.54 174.5 240 124.66 240 80L229 73Z" fill="#87755C" opacity="0.147" /></g>
+<g data-part="dentin" data-surface="cut-face">
+<path d="M124 73L208 58Q221 67 222 94L217 162Q212 199 205 214C205.71 217.66 206.36 221.33 206.95 225L124.34 225C124.48 220.98 124.7 216.98 125 213Q114 184 112 150L112 92Q113 79 124 73Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M126 85C126 125.96 127.2 174.68 130.69 225L144.45 225C144.49 173.47 148.29 122.54 156 77L126 85Z" fill="#F4F7FA" opacity="0.09" /><path d="M186 74C189.7 121.32 193.94 173.02 196.36 225L212.79 225C214.98 176.06 214.65 125.02 210 76L186 74Z" fill="#C9A360" opacity="0.092" /></g>
+<g data-part="pulp">
+</g>
+<g data-part="cementum">
+<path d="M125 213C124.7 216.98 124.48 220.98 124.34 225M206.95 225C206.36 221.33 205.71 217.66 205 214" fill="none" stroke="#C9A360" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+</g>
+<g data-part="enamel">
+<path d="M210 50L229 45Q246 58 249 81L243 161Q241 195 223 216L209 218L216 183L227 111L225 73Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M133 223C119 209 107 176 102 143L100 93Q101 70 112 61L210 44Q226 49 231 72L228 124Q226 177 209 218Q194.36 223.14 179.41 225L145.24 225Q139.15 224.26 133 223Z" fill="#F4F7FA" fill-rule="evenodd" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M112 64L210 46L228 56L126 78L103 93Q103 74 112 64Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="0.87" stroke-linejoin="round" />
+<path d="M108 99C109 135 116 174 128 196" fill="none" stroke="#F4F7FA" stroke-width="2.2" opacity=".32" stroke-linecap="round" />
+<path d="M134 220L140 209M199 204L209 215" fill="none" stroke="#C9D4E2" stroke-width="3" opacity=".5" stroke-linecap="round" />
+<path d="M230 53C249 88 237 173 222 211L204 210C215 181 225 141 224 84Z" fill="#C9D4E2" opacity="0.138" /></g>
+</g><g data-part="arrow"><path d="M125 281Q197 267 264 278Q347 296 430 279Q497 266 576 281" fill="none" stroke="#475569" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" data-object="flexible-wire" /><circle cx="197" cy="278" r="18" fill="#E9C98C" stroke="#475569" stroke-width="3" data-object="composite-resin" /><circle cx="356" cy="278" r="18" fill="#E9C98C" stroke="#475569" stroke-width="3" data-object="composite-resin" /><circle cx="515" cy="278" r="18" fill="#E9C98C" stroke="#475569" stroke-width="3" data-object="composite-resin" /></g><g data-part="lesion" /><g data-part="bone" /><g data-part="pdl" /></svg>
