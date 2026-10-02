@@ -267,6 +267,7 @@ const PERMANENT_DX = [
   img:'dx/fx-crown-root-comp.svg', source:'IADT-1 Table 6',
   name:{ zh:'複雜性牙冠牙根斷裂（露髓）', en:'Complicated crown-root fracture' },
   short:{ zh:'斷裂延伸至齦下牙根並通過牙髓', en:'Fracture extending below the gingival margin into the root, with pulp exposure' },
+  timeCritical:true,      // 跟複雜性牙冠斷裂一樣是露髓（Dr.Tso 2026-10-02 指定）；決策樹因此直接進診斷頁
   pub:{
     what:{ zh:'裂線從牙冠延伸到牙齦下方，而且穿過了牙髓，所以看得到紅色或出血的組織。', en:'The fracture runs from the crown to below the gum line and passes through the pulp, so red or bleeding tissue is visible.' },
     doNow:{ zh:'儘快就醫。牙醫會先固定鬆動的斷片並處理牙髓，再決定這顆牙的保存方式。', en:'See a dentist promptly. The loose fragment is stabilized and the pulp treated first, then the plan for saving the tooth is decided.' },
