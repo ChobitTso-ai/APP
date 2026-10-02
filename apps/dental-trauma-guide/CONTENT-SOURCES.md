@@ -105,6 +105,17 @@ IADT 的數字**。兩者若有出入，以 IADT 為準並在該處註明。
 - **成熟根 intrusion <3 mm**：8 週無再萌出才手術復位——這個 8 週是對的，
   與第 1 項未成熟根的 4 週是兩回事，App 分開寫，避免混淆。
 
+### 2026-10-02 臨床安全文字修正（Dr.Tso 指定，v2.5）
+
+四段共用文字原本寫得太絕對，臨床上會誤導。**只改這四段的說法，各診斷頁的處置數字與追蹤時程沒有動。**
+
+| 區段 | 原本的問題 | 改成 | 依據 |
+|---|---|---|---|
+| 保存液：自來水 | 標成禁止（紅色 ✗），可能讓人寧可讓牙根乾掉 | 排名外的**最後備案**：不建議長時間保存，但優於乾燥；取得保存液立即更換。1–4 名排名不變 | IADT-2：「Although water is a poor medium, it is better than leaving the tooth to air-dry.」 |
+| 牙髓測試警語 | 「決定根管治療的是序列變化與感染證據」——等於說所有根管治療都要等感染 | 單次陰性不等於壞死；但成熟根側向／內縮性脫位、根尖閉鎖恆牙脫落再植後，有特定的早期根管治療建議，依診斷頁 | 各診斷頁原本就寫的 injury-specific protocol（例如 IADT-2：「Initiate root canal treatment within 2 weeks」） |
+| 根尖成熟度 | 「未成熟＝觀察、成熟＝脫位脫落後就做根管」 | 成熟度 × 外傷類型共同決定；「活髓再生治療」改為《辭彙》用語「再生牙髓治療」；7–8 歲萌發改寫「上顎中切牙」 | 《台灣牙髓病學醫學辭彙》：regenerative endodontic therapy＝再生牙髓治療 |
+| 固定裝置原則 | 「一律使用被動、柔性、短期的固定」 | 「多數」外傷如此；合併齒槽骨或顎骨骨折可能需要較剛性的固定 | IADT-2：「In cases of associated alveolar or jawbone fracture, a more rigid splint is indicated and should be left in place for about 4 weeks.」 |
+
 ## 已從原文確認的關鍵數字
 
 固定（passive flexible splint，不鏽鋼線 ≤0.4 mm 或釣魚線 0.13–0.25 mm）：

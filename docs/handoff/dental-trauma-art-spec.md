@@ -7,6 +7,10 @@
 
 ## 修訂紀錄
 
+**v3.4（2026-10-02）** — 18e 自來水拿掉紅色禁止叉（Claude 已直接改 repo 版，見 `README.md` 的「Claude 端改過的圖」）：
+IADT-2 原文「Although water is a poor medium, it is better than leaving the tooth to air-dry」，
+App 改為排名外的最後備案。日後重畫這張**不要再加禁止符號**。
+
 **v3.3（2026-10-01）** — 採用 CODEX v4.0「立體斜角剖視」畫風（Dr.Tso 與 CODEX 確認），30 張診斷與處置圖全套換新：
 
 | 改了什麼 | 原因 |
@@ -265,7 +269,7 @@
 | 18b | `storage-hbss.svg` | 240×240 | 實驗室試劑瓶：螺旋蓋、方正瓶身、瓶身中央留一塊**空白標籤矩形**（不要寫字） |
 | 18c | `storage-saliva.svg` | 240×240 | 透明有蓋小杯，杯內有液面線 |
 | 18d | `storage-saline.svg` | 240×240 | 點滴軟袋：上方有吊掛孔、下方有出口管，明顯不是瓶子 |
-| 18e | `storage-water-no.svg` | 240×240 | 水龍頭流水，整張打一個紅色禁止斜槓 |
+| 18e | `storage-water-no.svg` | 240×240 | 水龍頭流水與盛水杯。**不加禁止符號**（v3.4：自來水是排名外的最後備案，不是禁用；檔名沿用） |
 | 19a | `step1-pick-up.svg` | 240×240 | 手指只捏牙冠把牙撿起來 |
 | 19b | `step2-rinse.svg` | 240×240 | 牙齒在流水下沖洗（只表達「沖」，**不要畫秒數**） |
 | 19c | `step3-replant-or-milk.svg` | 240×240 | 牙齒放回齒槽窩，旁邊一個牛奶盒代表替代方案 |

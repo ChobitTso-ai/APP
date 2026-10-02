@@ -153,6 +153,29 @@ const untranslated = attrs
 ok('★ HTML 裡寫死中文的 aria-label／title／placeholder 都有被換語言',
    untranslated.length === 0, brief(untranslated) || '全部都會換');
 
+/* ═══ ④ 臨床安全文字（2026-10-02 Dr.Tso 修正）═══
+   這幾段先前寫得太絕對，臨床上會誤導。釘在測試裡，免得被順手改回去。 */
+console.log('— 臨床安全文字 —');
+const water = D.STORAGE_MEDIA.find(m => m.id === 'water');
+const ranked = D.STORAGE_MEDIA.filter(m => !m.fallback).map(m => m.id).join('→');
+ok('★ 自來水是排名外的最後備案，不是禁用（IADT-2：poor medium, but better than air-drying）',
+   !!water && water.fallback === true && !water.forbidden &&
+   /最後備案/.test(water.note.zh) && /Last-resort/.test(water.note.en));
+ok('★ 保存液正式排名仍是 牛奶 → HBSS → 唾液 → 生理食鹽水', ranked === 'milk→hbss→saliva→saline', ranked);
+ok('★ 牙髓測試警語不再暗示所有根管治療都要等感染證據',
+   /早期根管治療建議/.test(D.PULP_TEST_CAVEAT.zh) && /early endodontic treatment/.test(D.PULP_TEST_CAVEAT.en) &&
+   !/決定是否根管治療的是/.test(D.PULP_TEST_CAVEAT.zh));
+ok('★ 根尖成熟度說明：成熟度 × 外傷類型共同決定牙髓策略',
+   /不能單獨決定/.test(D.APEX_BLOCK.body.zh) && /外傷類型/.test(D.APEX_BLOCK.body.zh) &&
+   /type of traumatic injury/.test(D.APEX_BLOCK.body.en));
+ok('★ 固定裝置原則不寫「一律」，並註明合併骨折可能需要較剛性的固定',
+   !/一律/.test(D.SPLINT_PRINCIPLE.zh) && !/Always/.test(D.SPLINT_PRINCIPLE.en) &&
+   /較剛性/.test(D.SPLINT_PRINCIPLE.zh) && /more rigid/.test(D.SPLINT_PRINCIPLE.en));
+const allData = ['common.js', 'permanent.js', 'primary.js']
+  .map(f => fs.readFileSync(path.join(root, 'data', f), 'utf8')).join('\n');
+ok('術語用「再生牙髓治療」（台灣牙髓病學醫學辭彙），不再出現「活髓再生治療」', !/活髓再生治療/.test(allData));
+ok('7–8 歲萌發寫「上顎中切牙」，不泛稱「上顎門齒」', !/上顎門齒[^。]*7–8/.test(allData));
+
 console.log('\n  診斷 ' + ALL_DX.length + '（恆牙 ' + D.PERMANENT_DX.length +
             ' ＋乳牙 ' + D.PRIMARY_DX.length + '）｜UI 字串 ' + uiKeys.size + ' 個');
 console.log('  通過 ' + pass + ' 項，失敗 ' + fail + ' 項');

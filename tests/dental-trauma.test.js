@@ -91,7 +91,24 @@ async function reset(p){
     ok('保存液依 IADT 偏好順序，牛奶排第一',
       names[0].startsWith('牛奶') && names[1].startsWith('HBSS') &&
       names[2].startsWith('唾液') && names[3].startsWith('生理食鹽水'), names.join(' → '));
-    ok('自來水標示為禁止', /✗/.test(names[4]) && await p.$('#storageRow .media.no') !== null);
+    // 自來水是排名外的最後備案，不是禁用（IADT-2：water is a poor medium, but better than air-drying）
+    const water = await p.evaluate(() => {
+      const box = [...document.querySelectorAll('#storageRow .media')][4];
+      return { name: box.querySelector('b').textContent, fallback: box.classList.contains('fallback'),
+               ranked: !!box.querySelector('.rank'), red: getComputedStyle(box.querySelector('b')).color,
+               ranks: [...document.querySelectorAll('#storageRow .rank')].map(r => r.textContent).join(''),
+               note: box.querySelector('small').textContent };
+    });
+    ok('★ 自來水標為「最後備案」，不打 ✗、不用紅色禁止樣式',
+      water.fallback && /最後備案/.test(water.name) && !/✗/.test(water.name) &&
+      !(await p.$('#storageRow .media.no')) && water.red !== 'rgb(185, 28, 28)', water.name);
+    ok('★ 自來水不進 1–4 的正式排名（牛奶 → HBSS → 唾液 → 生理食鹽水）',
+      !water.ranked && water.ranks === '1234', '編號 ' + water.ranks);
+    ok('自來水說明講清楚：優於讓牙根乾掉、取得保存液後立即更換',
+      /優於讓牙根乾掉/.test(water.note) && /立即更換/.test(water.note));
+    ok('★ 自來水插圖本身也沒有紅色禁止叉',
+      !/prohibited|#FF4D4F/i.test(require('fs').readFileSync(
+        path.join(__dirname, '..', 'apps', 'dental-trauma-guide', 'assets', 'care', 'storage-water-no.svg'), 'utf8')));
     await p.waitForFunction(() =>
       [...document.querySelectorAll('#storageRow .fig img')].every(i => i.complete));
     const media = await p.$$eval('#storageRow .fig img',
@@ -120,8 +137,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v2.4', /v2\.4/.test(await p.title()) &&
-      /v2\.4/.test(await p.textContent('footer')));
+    ok('版本號是 v2.5', /v2\.5/.test(await p.title()) &&
+      /v2\.5/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -462,8 +479,11 @@ async function reset(p){
     ok('★ 根尖成熟度三張圖都在且載得到（成熟／未成熟／放大對照）',
       apex.length === 3 && apex.every(x => x[1]),
       apex.map(x => x[0].split('/').pop()).join(' '));
-    ok('說明講到未成熟根可能自行血管再生',
-      /血管再生/.test(await p.textContent('#apexBody')));
+    const apexText = await p.textContent('#apexBody');
+    ok('說明講到未成熟根有較高的再血管化機會', /未成熟根/.test(apexText) && /再血管化/.test(apexText));
+    ok('★ 根尖成熟度不單獨決定根管治療，要搭配外傷類型（不再是「未成熟＝觀察、成熟＝做根管」）',
+      /不能單獨決定/.test(apexText) && /外傷類型/.test(apexText) &&
+      !/為什麼它決定處置/.test(await p.textContent('#txtApexTitle')));
   }
 
   /* ── 7g. 手機版面（v1.8）──
@@ -1109,7 +1129,9 @@ async function reset(p){
       /撞入 <3 mm[^。]*8 週內沒有再萌出/.test(clin));
     ok('成熟牙根管治療約 2 週開始', /約 2 週、或牙齒位置一允許操作時就開始/.test(clin));
     ok('脫位頁附牙髓測試判讀警告',
-      /第一次敏感性測試陰性，不等於牙髓壞死/.test(clin));
+      /單次牙髓敏感性測試陰性，不等於牙髓壞死/.test(clin));
+    ok('★ 警告不暗示所有根管治療都要等感染證據：註明高風險傷害有早期根管治療建議',
+      /部分高風險傷害有特定的早期根管治療建議/.test(clin) && !/決定是否根管治療的是/.test(clin));
 
     /* ── 9b. 兩份指引並列（v1.4）──
        主幹仍是 IADT，AAE 只是附註；如果哪天有人把主值換成 AAE 的 2 週，
@@ -1304,7 +1326,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v2\.4/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v2\.5/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();

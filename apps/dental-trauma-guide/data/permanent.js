@@ -701,7 +701,7 @@ const PERMANENT_DX = [
   pub:{
     what:{ zh:'整顆恆牙離開了齒槽窩。這是牙科少數真正以分鐘計算的急症：牙根表面的牙周韌帶細胞會隨著乾燥時間流失。', en:'A whole permanent tooth is out of its socket. This is one of the few dental emergencies measured in minutes — the PDL cells on the root surface die as the root dries.' },
     doNow:{ zh:'①保持冷靜 ②找到牙齒，只捏白色的牙冠 ③髒的話用牛奶、生理食鹽水或病人的唾液輕輕沖一下 ④立刻放回原本的位置，咬住紗布固定 ⑤沒辦法放回去就立刻泡進保存液（依序：牛奶、HBSS、唾液、生理食鹽水）⑥立刻就醫。', en:'1) Keep calm. 2) Find the tooth and pick it up by the white crown only. 3) If dirty, rinse briefly in milk, saline or the patient’s saliva. 4) Replant it immediately and have the patient bite on gauze. 5) If replantation is not possible, place it at once in a storage medium (in order: milk, HBSS, saliva, saline). 6) Get to a dentist immediately.' },
-    dontDo:{ zh:'不要碰牙根、不要刷或刮牙根、不要消毒、不要讓牙根乾掉、不要長時間泡自來水。乳牙不可以放回去。', en:'Do not touch the root, do not scrub or scrape it, do not disinfect it, do not let it dry, and do not store it in tap water. Never replant a primary tooth.' },
+    dontDo:{ zh:'不要碰牙根、不要刷或刮牙根、不要消毒、不要讓牙根乾掉、不要長時間泡自來水。乳牙不可以放回去。', en:'Do not touch the root, do not scrub or scrape it, do not disinfect it, do not let it dry, and do not leave it in tap water for long. Never replant a primary tooth.' },
     urgency:{ zh:'立刻——以分鐘計算。', en:'Immediately — minutes matter.' }
   },
   clin:{

@@ -88,6 +88,7 @@ const UI = {
   pfXray:       { zh: '要看 X 光片才答得出來',     en: 'Needs the radiograph to answer' },
   pfCount:      { zh: '{n} 個診斷',               en: '{n} diagnoses' },
   pfHere:       { zh: '目前在這題',               en: 'You are here' },
+  lastResort:   { zh: '最後備案',                 en: 'Last resort' },   // 自來水：保存液排名之外
 
   sourceLabel:  { zh: '出處',                     en: 'Source' },
   refTitle:     { zh: '參考文獻',                 en: 'References' },
@@ -143,7 +144,8 @@ const FIRST_AID_STEPS = [
    成熟／未成熟的處置差很多（牙髓能不能自行血管再生、要不要根尖成形術），
    但 App 各處原本只有「未成熟牙」「成熟牙」的文字。 */
 const APEX_BLOCK = {
-  title:{ zh:'根尖成熟了沒？為什麼它決定處置', en:'Open or closed apex — and why it changes everything' },
+  // 標題不寫「它決定處置」：根尖成熟度要跟外傷類型一起看，單獨決定不了根管治療
+  title:{ zh:'根尖成熟了沒？它怎麼影響牙髓處置', en:'Open or closed apex — how it affects pulp management' },
   figs:[
     { img:'dx/base-closed-apex.svg', cap:{ zh:'成熟根：根尖孔窄小', en:'Closed apex: narrow apical foramen' } },
     { img:'dx/base-open-apex.svg',   cap:{ zh:'未成熟根：牙根較短、根尖呈喇叭狀開口', en:'Open apex: shorter root, wide funnel-shaped opening' } }
@@ -151,8 +153,10 @@ const APEX_BLOCK = {
   zoom:{ img:'care/apex-open-vs-closed.svg',
          cap:{ zh:'兩顆牙並排：左為未成形的喇叭狀根尖，右為成形的窄小根尖孔',
                en:'Side by side: flared open apex on the left, closed narrow apex on the right' } },
-  body:{ zh:'**未成熟根**的根尖孔寬、血流豐富，牙髓有機會自行血管再生，所以外傷後**先觀察、不要急著抽神經**；壞死時走根尖成形術或活髓再生治療。\n\n**成熟根**的根尖孔窄，血管再生的機會很低，脫位與脫落後牙髓多半會壞死，該做根管治療就要準時做。\n\n判斷不確定時看年齡與牙齒大小：上顎門齒約 7–8 歲萌發，牙根還要再 2–3 年才發育完成。',
-         en:'An **open apex** has a wide foramen and a rich blood supply, so the pulp may revascularize on its own — **observe rather than rushing into endodontics**; if it does become necrotic, use apexification or regenerative endodontic treatment.\n\nA **closed apex** has a narrow foramen and little chance of revascularization: after luxation or avulsion the pulp usually becomes necrotic, so start root canal treatment on schedule.\n\nIf unsure, use age and tooth size: maxillary incisors erupt at about 7–8 years and the root takes another 2–3 years to complete.' }
+  /* 根尖成熟度 × 外傷類型 共同決定牙髓策略（先前寫成「未成熟＝觀察、成熟＝脫位脫落後就做
+     根管治療」，過度簡化）。各傷害的根管治療時機以診斷頁為準。 */
+  body:{ zh:'根尖成熟度會影響牙髓自行再血管化的可能性，但**不能單獨決定是否、以及何時進行根管治療**；還必須搭配外傷類型判斷。\n\n**未成熟根**的根尖孔較寬，牙髓有較高的再血管化機會，因此多數情況應優先保留牙髓或觀察恢復，不宜只因早期敏感性測試陰性就進行根管治療。若日後確認牙髓壞死與感染，再依情況考慮根尖成形術或再生牙髓治療。\n\n**成熟根**的再血管化機會較低，但不同外傷的根管策略仍不同。例如震盪、半脫位及部分外突性脫位通常先追蹤牙髓狀態；成熟根的側向脫位、內縮性脫位，以及根尖閉鎖恆牙脫落再植後，則有較積極的早期根管治療建議。請依各診斷頁的 injury-specific protocol 處理。\n\n判斷根尖成熟度時以影像為準。以上顎中切牙為例，通常約 7–8 歲萌發，牙根往往還需要約 2–3 年才完成發育。',
+         en:'Apical maturity affects the potential for pulp revascularization, but **it does not by itself determine whether or when root canal treatment is required**; the type of traumatic injury must also be considered.\n\n**An immature tooth with an open apex** has a greater potential for pulp revascularization. In most situations, pulp preservation or observation should therefore be prioritized, and root canal treatment should not be initiated solely because of an early negative sensibility test. If pulp necrosis and infection are subsequently confirmed, apexification or regenerative endodontic treatment may be considered as appropriate.\n\n**A mature tooth with a closed apex** has less potential for revascularization, but endodontic management still depends on the injury. Concussion, subluxation and some extrusive luxation injuries are generally monitored, whereas lateral luxation, intrusive luxation and replanted avulsed permanent teeth with closed apices have more proactive recommendations for early root canal treatment. Follow the injury-specific protocol on each diagnosis page.\n\nDetermine apical maturity radiographically. For example, maxillary central incisors typically erupt at about 7–8 years of age, and root development generally continues for another 2–3 years.' }
 };
 
 /* ---- 固定裝置示意圖 ---- */
@@ -206,7 +210,7 @@ const EMERGENCY = {
     {
       look:  { zh: '恆牙整顆掉出來', en: 'Permanent tooth knocked out' },
       doNow: { zh: '拿牙冠、不要碰牙根；髒的話用保存液輕輕沖一下就立即放回原位；不能放回就泡在保存液裡', en: 'Hold the crown, never the root; if dirty rinse briefly in a storage medium and replant at once; if not possible, place it in a storage medium' },
-      dont:  { zh: '不要刷、刮、消毒或讓牙根乾掉；不要長時間泡自來水', en: 'Do not scrub, scrape or disinfect the root, and do not let it dry; do not store in tap water' },
+      dont:  { zh: '不要刷、刮、消毒或讓牙根乾掉；不要長時間泡自來水', en: 'Do not scrub, scrape or disinfect the root, and do not let it dry; do not keep it in tap water for long' },
       when:  { zh: '立即，以分鐘計算', en: 'Immediately — minutes matter' }
     },
     {
@@ -238,9 +242,13 @@ const STORAGE_MEDIA = [
     note:{ zh:'吐進容器保存；不要讓病人含著以免吞入',       en:'Spit into a container; do not have the patient hold it in the mouth — risk of swallowing' } },
   { id:'saline', img:'care/storage-saline.svg',   name:{ zh:'生理食鹽水',    en:'Saline' },
     note:{ zh:'可用，但保存能力不如牛奶與 HBSS',            en:'Acceptable, but less effective than milk or HBSS' } },
+  // 自來水不在 IADT 的 1–4 排名內，但也不是禁用——IADT-2 原文：「Although water is a poor
+  // medium, it is better than leaving the tooth to air-dry.」所以標成排名外的最後備案
+  // （fallback）：不給排名編號、不打 ✗、不用紅色，整列放在 1–4 名後面（見 app.js）。
   { id:'water',  img:'care/storage-water-no.svg', name:{ zh:'自來水',       en:'Tap water' },
-    forbidden:true,
-    note:{ zh:'低滲透壓會使牙周韌帶細胞溶解，不可長時間浸泡', en:'Hypotonic — causes PDL cell lysis; not for prolonged storage' } }
+    fallback:true,
+    note:{ zh:'**最後備案，不建議長時間保存。**低滲透壓不利牙周韌帶細胞存活；但如果現場只有「自來水」與「讓牙齒乾燥」兩個選擇，短暫放在水中仍優於讓牙根乾掉。取得牛奶、HBSS、唾液或生理食鹽水後應立即更換。',
+           en:'**Last-resort option; not suitable for prolonged storage.** Its hypotonicity is harmful to periodontal ligament cells, but if the only alternatives are tap water or allowing the tooth to dry, brief storage in water is preferable to air-drying. Switch to milk, HBSS, saliva, or saline as soon as available.' } }
 ];
 
 /* ---- 撕脫時間門檻（Fouad et al. 2020）---- */
@@ -258,9 +266,11 @@ const PDL_NOTE = {
 };
 
 /* ---- 固定裝置的通則（Bourguignon et al. 2020 §6；Fouad et al. 2020 §8）---- */
+/* 不寫「一律」：合併齒槽骨或顎骨骨折時，IADT-2 指定較剛性的固定約 4 週
+   （「In cases of associated alveolar or jawbone fracture, a more rigid splint is indicated」）。 */
 const SPLINT_PRINCIPLE = {
-  zh: '一律使用被動、柔性、短期的固定裝置。不鏽鋼線直徑 ≤0.4 mm（0.016 吋），或尼龍釣魚線 0.13–0.25 mm，以複合樹脂黏著於唇側；複合樹脂與黏著劑要遠離牙齦與鄰接面，避免堆積牙菌斑與續發感染。固定天數依傷害類型而異，見各診斷頁。',
-  en: 'Always use a short-term, passive and flexible splint. Stainless steel wire up to 0.4 mm (0.016"), or nylon fishing line 0.13–0.25 mm, bonded with composite resin on the labial surfaces. Keep composite and bonding agent away from the gingiva and interproximal areas to avoid plaque retention and secondary infection. Duration depends on the injury — see each diagnosis.'
+  zh: '**多數牙齒外傷使用被動、柔性、短期的固定裝置。**一般可使用直徑 ≤0.4 mm（0.016 吋）的不鏽鋼線，或 0.13–0.25 mm 尼龍釣魚線，以複合樹脂黏著於唇側。複合樹脂與黏著劑應避免靠近牙齦與鄰接面，以減少牙菌斑堆積與續發感染。固定型態與時間依外傷類型而異；合併齒槽骨或顎骨骨折等情況可能需要較剛性的固定，請依各診斷頁處置。',
+  en: '**Most traumatic dental injuries are stabilized with a short-term, passive, flexible splint.** Stainless steel wire up to 0.4 mm (0.016 in) or 0.13–0.25 mm nylon fishing line may be bonded to the labial surfaces with composite resin. Keep composite and bonding material away from the gingiva and interproximal areas to reduce plaque retention and secondary infection. Splint type and duration depend on the injury; associated alveolar or jaw fractures may require more rigid stabilization. Follow the injury-specific protocol on each diagnosis page.'
 };
 
 /* ---- 抗生素：照 IADT 原文的講法寫，不寫成某藥必然有效 ---- */
@@ -350,10 +360,12 @@ const TETANUS_NOTE = {
   en: 'For contaminated, penetrating or open wounds, record the immunization history and refer to a physician to assess the need for a tetanus booster. Antibiotics are not a substitute for tetanus prophylaxis.'
 };
 
-/* ---- 牙髓測試的判讀警告：每一個 luxation 頁都要出現 ---- */
+/* ---- 牙髓測試的判讀警告：每一個 luxation 頁都要出現 ----
+   後半段不能寫成「一律等感染證據才做根管治療」：成熟根的側向／內縮性脫位、
+   根尖閉鎖恆牙脫落再植後，各診斷頁有特定的早期根管治療建議。 */
 const PULP_TEST_CAVEAT = {
-  zh: '外傷後第一次敏感性測試陰性，不等於牙髓壞死。脫位傷害後神經傳導可能停止數週到數月，但血流仍在，假陰性很常見。決定是否根管治療的是「序列變化」與感染證據（症狀、變色、竇管、腫脹、根尖病灶、發炎性吸收），不是單次測試結果。',
-  en: 'A negative sensibility test at the first visit does not mean pulp necrosis. After luxation injuries, nerve conduction may cease for weeks to months while blood supply persists, so false negatives are common. Endodontic treatment is decided by serial change and evidence of infection (symptoms, discoloration, sinus tract, swelling, apical pathosis, inflammatory resorption) — not by a single test.'
+  zh: '**單次牙髓敏感性測試陰性，不等於牙髓壞死。**外傷後神經反應可能暫時消失數週甚至數月，因此多數外傷應配合後續敏感性測試、臨床症狀與影像變化判讀，不能只靠單一次陰性結果決定根管治療。\n\n**但部分高風險傷害有特定的早期根管治療建議。**例如成熟根的側向脫位與內縮性脫位，以及根尖閉鎖恆牙脫落再植後，應依各診斷頁所列的 injury-specific protocol 決定根管治療時機，而不是等待明顯感染徵象出現。',
+  en: '**A single negative pulp sensibility test does not establish pulp necrosis.** Neural responses may be temporarily absent for weeks or even months after trauma, so in most injuries the pulp should be assessed using serial sensibility testing together with clinical and radiographic findings rather than a single negative test.\n\n**However, some high-risk injuries have specific recommendations for early endodontic treatment.** These include lateral and intrusive luxation in teeth with complete root formation and replanted avulsed permanent teeth with closed apices. In these situations, follow the injury-specific protocol on the diagnosis page rather than waiting for overt signs of infection.'
 };
 /* ---- 決策樹 ----
    走法比照急診的實際順序：
@@ -389,8 +401,8 @@ const TREE = {
     /* ===== 第 2 關：乳牙還是恆牙 ===== */
     dentition: {
       q:{ zh:'受傷的是恆牙還是乳牙？', en:'Is the injured tooth permanent or primary?' },
-      hint:{ zh:'不確定時看年齡與牙齒大小：上顎門齒約 7–8 歲換牙。乳牙與恆牙的處置原則差很多，這一題判斷錯後面全錯。',
-             en:'If unsure, use age and tooth size: maxillary incisors erupt at about 7–8 years. Management differs substantially, so this answer drives everything that follows.' },
+      hint:{ zh:'不確定時看年齡與牙齒大小：上顎中切牙約 7–8 歲換牙。乳牙與恆牙的處置原則差很多，這一題判斷錯後面全錯。',
+             en:'If unsure, use age and tooth size: maxillary central incisors erupt at about 7–8 years. Management differs substantially, so this answer drives everything that follows.' },
       opts:[
         { label:{ zh:'恆牙', en:'Permanent' }, next:'p_inSocket' },
         { label:{ zh:'乳牙', en:'Primary'   }, next:'d_inSocket' }

@@ -363,8 +363,22 @@ th{color:var(--muted);font-weight:600;white-space:nowrap;font-size:.78rem;backgr
 .media .fig img{max-width:100%;max-height:100%}
 .media b{display:block;font-size:.8rem;line-height:1.4;color:var(--text)}
 .media small{display:block;color:var(--muted);font-size:.7rem;line-height:1.5;margin-top:3px}
-.media.no{border-color:var(--danger-line);background:var(--danger-soft)}
-.media.no b{color:var(--danger)}
+/* 自來水：IADT 排名之外的最後備案，不是禁用——不用紅色、不打 ✗。
+   說明比其他保存液長，整列橫排放在 1–4 名之後，排名那四格維持原樣。 */
+.media.fallback{
+  grid-column:1 / -1; display:flex; gap:12px; align-items:flex-start; text-align:left;
+  background:var(--warn-soft); border-color:var(--warn-line); padding:10px 12px;
+}
+.media.fallback .fig{flex:none;width:84px;margin-bottom:0}
+.media.fallback .media-txt{flex:1;min-width:0}
+.media.fallback small{font-size:.76rem;color:var(--text-2);margin-top:4px}
+.media.fallback small strong{color:var(--warn)}
+.fallback-tag{
+  display:inline-block; margin-left:6px; vertical-align:1px;
+  font-size:.66rem; font-weight:700; letter-spacing:.02em;
+  color:var(--warn); background:var(--surface); border:1px solid var(--warn-line);
+  border-radius:999px; padding:0 8px;
+}
 .media .rank{
   display:inline-block;font-size:.66rem;font-weight:700;color:var(--accent-ink);
   background:var(--accent-soft);border-radius:999px;padding:0 7px;margin-bottom:4px;
