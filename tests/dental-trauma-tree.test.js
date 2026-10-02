@@ -165,6 +165,23 @@ for (const [id, n] of Object.entries(TREE.nodes)){
 }
 ok('題目與選項都有英文', noEn.length === 0, noEn.join(' '));
 
+/* ---------- 5. ⚡ 時間急迫的診斷不擋在影像關卡後面 ----------
+   設計原則（見 common.js 決策樹開頭的註解）：脫落、露髓、明顯移位的脫位，急性處置
+   不能等 X 光，臨床上已經確定的話直接進診斷頁。gate:false 的影像關卡就是「臨床已確定、
+   只是提醒拍片」，擋在 ⚡ 診斷前面，會跟頁面上「先處置、影像同時進行或隨後補」自相矛盾。
+   gate:true 不在此限——找不到牙齒時本來就要靠 X 光分脫落與內縮。 */
+const TC = new Set(ALL_DX.filter(d => d.timeCritical).map(d => d.id));
+const tcBehind = Object.entries(TREE.nodes)
+  .filter(([id, n]) => n.type === 'imaging' && !n.gate && TC.has(n.dx))
+  .map(([id, n]) => id + ' → ' + n.dx);
+ok('★ ⚡ 時間急迫的診斷不會被擋在影像關卡後面', tcBehind.length === 0,
+   tcBehind.join(' ｜ ') || TC.size + ' 個 ⚡ 診斷，沒有一個在 gate:false 影像關卡後面');
+
+// 恆牙露髓的兩個診斷都標 ⚡（Dr.Tso 2026-10-02 指定；兩者家屬版都寫「當日處理」）
+const exposed = ['p-complicated-crown-fracture', 'p-crown-root-fracture-comp'];
+ok('★ 恆牙露髓的兩個診斷（複雜性牙冠斷裂、複雜性牙冠牙根斷裂）都標 ⚡',
+   exposed.every(id => TC.has(id)), exposed.filter(id => !TC.has(id)).join(' ') || '都有');
+
 console.log('\n  節點 ' + NODE_IDS.length +
             '（一般模式 ' + N.nodes.size + '、提示模式 ' + H.nodes.size + '）' +
             '｜診斷 ' + ALL_DX.length + ' 全可達');

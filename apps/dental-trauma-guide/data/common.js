@@ -438,7 +438,9 @@ const TREE = {
       q:{ zh:'這條延伸到齦下的裂線有沒有通過牙髓？', en:'Does that subgingival fracture involve the pulp?' },
       opts:[
         { label:{ zh:'沒有露髓', en:'No pulp exposure' }, next:'p_img_cr_uncomp', img:'dx/fx-crown-root-uncomp.svg' },
-        { label:{ zh:'有露髓',   en:'Pulp exposed'     }, next:'p_img_cr_comp', img:'dx/fx-crown-root-comp.svg' }
+        // 露髓是時間急迫（⚡）：跟複雜性牙冠斷裂一樣直接進診斷頁，不經影像關卡。
+        // 該拍的片（平行根尖片加不同角度、考慮 CBCT）列在診斷頁的「建議影像」。
+        { label:{ zh:'有露髓',   en:'Pulp exposed'     }, dx:'p-crown-root-fracture-comp', img:'dx/fx-crown-root-comp.svg' }
       ]
     },
     p_position: {
@@ -511,15 +513,6 @@ const TREE = {
       ],
       why:{ zh:'齦下裂線延伸多深，決定這顆牙能不能修復、要不要做牙根突出術，二維影像常常界定不出來。',
              en:'How far the subgingival fracture extends determines restorability and whether extrusion is needed — two-dimensional imaging often cannot define it.' }
-    },
-    p_img_cr_comp: {
-      type:'imaging', gate:false, dx:'p-crown-root-fracture-comp',
-      films:[
-        { zh:'一張平行投影根尖片，加不同水平與垂直角度的加照', en:'One parallel periapical radiograph plus views at different horizontal and vertical angulations' },
-        { zh:'**考慮 CBCT**：裂線路徑、範圍、與邊緣骨的關係、冠根比', en:'**Consider CBCT**: fracture path, extent, relationship to the marginal bone, crown-root ratio' }
-      ],
-      why:{ zh:'同未露髓型；另外要確認牙根長度與牙髓處置的可行性。',
-             en:'As for the uncomplicated type, and additionally to confirm root length and the feasibility of pulp treatment.' }
     },
     p_img_loose: {
       type:'imaging', gate:true, next:'p_film_loose',

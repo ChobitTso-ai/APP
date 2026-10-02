@@ -120,8 +120,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v2.3', /v2\.3/.test(await p.title()) &&
-      /v2\.3/.test(await p.textContent('footer')));
+    ok('版本號是 v2.4', /v2\.4/.test(await p.title()) &&
+      /v2\.4/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -1304,7 +1304,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v2\.3/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v2\.4/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
