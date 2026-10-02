@@ -252,14 +252,24 @@ function renderRefBlocks(){
 
   const row = $('storageRow');
   row.innerHTML = '';
-  STORAGE_MEDIA.forEach((m, i) => {
-    const box = el('div', 'media' + (m.forbidden ? ' no' : ''));
-    if (!m.forbidden) box.appendChild(el('span', 'rank', String(i + 1)));
+  // 1–4 照 IADT 偏好順序編號。自來水是排名外的最後備案（fallback）：不編號、不打 ✗、
+  // 不用紅色；說明較長，整列橫排放在 1–4 名後面（見 styles.css 的 .media.fallback）。
+  let rank = 0;
+  STORAGE_MEDIA.forEach(m => {
+    const box = el('div', 'media' + (m.fallback ? ' fallback' : ''));
+    if (!m.fallback) box.appendChild(el('span', 'rank', String(++rank)));
     const fig = figure(m.img, L(m.name), L(m.name));
     fig.className = 'fig';
     box.appendChild(fig);
-    box.appendChild(el('b', null, esc(L(m.name)) + (m.forbidden ? ' ✗' : '')));
-    box.appendChild(el('small', null, esc(L(m.note))));
+    if (m.fallback){
+      const txt = el('div', 'media-txt');
+      txt.appendChild(el('b', null, esc(L(m.name)) + ' <span class="fallback-tag">' + esc(L(UI.lastResort)) + '</span>'));
+      txt.appendChild(el('small', null, md(L(m.note))));
+      box.appendChild(txt);
+    } else {
+      box.appendChild(el('b', null, esc(L(m.name))));
+      box.appendChild(el('small', null, esc(L(m.note))));
+    }
     row.appendChild(box);
   });
   $('txtPdlNote').innerHTML = md(L(PDL_NOTE));
