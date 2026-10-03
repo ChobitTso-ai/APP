@@ -137,8 +137,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v2.5', /v2\.5/.test(await p.title()) &&
-      /v2\.5/.test(await p.textContent('footer')));
+    ok('版本號是 v2.6', /v2\.6/.test(await p.title()) &&
+      /v2\.6/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -1137,10 +1137,20 @@ async function reset(p){
        主幹仍是 IADT，AAE 只是附註；如果哪天有人把主值換成 AAE 的 2 週，
        上面那條「固定 4 週」的斷言會先擋下來。 */
     const notes = await p.$$eval('#paneClinical .aae-note', ns => ns.map(n => n.textContent));
-    ok('★ 內縮性脫位有 AAE 附註', notes.length === 1, notes.length + ' 則');
+    // 兩則：急性處置的「未成熟根 >7 mm」（v2.6 補）＋固定裝置的「AAE 兩表不一致」
+    ok('★ 內縮性脫位有 AAE 附註（急性處置、固定裝置各一）', notes.length === 2, notes.length + ' 則');
+    const splintNote = notes.find(t => /Table 5/.test(t)) || '';
     ok('★ 附註誠實交代 AAE 自身兩表不一致（Table 3 寫 2 週、Table 5 拆在 4 週）',
-      /Table 3/.test(notes[0]) && /2 週/.test(notes[0]) &&
-      /Table 5/.test(notes[0]) && /4 週/.test(notes[0]), notes[0] || '');
+      /Table 3/.test(splintNote) && /2 週/.test(splintNote) &&
+      /Table 5/.test(splintNote) && /4 週/.test(splintNote), splintNote);
+    const txNote = await p.evaluate(() => {
+      const sec = [...document.querySelectorAll('#paneClinical > .card')].find(c => c.querySelector('h2').textContent === '急性處置');
+      const n = sec && sec.querySelector('.aae-note');
+      return n ? n.textContent : '';
+    });
+    ok('★ 急性處置附 AAE 差異：未成熟根 ≤7 mm 等再萌出、>7 mm 4 週內手術或矯正復位',
+      /≤7 mm/.test(txNote) && />7 mm/.test(txNote) && /4 週內手術或矯正復位/.test(txNote), txNote.slice(0, 40));
+    ok('IADT 主文不動：未成熟牙仍是「不論撞入深度，先讓牙齒自行再萌出」', /不論撞入深度，先讓牙齒自行再萌出/.test(clin));
     ok('★ 附註有 AAE 2026 標籤，跟 IADT 主文區隔得開',
       (await p.textContent('#paneClinical .aae-tag')).trim() === 'AAE 2026');
     const fu = await p.textContent('#dxFollowUp');
@@ -1174,6 +1184,33 @@ async function reset(p){
     const note = await p.textContent('#dxFollowUp .aae-note');
     ok('★ 乳牙頁明講 AAE 2026 只涵蓋恆牙、本頁單一來源是 IADT-3',
       /只涵蓋/.test(note) && /恆牙/.test(note) && /IADT-3/.test(note), note);
+
+    /* ── 9e. v2.6：側向脫位的 AAE 牙髓附註、複雜性牙冠牙根斷裂的牙髓策略 ── */
+    await p.click('#btnBack');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    await p.fill('#dxSearch', '側向');
+    await p.waitForTimeout(150);
+    await p.click('#browseList .dx-card >> nth=0');
+    await p.waitForSelector('#screenDx:not([hidden])');
+    const lat = await p.evaluate(() => {
+      const sec = [...document.querySelectorAll('#paneClinical > .card')]
+        .find(c => c.querySelector('h2').textContent === '牙髓與根管策略');
+      const n = sec && sec.querySelector('.aae-note');
+      return { name: document.getElementById('dxNameZh').textContent, dent: document.getElementById('dxDentition').textContent,
+               pulp: sec ? sec.textContent : '', note: n ? n.textContent : '' };
+    });
+    ok('★ 恆牙側向脫位：IADT 主文仍是成熟牙早期根管治療，另附 AAE「診斷出來才治療」',
+      lat.name === '側向脫位' && lat.dent === '恆牙' && /通常較適合早期根管治療/.test(lat.pulp) &&
+      /診斷出來才進行根管治療/.test(lat.note), lat.note.slice(0, 40));
+    await p.click('#btnBack');
+    await p.waitForSelector('#screenBrowse:not([hidden])');
+    await p.fill('#dxSearch', '複雜性牙冠牙根');
+    await p.waitForTimeout(150);
+    await p.click('#browseList .dx-card >> nth=0');
+    await p.waitForSelector('#screenDx:not([hidden])');
+    const crp = await p.textContent('#paneClinical');
+    ok('★ 複雜性牙冠牙根斷裂：牙髓策略與急性處置一致（不再寫「修復需要根管空間時才」摘髓）',
+      /成熟牙通常需要摘除牙髓並完成根管治療/.test(crp) && !/修復需要根管空間時才摘除/.test(crp));
 
     // 後面的區段（醫師版／家屬版、回診日期）預期停在恆牙內縮性脫位，交還畫面
     await p.click('#btnBack');
@@ -1326,7 +1363,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v2\.5/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v2\.6/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();

@@ -176,6 +176,36 @@ const allData = ['common.js', 'permanent.js', 'primary.js']
 ok('術語用「再生牙髓治療」（台灣牙髓病學醫學辭彙），不再出現「活髓再生治療」', !/活髓再生治療/.test(allData));
 ok('7–8 歲萌發寫「上顎中切牙」，不泛稱「上顎門齒」', !/上顎門齒[^。]*7–8/.test(allData));
 
+/* ═══ ⑤ v2.6 三處修正（2026-10-03，CODEX 提出、回 IADT／AAE 原文查證）═══
+   主文仍是 IADT 2020，AAE 2026 不同處只加附註；這裡同時釘住「附註有加」與「主文沒被換掉」。 */
+console.log('— v2.6 指引差異 —');
+const dx = id => D.PERMANENT_DX.find(d => d.id === id);
+const crc = dx('p-crown-root-fracture-comp').clin;
+ok('★ 複雜性牙冠牙根斷裂：成熟牙「通常」摘髓（IADT-1 Table 6：usually indicated），不再寫「修復需要時才」',
+   /成熟牙通常需要摘除牙髓/.test(crc.pulp[0].zh) && /usually indicated/.test(crc.pulp[0].en) &&
+   !/才摘除/.test(crc.pulp[0].zh) && !/when the restorative plan requires/.test(crc.pulp[0].en));
+const lat = dx('p-lateral-luxation').clin;
+ok('★ 側向脫位：IADT 的成熟牙早期根管治療仍在主文',
+   lat.pulp.some(t => /通常較適合早期根管治療/.test(t.zh) && /early endodontic treatment/.test(t.en)));
+ok('★ 側向脫位：另有 AAE 牙髓附註（診斷出牙髓壞死與感染才治療）',
+   !!lat.aaePulp && /診斷出來才進行根管治療/.test(lat.aaePulp.zh) && /once they are diagnosed/.test(lat.aaePulp.en));
+const intr = dx('p-intrusive-luxation').clin;
+ok('★ 內縮性脫位：IADT 主文仍是未成熟牙不論深度先等再萌出',
+   intr.treatment.some(t => /不論撞入深度/.test(t.zh) && /regardless of the degree of intrusion/.test(t.en)));
+ok('★ 內縮性脫位：另有 AAE 處置附註（≤7 mm 等、>7 mm 4 週內手術或矯正復位）',
+   !!intr.aaeTreatment && /≤7 mm/.test(intr.aaeTreatment.zh) && />7 mm/.test(intr.aaeTreatment.zh) &&
+   /4 週內手術或矯正復位/.test(intr.aaeTreatment.zh) && /within 4 weeks/.test(intr.aaeTreatment.en));
+ok('★ 根尖成熟度說明分別標出 IADT 2020 與 AAE 2026 對成熟根側向脫位的差異',
+   /IADT 2020/.test(D.APEX_BLOCK.body.zh) && /AAE 2026[^。]*側向脫位/.test(D.APEX_BLOCK.body.zh) &&
+   /IADT 2020/.test(D.APEX_BLOCK.body.en) && /AAE 2026[^.]*lateral luxation/.test(D.APEX_BLOCK.body.en));
+/* 資料裡的每個 aae* 附註欄位都要有 renderClinical 接手；
+   只加資料、忘了接畫面，附註就靜靜地不出現——UI 測試只點得到它走過的那幾頁 */
+const aaeKeys = [...new Set(ALL_DX.flatMap(d =>
+  Object.keys(d.clin || {}).filter(k => /^aae/.test(k)).map(k => 'c.' + k)       // 醫師版各段：renderClinical 的 c
+    .concat(Object.keys(d).filter(k => /^aae/.test(k)).map(k => 'd.' + k))))];   // 追蹤時程：d.aaeFollowUp
+const unwired = aaeKeys.filter(k => !new RegExp('\\b' + k.replace('.', '\\.') + '\\b').test(appJs));
+ok('★ 資料裡每種 AAE 附註欄位都有畫到畫面上', unwired.length === 0, unwired.join('、') || aaeKeys.join('、'));
+
 console.log('\n  診斷 ' + ALL_DX.length + '（恆牙 ' + D.PERMANENT_DX.length +
             ' ＋乳牙 ' + D.PRIMARY_DX.length + '）｜UI 字串 ' + uiKeys.size + ' 個');
 console.log('  通過 ' + pass + ' 項，失敗 ' + fail + ' 項');
