@@ -1,21 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" version="1.1"><!-- © 2026 Tso KY - All Rights Reserved
 Protected against reverse engineering and unauthorized modification
-插圖版本 v4.0 --><title>輕柔沖洗髒污</title><desc>v4.0。手指捏住完整牙冠，流動水沖洗牙根；不畫刷洗、時間或文字。</desc><g data-object="faucet"><path d="M20 34L89 34L89 27L113 27L113 34L160 34Q181 34 181 58L181 70L158 70L158 56L20 56Z" fill="#C9D4E2" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M100 27L100 17M82 17L119 17" fill="none" stroke="#C9D4E2" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g><g transform="translate(17 167) rotate(-78) scale(.36) translate(-175 -44)"><g data-tooth="1"><g data-part="dentin" data-surface="side-thickness">
-<path d="M208 70L230 58Q247 68 247 96L241 167Q239 200 222 217C224 276 220 343 208 397Q194 453 181 478L173 468C188 418 199 365 202 315L205 213Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round"/>
-<path d="M229 73C238 193 218 363 181 476L183 475C221 368 240 204 240 80Z" fill="#87755C" opacity="0.147"/></g>
+插圖版本 v4.4 --><title>牙齒浸於牛奶杯</title><desc>v4.4。完整牙齒浸於牛奶杯液面下，杯採剖視。杯旁放直立牛奶紙盒，沿用保存液插圖的屋頂摺口、藍色帶與乳滴圖案，以無文字圖形辨識牛奶。沒有手指、傾倒或流水。</desc>
+<g data-object="milk-carton" transform="matrix(.85 0 0 .85 -40 21)">
+<path d="M65 75L143 75L174 57L174 197L143 218L65 218Z" fill="#F4F7FA" stroke="#64748B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M143 75L174 57L174 197L143 218Z" fill="#C9D4E2" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M65 75L89 43L153 43L143 75Z" fill="#F4F7FA" stroke="#64748B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M143 75L153 43L174 57Z" fill="#C9D4E2" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M89 43L89 29L153 29L153 43Z" fill="#F4F7FA" stroke="#64748B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M153 29L177 20L177 35L153 43Z" fill="#F4F7FA" stroke="#64748B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M65 179Q104 166 143 180L143 218L65 218Z" fill="#4DA3FF"/>
+<path d="M143 180L174 163L174 197L143 218Z" fill="#4DA3FF" opacity=".7"/>
+<circle cx="105" cy="126" r="29" fill="#4DA3FF"/>
+<path d="M105 105C101 113 93 120 93 129C93 144 117 144 117 129C117 120 109 113 105 105Z" fill="#F4F7FA"/>
+<path d="M85 58L130 58M153 88L164 82" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g><g data-scene="milk-immersion" transform="matrix(.90 0 0 .90 53 6)"><g data-object="milk-cup-back">
+<path d="M52 65L63 210Q120 235 177 210L188 65Z" fill="#F4F7FA" stroke="#475569" stroke-width="3" stroke-linejoin="round"/>
+<ellipse cx="120" cy="65" rx="68" ry="12" fill="#F4F7FA" stroke="#475569" stroke-width="3"/>
+<path d="M56 83Q120 104 184 83L177 210Q120 233 63 210Z" fill="#E9C98C" opacity="0.10"/>
+</g>
+<g transform="matrix(.27 0 0 .27 69 74)">
+<g data-object="submerged-outline"><path d="M124 73L208 58Q221 67 222 94L217 162Q212 199 205 214C216 271 213 329 202 382C195 423 185 458 179 476Q176 482 172 475C157 440 145 391 135 340C127 295 122 253 125 213Q114 184 112 150L112 92Q113 79 124 73Z" fill="none" stroke="#64748B" stroke-width="6" stroke-linejoin="round"/><path d="M133 223C119 209 107 176 102 143L100 93Q101 70 112 61L210 44Q226 49 231 72L228 124Q226 177 209 218Q172 231 133 223Z" fill="none" stroke="#64748B" stroke-width="6" stroke-linejoin="round"/></g><g xmlns="http://www.w3.org/2000/svg" data-tooth="1"><g data-part="dentin" data-surface="side-thickness">
+<path d="M208 70L230 58Q247 68 247 96L241 167Q239 200 222 217C224 276 220 343 208 397Q194 453 181 478L173 468C188 418 199 365 202 315L205 213Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M229 73C238 193 218 363 181 476L183 475C221 368 240 204 240 80Z" fill="#87755C" opacity="0.147" /></g>
 <g data-part="dentin" data-surface="cut-face">
-<path d="M124 73L208 58Q221 67 222 94L217 162Q212 199 205 214C216 271 213 329 202 382C195 423 185 458 179 476Q176 482 172 475C157 440 145 391 135 340C127 295 122 253 125 213Q114 184 112 150L112 92Q113 79 124 73Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round"/>
-<path d="M126 85C126 197 135 367 175 469L177 472C143 365 135 201 156 77Z" fill="#F4F7FA" opacity="0.09"/><path d="M186 74C196 202 210 362 181 473L181 475C195 413 225 234 210 76Z" fill="#C9A360" opacity="0.092"/></g>
+<path d="M124 73L208 58Q221 67 222 94L217 162Q212 199 205 214C216 271 213 329 202 382C195 423 185 458 179 476Q176 482 172 475C157 440 145 391 135 340C127 295 122 253 125 213Q114 184 112 150L112 92Q113 79 124 73Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M126 85C126 197 135 367 175 469L177 472C143 365 135 201 156 77Z" fill="#F4F7FA" opacity="0.09" /><path d="M186 74C196 202 210 362 181 473L181 475C195 413 225 234 210 76Z" fill="#C9A360" opacity="0.092" /></g>
 <g data-part="pulp">
 </g>
 <g data-part="cementum">
-<path d="M125 213C122 253 127 295 135 340C145 391 157 440 172 475Q176 482 179 476C185 458 195 423 202 382C213 329 216 271 205 214" fill="none" stroke="#C9A360" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M125 213C122 253 127 295 135 340C145 391 157 440 172 475Q176 482 179 476C185 458 195 423 202 382C213 329 216 271 205 214" fill="none" stroke="#C9A360" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
 </g>
 <g data-part="enamel">
-<path d="M210 50L229 45Q246 58 249 81L243 161Q241 195 223 216L209 218L216 183L227 111L225 73Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round"/>
-<path d="M133 223C119 209 107 176 102 143L100 93Q101 70 112 61L210 44Q226 49 231 72L228 124Q226 177 209 218Q172 231 133 223Z" fill="#F4F7FA" fill-rule="evenodd" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round"/>
-<path d="M112 64L210 46L228 56L126 78L103 93Q103 74 112 64Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="0.87" stroke-linejoin="round"/>
-<path d="M108 99C109 135 116 174 128 196" fill="none" stroke="#F4F7FA" stroke-width="2.2" opacity=".32" stroke-linecap="round"/>
-<path d="M134 220L140 209M199 204L209 215" fill="none" stroke="#C9D4E2" stroke-width="3" opacity=".5" stroke-linecap="round"/>
-<path d="M230 53C249 88 237 173 222 211L204 210C215 181 225 141 224 84Z" fill="#C9D4E2" opacity="0.138"/></g>
-</g></g><g data-object="fingertips"><path d="M5 190Q20 174 41 180L47 186Q47 196 36 197L17 199L5 213Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 158L32 161Q49 166 41 178Q38 184 29 179L5 176Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g><g data-part="arrow"><path d="M165 74L163 122M174 75L170 175M162 140L162 192M179 175L175 198M178 202L185 214" fill="none" stroke="#4DA3FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M191 212Q196 220 192 227Q183 229 185 221Z" fill="#4DA3FF"/></g><g data-part="lesion"/></svg>
+<path d="M210 50L229 45Q246 58 249 81L243 161Q241 195 223 216L209 218L216 183L227 111L225 73Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M133 223C119 209 107 176 102 143L100 93Q101 70 112 61L210 44Q226 49 231 72L228 124Q226 177 209 218Q172 231 133 223Z" fill="#F4F7FA" fill-rule="evenodd" stroke="#C9D4E2" stroke-width="1.16" stroke-linejoin="round" />
+<path d="M112 64L210 46L228 56L126 78L103 93Q103 74 112 64Z" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="0.87" stroke-linejoin="round" />
+<path d="M108 99C109 135 116 174 128 196" fill="none" stroke="#F4F7FA" stroke-width="2.2" opacity=".32" stroke-linecap="round" />
+<path d="M134 220L140 209M199 204L209 215" fill="none" stroke="#C9D4E2" stroke-width="3" opacity=".5" stroke-linecap="round" />
+<path d="M230 53C249 88 237 173 222 211L204 210C215 181 225 141 224 84Z" fill="#C9D4E2" opacity="0.138" /></g>
+</g>
+</g>
+<g data-object="milk-cup-front">
+<path d="M56 83Q120 104 184 83L177 210Q120 233 63 210Z" fill="#F4F7FA" opacity="0.12"/>
+<path d="M52 65L63 210Q120 235 177 210L188 65M52 65Q120 89 188 65" fill="none" stroke="#475569" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M66 103L73 193M179 98L171 195" fill="none" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round"/>
+</g><g data-part="arrow"/><g data-part="lesion"/></g></svg>
