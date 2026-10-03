@@ -62,7 +62,9 @@ IADT 的數字**。兩者若有出入，以 IADT 為準並在該處註明。
 | 口外乾燥門檻 | 60 分鐘 | 60 分鐘 | 一致 |
 | **脫落再植後根管治療起始** | 再植後約 2 週內、拆固定前 | **7–14 天**，拆固定前 | AAE 更明確 |
 | 內縮成熟根根管起始 | 約 2 週 | 2 wk | 一致 |
-| 內縮 未成熟根等再萌出 | 4 wk 無動靜就矯正復位 | 同 | 一致 |
+| **成熟根側向脫位根管策略** | **約 2 週牙髓評估時就開始根管治療**（「Root canal treatment should be started」） | **診斷出牙髓壞死與感染才治療**（「If diagnosed, endodontic treatment is indicated」） | **策略不同**（2026-10-03 補，診斷頁有附註） |
+| 內縮 未成熟根 ≤7 mm | 不論深度先等自行再萌出；4 wk 無再萌出就矯正復位 | 先等自行再萌出；無動靜則 4 wk 內矯正復位 | 實質一致 |
+| **內縮 未成熟根 >7 mm** | **仍先等自行再萌出**（「independent of the degree of intrusion」）；4 wk 無再萌出才矯正復位 | **4 wk 內手術或矯正復位** | **不同**（2026-10-03 更正：先前整列寫「一致」是錯的；診斷頁有附註） |
 | 內縮 成熟根 ≤3 mm | 8 wk 無動靜就復位 | 同 | 一致 |
 | 內縮 成熟根 3–7 mm／>7 mm | 矯正或手術／手術 | 同 | 一致 |
 
@@ -115,6 +117,14 @@ IADT 的數字**。兩者若有出入，以 IADT 為準並在該處註明。
 | 牙髓測試警語 | 「決定根管治療的是序列變化與感染證據」——等於說所有根管治療都要等感染 | 單次陰性不等於壞死；但成熟根側向／內縮性脫位、根尖閉鎖恆牙脫落再植後，有特定的早期根管治療建議，依診斷頁 | 各診斷頁原本就寫的 injury-specific protocol（例如 IADT-2：「Initiate root canal treatment within 2 weeks」） |
 | 根尖成熟度 | 「未成熟＝觀察、成熟＝脫位脫落後就做根管」 | 成熟度 × 外傷類型共同決定；「活髓再生治療」改為《辭彙》用語「再生牙髓治療」；7–8 歲萌發改寫「上顎中切牙」 | 《台灣牙髓病學醫學辭彙》：regenerative endodontic therapy＝再生牙髓治療 |
 | 固定裝置原則 | 「一律使用被動、柔性、短期的固定」 | 「多數」外傷如此；合併齒槽骨或顎骨骨折可能需要較剛性的固定 | IADT-2：「In cases of associated alveolar or jawbone fracture, a more rigid splint is indicated and should be left in place for about 4 weeks.」 |
+
+### 2026-10-03 三處修正（CODEX 提出，逐條回原文查證後採用，v2.6）
+
+| 診斷 | 問題 | 原文 | 處理 |
+|---|---|---|---|
+| 複雜性牙冠牙根斷裂 | 牙髓策略寫「成熟牙**且修復需要根管空間時才**摘除牙髓」，跟同頁急性處置自相矛盾 | IADT-1 Table 6：「In mature teeth with complete root formation, removal of the pulp is usually indicated」 | 改成「成熟牙通常需要摘除牙髓並完成根管治療，最終處置配合斷裂線位置與修復計畫」 |
+| 側向脫位（成熟根） | 只寫 IADT 的早期根管治療，沒標出 AAE 不同 | IADT-1：「Root canal treatment should be started」；AAE Table 3：「If diagnosed, endodontic treatment is indicated」 | IADT 主文不動，牙髓策略加 AAE 附註（`aaePulp`）；首頁根尖段改成分別標出兩份指引 |
+| 內縮性脫位（未成熟根 >7 mm） | 上表把未成熟根整列寫成「一致」 | AAE Table 3：「In cases of intrusion >7 mm, reposition surgically or orthodontically within 4 weeks」 | IADT 主文不動，急性處置加 AAE 附註（`aaeTreatment`）；上表拆成 ≤7 mm／>7 mm 兩列 |
 
 ## 已從原文確認的關鍵數字
 

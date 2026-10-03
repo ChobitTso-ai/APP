@@ -759,7 +759,11 @@ function renderClinical(d){
 
   host.appendChild(section(L(UI.secCriteria),  bulletList(c.criteria)));
   host.appendChild(section(L(UI.secImaging),   bulletList(c.imaging)));
-  host.appendChild(section(L(UI.secTreatment), bulletList(c.treatment)));
+  // 急性處置；AAE 2026 不同時接一則附註（同 aaeSplint／aaeFollowUp，沒有就不出現）
+  const tx = el('div');
+  tx.appendChild(bulletList(c.treatment));
+  if (c.aaeTreatment) tx.appendChild(aaeNote(c.aaeTreatment));
+  host.appendChild(section(L(UI.secTreatment), tx));
 
   // 固定裝置
   const sp = el('div');
@@ -776,6 +780,7 @@ function renderClinical(d){
   // 牙髓策略（脫位類加上測試判讀警告）
   const pulp = el('div');
   pulp.appendChild(bulletList(c.pulp));
+  if (c.aaePulp) pulp.appendChild(aaeNote(c.aaePulp));
   if (d.group === 'luxation' && d.dentition === 'permanent'){
     pulp.appendChild(el('div', 'caveat', md(L(PULP_TEST_CAVEAT))));
   }

@@ -291,7 +291,9 @@ const PERMANENT_DX = [
       { zh:'後續選項與未露髓型相同：完成根管治療與修復、矯正性或手術性牙根突出術、牙根埋入、蓄意再植術、拔除、自體移植', en:'Later options as for the uncomplicated type: completing root canal treatment and restoration, orthodontic or surgical extrusion, root submergence, intentional replantation, extraction, autotransplantation' }
     ],
     splint:{ zh:'暫時固定鬆動斷片，直到治療計畫確定；非脫位用的固定療程。', en:'Temporary stabilization of the mobile fragment until the plan is settled; not a luxation splinting protocol.' },
-    pulp:[{ zh:'未成熟牙以保存活髓優先；成熟牙且修復需要根管空間時才摘除牙髓', en:'Preserve vital pulp in immature teeth; remove the pulp in mature teeth when the restorative plan requires the canal space' }],
+    // IADT-1 Table 6：「In mature teeth with complete root formation, removal of the pulp is usually
+    // indicated」——先前寫「修復需要根管空間時才摘除」，跟原文與上面的急性處置自相矛盾（2026-10-03 修正）
+    pulp:[{ zh:'未成熟牙以保存活髓、促進牙根持續發育為優先；成熟牙通常需要摘除牙髓並完成根管治療，最終處置仍需配合斷裂線位置與修復計畫', en:'In immature teeth, pulp preservation is preferred to allow continued root development. In mature teeth, pulp removal and root canal treatment are usually indicated, with definitive management depending on the fracture level and restorative plan' }],
     good:[
       { zh:'無症狀，牙齒功能正常', en:'Asymptomatic with normal function' },
       { zh:'未成熟牙持續進行牙根發育', en:'Continued root development in immature teeth' }
@@ -603,6 +605,10 @@ const PERMANENT_DX = [
       { zh:'約 2 週做牙髓評估：牙根未發育完成者可能自行血管再生，不應預防性根管治療；一旦牙髓壞死並出現發炎性外吸收，應儘快開始根管治療，並採用適合未成熟牙的術式', en:'Endodontic evaluation at about 2 weeks. Immature teeth may revascularize spontaneously, so avoid prophylactic root canal treatment; if the pulp becomes necrotic with signs of inflammatory external resorption, start endodontic treatment as soon as possible using techniques suitable for immature teeth' },
       { zh:'牙根發育完成的成熟牙牙髓壞死機率高，通常較適合早期根管治療', en:'In mature teeth the likelihood of pulp necrosis is high, so early endodontic treatment is usually appropriate' }
     ],
+    // AAE 2026 Table 3「Endodontic treatment」：成熟根「Pulp necrosis and infection are common
+    // complications. If diagnosed, endodontic treatment is indicated.」——IADT-1 是約 2 週評估時就開始
+    aaePulp:{ zh:'（Table 3）：成熟根寫的是「牙髓壞死與感染是常見併發症，**診斷出來才進行根管治療**」，沒有像 IADT 2020 那樣在約 2 週評估時就開始根管治療。',
+              en:'(Table 3): for mature teeth the AAE states that pulp necrosis and infection are common complications and that **endodontic treatment is indicated once they are diagnosed**; it does not start root canal treatment at the ~2-week evaluation as the IADT 2020 does.' },
     good:[
       { zh:'無症狀，牙齒回到正常位置', en:'Asymptomatic, tooth in its correct position' },
       { zh:'齒槽骨板完整', en:'Intact lamina dura' },
@@ -658,6 +664,11 @@ const PERMANENT_DX = [
       { zh:'成熟牙撞入 3–7 mm：手術復位（首選）或矯正復位', en:'Mature teeth intruded 3–7 mm: reposition surgically (preferably) or orthodontically' },
       { zh:'成熟牙撞入 >7 mm：手術復位', en:'Mature teeth intruded beyond 7 mm: reposition surgically' }
     ],
+    // AAE 2026 Table 3「Immediate treatment」未成熟根：「Up to 7 mm intrusion, allow for re-eruption …
+    // If no movement, initiate orthodontic repositioning within 4 weeks」「In cases of intrusion >7 mm,
+    // reposition surgically or orthodontically within 4 weeks」——IADT-1 是不論深度都先等再萌出
+    aaeTreatment:{ zh:'（Table 3）：未成熟根撞入 **≤7 mm** 先等自行再萌出，沒有動靜就在 4 週內開始矯正復位；撞入 **>7 mm** 則在 **4 週內手術或矯正復位**。IADT 2020 是未成熟牙不論撞入深度都先等自行再萌出。',
+                   en:'(Table 3): in immature teeth, intrusion **up to 7 mm** is left to re-erupt, with orthodontic repositioning within 4 weeks if there is no movement; intrusion **beyond 7 mm** is repositioned **surgically or orthodontically within 4 weeks**. The IADT 2020 allows spontaneous re-eruption in immature teeth regardless of the degree of intrusion.' },
     splint:{ zh:'手術復位後以被動柔性固定裝置固定 4 週。', en:'Passive flexible splint for 4 weeks after surgical repositioning.' },
     aaeSplint:{ zh:'**兩處寫法不一致**：Table 3 寫「復位後固定 2 週，位移大則 4 週」，但 Table 5 把拆固定列在 **4 週**（與 IADT 相同）。採 4 週較保守。',
                 en:'**Internally inconsistent here**: Table 3 says "splint for 2 wk after repositioning, 4 wk if displacement is extensive", while Table 5 lists splint removal at **4 wk** (matching the IADT). Four weeks is the more conservative reading.' },
