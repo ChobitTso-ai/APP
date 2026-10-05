@@ -350,7 +350,7 @@ th{color:var(--muted);font-weight:600;white-space:nowrap;font-size:.78rem;backgr
 
 /* ===== 保存液 ===== */
 .media-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-@media(min-width:560px){ .media-row{grid-template-columns:repeat(5,1fr)} }
+@media(min-width:560px){ .media-row{grid-template-columns:repeat(4,1fr)} }
 .media{
   text-align:center;padding:10px 6px;border-radius:8px;
   background:var(--surface);border:1px solid var(--line);

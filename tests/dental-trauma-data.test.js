@@ -206,6 +206,21 @@ const aaeKeys = [...new Set(ALL_DX.flatMap(d =>
 const unwired = aaeKeys.filter(k => !new RegExp('\\b' + k.replace('.', '\\.') + '\\b').test(appJs));
 ok('★ 資料裡每種 AAE 附註欄位都有畫到畫面上', unwired.length === 0, unwired.join('、') || aaeKeys.join('、'));
 
+/* ═══ ⑥ 急救步驟 2（2026-10-05）═══
+   IADT-2 急救原文：「If the tooth is dirty, rinse it gently in milk, saline or in the patient's saliva」。
+   插圖要表達「捏牙冠、短暫輕晃」，不能看起來像步驟 3 的泡牛奶保存。 */
+console.log('— 急救步驟 2 —');
+const step2 = D.FIRST_AID_STEPS[1];
+ok('★ 步驟 2 中文列齊牛奶、生理食鹽水、病人的唾液',
+   /牛奶/.test(step2.text.zh) && /生理食鹽水/.test(step2.text.zh) && /病人的唾液/.test(step2.text.zh), step2.text.zh);
+ok('★ 步驟 2 英文列齊 milk、saline、saliva',
+   /milk/.test(step2.text.en) && /saline/.test(step2.text.en) && /saliva/.test(step2.text.en), step2.text.en);
+const s2svg = fs.readFileSync(path.join(root, 'assets', step2.img), 'utf8');
+const s2title = (s2svg.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
+ok('★ 步驟 2 插圖是「沖洗」不是「浸泡」（title 沒有「浸」）', /沖洗/.test(s2title) && !/浸/.test(s2title), s2title);
+ok('★ 步驟 2 插圖有手指捏牙冠、有表示輕晃的箭頭，沒有水龍頭',
+   /data-object="fingertips"/.test(s2svg) && /data-part="arrow"><path/.test(s2svg) && !/faucet/.test(s2svg));
+
 console.log('\n  診斷 ' + ALL_DX.length + '（恆牙 ' + D.PERMANENT_DX.length +
             ' ＋乳牙 ' + D.PRIMARY_DX.length + '）｜UI 字串 ' + uiKeys.size + ' 個');
 console.log('  通過 ' + pass + ' 項，失敗 ' + fail + ' 項');
