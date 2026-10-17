@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v2.5
+  案例標記工具 v2.6
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v2.5</title>
+<title>案例標記工具 v2.6</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -229,6 +229,14 @@
     .tpl-slot .x{width:22px; height:22px; line-height:22px; font-size:12px;}
   }
   .tpl-msg{font-size:12px; color:var(--ink-2); min-height:18px; margin:4px 0 2px; line-height:1.6;}
+  .tpl-learn{font-size:12px; color:var(--ink-2); margin:2px 0 0; line-height:1.6;}
+  .tpl-learn button{border:0; background:none; color:var(--accent); font-size:12px; cursor:pointer; padding:0 0 0 6px; text-decoration:underline;}
+  .tpl-slot .cf{
+    position:absolute; left:50%; top:1px; transform:translateX(-50%); font-size:8px; font-weight:800; line-height:1.3;
+    color:#fff; padding:0 4px; border-radius:7px; white-space:nowrap; pointer-events:none;
+  }
+  .tpl-slot .cf.hi{background:#2e9e5b;} .tpl-slot .cf.mid{background:#d99a00;} .tpl-slot .cf.lo{background:#e5702a;}
+  @media (min-width:700px){ .tpl-slot .cf{font-size:11px;} }
   .col-act{padding:14px; display:flex; gap:10px; flex-wrap:wrap;}
   /* ── 進階版面面板 ── */
   .opt-grid{display:flex; flex-direction:column; gap:12px; padding:0 16px;}
@@ -340,7 +348,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.5</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.6</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -462,7 +470,12 @@
           <button class="btn" id="btnTplAuto">⚡ 依照片庫順序自動填入</button>
           <button class="btn" id="btnTplClear">清空格子</button>
         </div>
+        <div class="col-act" style="padding:6px 0 0">
+          <button class="btn" id="btnTplSuggest" title="實驗功能：拿這批照片跟你確認過的排列比對後建議，不是影像辨識模型">🔍 依學過的排列建議（實驗）</button>
+          <button class="btn" id="btnTplLearn">✓ 這個排列正確，讓 App 學起來</button>
+        </div>
         <div class="tpl-msg" id="tplMsg"></div>
+        <div class="tpl-learn"><span id="tplLearn"></span><button id="btnTplForget">清除學習資料</button></div>
       </div>
       <div class="sec-t" id="pickTitle">① 依順序點選照片（最多 8 張，含已完成的標記）</div>
       <div class="case-bar" style="padding-bottom:6px"><div class="case-chips" id="pickChips"></div></div>
@@ -549,7 +562,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v2.5　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v2.6　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -801,7 +814,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v2.5
+   案例標記工具 v2.6
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -1208,6 +1221,7 @@ function makeThumb(p){
    加新功能時在 NEW_FEATURES 補一筆，並把 NEW_SINCE 設成要提示的最舊版本。 */
 var NEW_SINCE = 2.1;                 // 只提示這個版本（含）之後新增的功能
 var NEW_FEATURES = [
+  { el:"btnTplSuggest", ver:2.6, name:"依學過的排列建議（實驗）" },
   { el:"btnTplFmx18",   ver:2.5, name:"標準照模板（根尖片 18 張／口內照）" },
   { el:"btnTeeth",      ver:2.3, name:"牙齒對齊" },
   { el:"btnCaseExport", ver:2.1, name:"匯出此病例" },
@@ -2633,7 +2647,7 @@ var tplMsgTxt = "";
 function tplPickPhoto(tid, p){
   var a = slotArr(tid), at = a.indexOf(p.id);
   tplMsgTxt = "";
-  if(at >= 0){ a[at] = null; state.slotActive = at; return; }
+  if(at >= 0){ a[at] = null; state.slotActive = at; dropConf(tid, at); return; }
   var target = state.slotActive;
   if(!(target >= 0 && target < a.length)) target = nextEmptySlot(tid, 0);
   if(target < 0){
@@ -2641,8 +2655,10 @@ function tplPickPhoto(tid, p){
     return;
   }
   a[target] = p.id;
+  dropConf(tid, target);                     // 手動放的就不是「建議」了
   state.slotActive = nextEmptySlot(tid, target + 1);
 }
+function dropConf(tid, i){ if(slotConf[tid]) delete slotConf[tid][i]; }
 function renderTplMap(){
   var tid = curTplId(), box = $("tplBox");
   box.hidden = !tid;
@@ -2653,6 +2669,7 @@ function renderTplMap(){
   $("tplTip").textContent = "畫面左邊是病人的右側。先點要放的格子（藍框），再點下面的照片；" +
     "放好會自動跳到下一個空格，再點一次已放入的照片可以拿出來。";
   $("tplMsg").textContent = tplMsgTxt;
+  $("tplLearn").textContent = learnSummary(tid);
   var m = $("tplMap"); m.innerHTML = "";
   m.style.aspectRatio = t.w + " / " + t.h;
   t.slots.forEach(function(sl, i){
@@ -2671,9 +2688,17 @@ function renderTplMap(){
     var lb = document.createElement("div"); lb.className = "lb"; lb.textContent = sl.name;
     if(sl.fdi){ var fi = document.createElement("i"); fi.textContent = sl.fdi; lb.appendChild(fi); }
     inn.appendChild(lb);
+    var cf = slotConf[tid] && slotConf[tid][i];
+    if(cf && cf.id === a[i]){                 // 只在照片還是建議的那張時顯示把握度
+      var cb = document.createElement("div");
+      cb.className = "cf " + (cf.score >= SUG_OK ? "hi" : "mid");
+      cb.textContent = Math.round(cf.score*100) + "%";
+      cb.title = "跟你學過的排列有多像（不是正確率；高通常代表是同一個病人）";
+      inn.appendChild(cb);
+    }
     if(p){
       var x = document.createElement("button"); x.className = "x"; x.textContent = "✕"; x.title = "清空這一格";
-      x.onclick = function(ev){ ev.stopPropagation(); a[i] = null; state.slotActive = i; tplMsgTxt = ""; renderCollage(); };
+      x.onclick = function(ev){ ev.stopPropagation(); a[i] = null; state.slotActive = i; tplMsgTxt = ""; dropConf(tid, i); renderCollage(); };
       inn.appendChild(x);
     }
     d.appendChild(inn);
@@ -2701,6 +2726,228 @@ $("btnTplAuto").onclick = function(){
 $("btnTplClear").onclick = function(){
   var tid = curTplId(); if(!tid) return;
   state.colSlots[tid] = []; state.slotActive = -1; tplMsgTxt = "";
+  slotConf[tid] = {}; lastSuggest = null;
+  renderCollage();
+};
+
+/* ───────── 依學過的排列建議（實驗） ─────────
+   檔名與檔案時間在使用者的流程裡都沒有牙位資訊（匯出時間相同、檔名自訂），
+   所以只能看影像本身。**這不是影像辨識模型**——沒有任何預訓練或外部資料，
+   只是「你確認過哪張照片放在哪一格，App 就在這台裝置上記下它的小特徵，
+   下次拿新的一組去比對、建議放哪格」。
+   · 特徵：灰階縮成 24×24、去平均、正規化（對亮度／對比不敏感）＋外框長寬比
+   · 相似度：皮爾森相關 ×0.75 ＋ 長寬比相似 ×0.25；每格取該格所有範例中最像的一個
+   · 指派：匈牙利演算法求總分最高、每張照片與每格都只用一次（貪婪法會被搶走最佳配對）
+   · **結構相關性必須先過 R_MIN 才算數，長寬比不能補**：白雜訊與任一範例的相關性約為 0±0.04，
+     若讓形狀分（最多 0.25）加上隨機相關性去碰總門檻，雜訊圖會有可觀的機率被硬放。
+     白雜訊 r 的標準差 σ≈1/√576≈0.042；一個模板最多 18 格×6 個範例＝108 個比對對象，
+     要讓單張雜訊被誤放的機率壓到約萬分之一，門檻要到 4.8σ≈0.20。實測 R_MIN=0.15 時
+     200 張隨機雜訊有 3 張被放進去（1.5%），所以才拉到 0.20。再加總分門檻 SUG_MIN 當第二道
+   · **可靠度限制**：同一個病人追蹤前後（補綴物、牙齒形狀一致）會比較準；
+     不同病人之間，左右側幾乎只能靠運氣——所以一律只是建議，顯示把握度、要你確認。
+     SUG_MIN／SUG_OK 是未經真實 X 光驗證的暫定值，準確度以畫面上的累計「保留比例」為準。
+   · **把握度分不出對錯，只分得出「是不是同一個病人」**（合成壓力測試：病人差異一大，
+     對的格子平均 0.51、錯的 0.47，幾乎重疊；同病人追蹤則 0.73~0.95）。所以 SUG_MIN 訂在
+     同病人等級（0.60），不夠的留空，**不是「放了再標橘色」**——標橘色會讓人以為它知道自己不確定。
+     沒放的格子會回報最高相似度，方便用真實資料校準。
+   · 隱私：記的是 24×24 灰階小圖特徵（量化成位元組），不含照片、檔名、病例代號，
+     只存在這台裝置的 localStorage，不進備份、不上傳；可一鍵清除。 */
+var DESC_N = 24, MEM_KEY = "cm_tplmem", MEM_CAP = 6, R_MIN = 0.20, SUG_MIN = 0.60, SUG_OK = 0.80;
+var memCache = null, decCache = new WeakMap();
+var slotConf = {};            // 模板 id -> { 格子編號: {id, score} }（建議當下的把握度，照片被換掉就不顯示）
+var lastSuggest = null;       // { tid, map:{格子編號: 建議的照片 id} }：確認時用來算「保留幾格」
+function memGet(){
+  if(memCache) return memCache;
+  try{
+    var m = JSON.parse(localStorage.getItem(MEM_KEY) || "null");
+    if(m && m.v === 1 && m.tpl) { m.stat = m.stat || {}; memCache = m; return m; }
+  }catch(e){}
+  memCache = { v:1, tpl:{}, stat:{} };
+  return memCache;
+}
+function memSave(){
+  try{ localStorage.setItem(MEM_KEY, JSON.stringify(memGet())); return true; }catch(e){ return false; }
+}
+function photoDesc(p){
+  if(p.descBmp === p.bmp && p.desc) return p.desc;
+  var W = bw(p.bmp), H = bh(p.bmp), N = DESC_N;
+  // 分兩段縮：一次縮太多倍會鋸齒、特徵不穩。去掉外圈 5%（截圖常帶視窗邊框）
+  var big = document.createElement("canvas"); big.width = big.height = N*4;
+  var gb = big.getContext("2d"); gb.imageSmoothingQuality = "high";
+  var mx = W*0.05, my = H*0.05;
+  gb.drawImage(p.bmp, mx, my, W - 2*mx, H - 2*my, 0, 0, N*4, N*4);
+  var sm = document.createElement("canvas"); sm.width = sm.height = N;
+  var gs = sm.getContext("2d"); gs.imageSmoothingQuality = "high";
+  gs.drawImage(big, 0, 0, N, N);
+  var px = gs.getImageData(0, 0, N, N).data, v = new Float32Array(N*N), mean = 0, i;
+  for(i=0; i<N*N; i++){ v[i] = 0.299*px[i*4] + 0.587*px[i*4+1] + 0.114*px[i*4+2]; mean += v[i]; }
+  mean /= N*N;
+  var norm = 0;
+  for(i=0; i<N*N; i++){ v[i] -= mean; norm += v[i]*v[i]; }
+  norm = Math.sqrt(norm);
+  var flat = (norm / N) < 2;                // 標準差不到 2 個灰階＝幾乎一片純色，沒有可比對的結構
+  if(!flat) for(i=0; i<N*N; i++) v[i] /= norm;
+  var d = { v:v, a:Math.log(W/H), flat:flat };
+  p.desc = d; p.descBmp = p.bmp;
+  return d;
+}
+function encDesc(d){
+  var m = 0, i;
+  for(i=0; i<d.v.length; i++) m = Math.max(m, Math.abs(d.v[i]));
+  var s = "";
+  for(i=0; i<d.v.length; i++) s += String.fromCharCode(Math.round(d.v[i]/m*127) + 128);
+  return { q:btoa(s), m:m, a:Math.round(d.a*1000)/1000 };
+}
+function decDesc(e){
+  var c = decCache.get(e); if(c) return c;
+  var s = atob(e.q), v = new Float32Array(s.length), norm = 0, i;
+  for(i=0; i<s.length; i++){ v[i] = (s.charCodeAt(i) - 128)/127*e.m; norm += v[i]*v[i]; }
+  norm = Math.sqrt(norm) || 1;
+  for(i=0; i<s.length; i++) v[i] /= norm;
+  c = { v:v, a:e.a }; decCache.set(e, c);
+  return c;
+}
+function descSim(d, ex){
+  var dot = 0, i;
+  for(i=0; i<d.v.length; i++) dot += d.v[i]*ex.v[i];      // 兩者皆單位向量 → 皮爾森相關
+  if(dot < R_MIN) return 0;                                // 結構對不上就是對不上，不讓形狀補分
+  var da = d.a - ex.a, as = Math.exp(-(da*da)/(2*0.25*0.25));
+  return 0.75*dot + 0.25*as;
+}
+/* 匈牙利演算法（最小成本，列數 ≤ 欄數） */
+function hungarianMin(cost, n, m){
+  var INF = 1e9, u = [], v = [], p = [], way = [], i, j;
+  for(j=0; j<=m; j++){ v[j] = 0; p[j] = 0; way[j] = 0; }
+  for(i=0; i<=n; i++) u[i] = 0;
+  for(i=1; i<=n; i++){
+    p[0] = i;
+    var j0 = 0, minv = [], used = [];
+    for(j=0; j<=m; j++){ minv[j] = INF; used[j] = false; }
+    do{
+      used[j0] = true;
+      var i0 = p[j0], delta = INF, j1 = 0;
+      for(j=1; j<=m; j++) if(!used[j]){
+        var cur = cost[i0-1][j-1] - u[i0] - v[j];
+        if(cur < minv[j]){ minv[j] = cur; way[j] = j0; }
+        if(minv[j] < delta){ delta = minv[j]; j1 = j; }
+      }
+      for(j=0; j<=m; j++){
+        if(used[j]){ u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
+      }
+      j0 = j1;
+    }while(p[j0] !== 0);
+    do{ var jj = way[j0]; p[j0] = p[jj]; j0 = jj; }while(j0);
+  }
+  var res = [];
+  for(i=0; i<n; i++) res[i] = -1;
+  for(j=1; j<=m; j++) if(p[j]) res[p[j]-1] = j-1;
+  return res;
+}
+/* 分數矩陣（列＝照片、欄＝格子）→ 每張照片分到的格子（-1＝沒分到），總分最高 */
+function assignMax(S){
+  var n = S.length; if(!n) return [];
+  var m = S[0].length; if(!m) return S.map(function(){ return -1; });
+  var i, j, cost = [];
+  if(n <= m){
+    for(i=0; i<n; i++){ cost[i] = []; for(j=0; j<m; j++) cost[i][j] = -S[i][j]; }
+    return hungarianMin(cost, n, m);
+  }
+  for(j=0; j<m; j++){ cost[j] = []; for(i=0; i<n; i++) cost[j][i] = -S[i][j]; }
+  var colToRow = hungarianMin(cost, m, n), res = [];       // 這裡 colToRow[格子]＝照片
+  for(i=0; i<n; i++) res[i] = -1;
+  colToRow.forEach(function(row, col){ if(row >= 0) res[row] = col; });
+  return res;
+}
+function learnSummary(tid){
+  var m = memGet(), t = m.tpl[tid] || {}, slots = 0, ex = 0, k;
+  for(k in t) if(t[k] && t[k].length){ slots++; ex += t[k].length; }
+  var s = slots ? "已學過 " + slots + "／" + TEMPLATES[tid].slots.length + " 格的範例（共 " + ex + " 個）"
+                : "還沒學過任何排列";
+  var st = m.stat[tid];
+  if(st && st.sug) s += "；累計建議 " + st.sug + " 格，你保留了 " + st.kept + " 格（" + Math.round(st.kept/st.sug*100) + "%）";
+  return s;
+}
+$("btnTplLearn").onclick = function(){
+  var tid = curTplId(); if(!tid) return;
+  var a = slotArr(tid), m = memGet(), t = m.tpl[tid] || (m.tpl[tid] = {}), n = 0;
+  if(!tplAssigned(tid).length){ tplMsgTxt = "還沒有放任何照片，沒有可以學的排列。"; renderCollage(); return; }
+  a.forEach(function(pid, i){
+    var p = pid && photoById(pid); if(!p) return;
+    var d = photoDesc(p); if(d.flat) return;
+    var e = encDesc(d), list = t[i] || (t[i] = []);
+    if(list.some(function(x){ return x.q === e.q; })) return;     // 同一張重複確認不重複記
+    list.push(e);
+    while(list.length > MEM_CAP) list.shift();
+    n++;
+  });
+  var extra = "";
+  if(lastSuggest && lastSuggest.tid === tid){
+    var sug = 0, kept = 0, k;
+    for(k in lastSuggest.map){ sug++; if(a[k] === lastSuggest.map[k]) kept++; }
+    var st = m.stat[tid] || (m.stat[tid] = { runs:0, sug:0, kept:0 });
+    st.runs++; st.sug += sug; st.kept += kept;
+    extra = "本次建議 " + sug + " 格，你保留了 " + kept + " 格。";
+    lastSuggest = null;
+  }
+  tplMsgTxt = memSave()
+    ? "已學起來：這組排列記下 " + n + " 格的新範例。" + extra
+    : "存不進這台裝置的儲存空間，沒有學起來。";
+  renderCollage();
+};
+$("btnTplForget").onclick = function(){
+  if(!confirm("清除 App 學過的所有排列？\n\n只會清掉比對用的小特徵與累計數字，不影響任何照片、組圖或專案。")) return;
+  memCache = { v:1, tpl:{}, stat:{} }; memSave();
+  lastSuggest = null; slotConf = {};
+  tplMsgTxt = "已清除學習資料。";
+  renderCollage();
+};
+$("btnTplSuggest").onclick = function(){
+  var tid = curTplId(); if(!tid) return;
+  var m = memGet(), t = m.tpl[tid] || {}, a = slotArr(tid);
+  var learned = Object.keys(t).filter(function(k){ return t[k] && t[k].length; });
+  if(!learned.length){
+    tplMsgTxt = "還沒有學過這個模板的排列。先手動排好一組（可以先用「依照片庫順序自動填入」再調整），" +
+                "確認每一格都對，按「✓ 這個排列正確」，下次匯入新的一組時就能建議。";
+    renderCollage(); return;
+  }
+  var slots = [];                                   // 只處理「還空著而且學過」的格子，不動你已經放的
+  a.forEach(function(pid, i){ if(!pid && t[i] && t[i].length) slots.push(i); });
+  var pool = photosOfCase(state.pickCase).filter(function(p){ return a.indexOf(p.id) < 0; });
+  if(!slots.length || !pool.length){
+    tplMsgTxt = !slots.length ? "沒有可以建議的空格（空格都還沒學過，或格子已經滿了）。"
+      : "沒有可以放的照片（目前篩選範圍內的照片都已經放進格子了）。想只辨識某個病例，先在上面選那個病例。";
+    renderCollage(); return;
+  }
+  var S = pool.map(function(p){
+    var d = photoDesc(p);
+    return slots.map(function(si){
+      if(d.flat) return 0;
+      var best = 0;
+      t[si].forEach(function(e){ var sc = descSim(d, decDesc(e)); if(sc > best) best = sc; });
+      return best;
+    });
+  });
+  var asg = assignMax(S), placed = 0, bestBelow = 0;
+  slotConf[tid] = {};
+  if(!lastSuggest || lastSuggest.tid !== tid) lastSuggest = { tid:tid, map:{} };
+  asg.forEach(function(ci, pi){
+    if(ci < 0) return;
+    var sc = S[pi][ci];
+    if(sc < SUG_MIN){ bestBelow = Math.max(bestBelow, sc); return; }    // 不夠像寧可留空，不硬放
+    var si = slots[ci];
+    a[si] = pool[pi].id;
+    slotConf[tid][si] = { id:pool[pi].id, score:sc };
+    lastSuggest.map[si] = pool[pi].id;
+    placed++;
+  });
+  state.slotActive = nextEmptySlot(tid, 0);
+  var blank = slots.length - placed;
+  var why = blank && bestBelow ? "（沒放的最高只有 " + Math.floor(bestBelow*100) + "%，要 " + Math.round(SUG_MIN*100) + "% 以上才放）" : "";
+  tplMsgTxt = placed
+    ? "建議放入 " + placed + " 格" + (blank ? "；另 " + blank + " 格不夠像，留空" + why : "") +
+      "。這是跟你學過的排列比對的結果，不是影像辨識；通常同一個病人的追蹤前後才準，" +
+      "左右側特別容易搞混，請逐格確認，沒問題再按「✓ 這個排列正確」。"
+    : "沒有任何一張跟學過的排列夠像" + why + "，所以沒有放。換成同一個病人的追蹤照片通常才比得起來。";
   renderCollage();
 };
 /* 格式按鈕的亮燈：一般版型與標準照模板兩排共用同一個 state.colFormat */
