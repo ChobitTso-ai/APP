@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.3 端到端測試
+/* PDF工具箱 v2.4 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -821,6 +821,142 @@ function ok(n, c, d) {
     !editorFile || editorFile.name !== 'locked.pdf'));
   ok('擋下來之後合併清單沒有被加進壞檔', await page.evaluate(() =>
     !mergePdfFiles.some(f => f.name === 'locked.pdf')));
+
+  console.log('— 🔒 設定密碼（v2.4）—');
+  await page.click('.tab[data-tab="unlock"]');
+  await page.click('.sub-tab[data-sub="encrypt"]');
+  ok('切到「設定密碼」子分頁', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('encryptPane')).display !== 'none' &&
+    getComputedStyle(document.getElementById('unlockPane')).display === 'none'));
+  ok('兩組子分頁互不干擾（轉換分頁的選擇沒被改掉）', await page.evaluate(() => {
+    // 先前測試選的是「PDF 轉圖片」，切換密碼分頁的子頁不該動到它
+    const convert = document.getElementById('convertTab');
+    const active = convert.querySelector('.sub-tab.active');
+    const p2i = document.getElementById('pdf2imgPane');
+    return active && active.dataset.sub === 'pdf2img' && !p2i.hidden;
+  }));
+
+  const plainPdf = await page.evaluate(async () => {
+    const lib = await loadCryptoLib();
+    const d = await lib.PDFDocument.create();
+    const f = await d.embedFont(lib.StandardFonts.Helvetica);
+    for (let i = 1; i <= 3; i++) {
+      d.addPage([595, 842]).drawText(`CLINIC-NOTE-${i}`, { x: 60, y: 742, size: 24, font: f });
+    }
+    return Array.from(await d.save());
+  });
+
+  const feedEncrypt = async (arr) => {
+    await page.evaluate(() => { encryptFile = null; });
+    await page.evaluate((a) => {
+      const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'note.pdf', { type: 'application/pdf' }));
+      const inp = document.getElementById('encryptFileInput');
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event('change'));
+    }, arr);
+  };
+
+  await feedEncrypt(plainPdf);
+  await page.waitForFunction(() => encryptFile !== null, null, { timeout: 30000 });
+  ok('載入未加密的檔案', await page.evaluate(() => encryptFile.pageCount) === 3);
+
+  console.log('  · 兩次密碼不一致要擋下來');
+  await page.fill('#encryptPassword', 'abc12345');
+  await page.fill('#encryptPassword2', 'abc99999');
+  ok('邊打邊提示不一致', await page.evaluate(() =>
+    /不一樣/.test(document.getElementById('encryptPasswordHint').textContent)));
+  ok('不一致時按鈕停用', await page.evaluate(() =>
+    document.getElementById('encryptButton').disabled));
+
+  await page.fill('#encryptPassword2', 'abc12345');
+  ok('改成一致後提示轉為確認', await page.evaluate(() =>
+    /一致/.test(document.getElementById('encryptPasswordHint').textContent)));
+  ok('按鈕恢復可用', await page.evaluate(() =>
+    !document.getElementById('encryptButton').disabled));
+
+  console.log('  · 加密後的檔案真的要密碼');
+  const [dlEnc] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#encryptButton'),
+  ]);
+  const encPath = path.join(OUT, 'protected.pdf');
+  await dlEnc.saveAs(encPath);
+  const encBytes = Array.from(fs.readFileSync(encPath));
+
+  const encCheck = await page.evaluate(async (arr) => {
+    const bytes = new Uint8Array(arr);
+    const out = {};
+    // 沒給密碼應該開不起來
+    try {
+      await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+      out.opensWithout = 'OPENED (BAD)';
+    } catch (e) {
+      out.opensWithout = `${e.name} code=${e.code}`;
+    }
+    // 錯的密碼也要被擋
+    try {
+      await pdfjsLib.getDocument({ data: bytes.slice(0), password: 'nope' }).promise;
+      out.wrongPw = 'OPENED (BAD)';
+    } catch (e) {
+      out.wrongPw = e.name;
+    }
+    // 對的密碼要開得起來，而且文字還在
+    try {
+      const d = await pdfjsLib.getDocument({ data: bytes.slice(0), password: 'abc12345' }).promise;
+      const t = [];
+      for (let i = 1; i <= d.numPages; i++) {
+        t.push((await (await d.getPage(i)).getTextContent()).items.map(x => x.str).join(''));
+      }
+      out.rightPw = { pages: d.numPages, text: t.join('|') };
+    } catch (e) {
+      out.rightPw = 'FAILED: ' + e.name;
+    }
+    return out;
+  }, encBytes);
+
+  ok('沒有密碼打不開', /PasswordException/.test(encCheck.opensWithout), encCheck.opensWithout);
+  ok('錯誤的密碼打不開', /PasswordException/.test(encCheck.wrongPw), String(encCheck.wrongPw));
+  ok('正確的密碼打得開，頁數正確',
+    encCheck.rightPw && encCheck.rightPw.pages === 3, JSON.stringify(encCheck.rightPw).slice(0, 80));
+  ok('加密後文字完整保留（不是轉成圖片）',
+    encCheck.rightPw && /CLINIC-NOTE-1/.test(encCheck.rightPw.text) &&
+    /CLINIC-NOTE-3/.test(encCheck.rightPw.text),
+    encCheck.rightPw && encCheck.rightPw.text);
+
+  console.log('  · 加密 → 解密 來回一趟，內容要一模一樣');
+  await page.click('.sub-tab[data-sub="unlock"]');
+  await feedUnlock(encBytes);
+  ok('解除端辨識出這是有開啟密碼的檔', await page.evaluate(() => unlockFile.kind) === 'user');
+  await page.fill('#unlockPassword', 'abc12345');
+  const [dlRound] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#unlockButton'),
+  ]);
+  const roundPath = path.join(OUT, 'roundtrip.pdf');
+  await dlRound.saveAs(roundPath);
+  const roundText = await page.evaluate(async (arr) => {
+    const d = await pdfjsLib.getDocument({ data: new Uint8Array(arr) }).promise;
+    const t = [];
+    for (let i = 1; i <= d.numPages; i++) {
+      t.push((await (await d.getPage(i)).getTextContent()).items.map(x => x.str).join(''));
+    }
+    return { pages: d.numPages, text: t.join('|') };
+  }, Array.from(fs.readFileSync(roundPath)));
+  ok('來回之後頁數不變', roundText.pages === 3);
+  ok('來回之後文字一字不差', roundText.text === 'CLINIC-NOTE-1|CLINIC-NOTE-2|CLINIC-NOTE-3',
+    roundText.text);
+
+  console.log('  · 已經有密碼的檔案不給重複加密');
+  await page.click('.sub-tab[data-sub="encrypt"]');
+  await page.evaluate(() => clearEncryptPDF());
+  await feedEncrypt(encBytes);
+  await page.waitForFunction(
+    () => /本來就有密碼/.test(document.getElementById('encryptStatusMessage').textContent),
+    null, { timeout: 30000 });
+  ok('提示要先去解除密碼', true, (await page.textContent('#encryptStatusMessage')).trim());
+  ok('沒有把加密檔載進來', await page.evaluate(() => encryptFile === null));
 
   console.log('— [hidden] 不會被自訂 class 蓋掉 —');
   ok('隱藏的面板 computed display 是 none', await page.evaluate(() => {
