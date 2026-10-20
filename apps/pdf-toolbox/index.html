@@ -1087,7 +1087,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉與轉換 v2.2 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換與解密 v2.3 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1096,6 +1096,7 @@
             <div class="tab" data-tab="split">✂️ 分割</div>
             <div class="tab" data-tab="editor">🖍️ 編輯</div>
             <div class="tab" data-tab="convert">🔄 轉換</div>
+            <div class="tab" data-tab="unlock">🔓 解密</div>
         </div>
 
         <!-- 合併功能 -->
@@ -1542,8 +1543,89 @@
             </div>
         </div>
 
+        <!-- 解除密碼 -->
+        <div id="unlockTab" class="tab-content">
+            <div class="info-box">
+                <h4>🔓 把 PDF 的密碼拿掉</h4>
+                <p>解開有密碼的 PDF，存成不用密碼就能開的版本。</p>
+                <ul>
+                    <li>✅ <strong>文字、書籤與原本的排版都會保留</strong>，不會變成圖片</li>
+                    <li>🔑 需要輸入正確的密碼才解得開——這不是破解密碼的工具</li>
+                    <li>🧾 只設了「權限密碼」（可以直接開、但不給列印或複製）的檔案，不必輸入密碼</li>
+                    <li>🔒 全程在自己的電腦處理，檔案和密碼都不會上傳</li>
+                </ul>
+                <p class="hint-text">
+                    解開之後這份檔案就能拿去用本工具箱的合併、分割、遮蔽等功能了——
+                    那些功能讀不了有密碼的檔案。請只對你本來就有權限開啟的文件使用。
+                </p>
+            </div>
+
+            <div class="upload-area" id="unlockUploadArea">
+                <div class="upload-icon">🔓</div>
+                <div class="upload-text">點擊選擇有密碼的PDF檔案</div>
+                <div class="upload-hint">載入後會先檢查它用的是哪一種密碼</div>
+                <button class="upload-button" onclick="document.getElementById('unlockFileInput').click()">
+                    🔓 選擇PDF檔案
+                </button>
+                <input type="file" id="unlockFileInput" class="file-input" accept=".pdf,application/pdf" />
+            </div>
+
+            <div id="unlockContent" hidden>
+                <div class="pdf-item">
+                    <div class="pdf-info">
+                        <div class="pdf-icon">🔒</div>
+                        <div class="pdf-details">
+                            <h3 id="unlockFileName">-</h3>
+                            <p id="unlockFileInfo">-</p>
+                        </div>
+                    </div>
+                    <div class="pdf-actions">
+                        <button class="action-button remove-button" onclick="clearUnlockPDF()">
+                            🗑️ 清除
+                        </button>
+                    </div>
+                </div>
+
+                <div class="option-box" id="unlockPasswordBox" hidden>
+                    <h4>🔑 輸入開啟密碼</h4>
+                    <div class="option-row">
+                        <div class="control-group" style="min-width: 260px;">
+                            <input type="password" id="unlockPassword" class="control-input"
+                                   placeholder="這份檔案的開啟密碼" autocomplete="off" />
+                        </div>
+                        <label>
+                            <input type="checkbox" id="unlockShowPassword" />
+                            顯示密碼
+                        </label>
+                    </div>
+                    <p class="hint-text">密碼只在這個頁面裡用來解開檔案，不會被記住也不會送出去。</p>
+                </div>
+
+                <div class="option-box">
+                    <h4>💾 輸出</h4>
+                    <div class="option-row">
+                        <div class="control-group" style="min-width: 260px;">
+                            <label for="unlockOutName">輸出檔名：</label>
+                            <input type="text" id="unlockOutName" class="control-input" placeholder="unlocked" />
+                        </div>
+                    </div>
+                </div>
+
+                <button class="merge-button" id="unlockButton" onclick="unlockPDF()">
+                    🔓 解除密碼並下載
+                </button>
+
+                <div class="progress-bar" id="unlockProgressBar">
+                    <div class="progress-fill" id="unlockProgressFill"></div>
+                </div>
+                <div class="hint-text progress-note" id="unlockProgressNote" hidden></div>
+
+                <div class="status-message" id="unlockStatusMessage"></div>
+            </div>
+        </div>
+
         <div class="footer">
-            <p><strong>PDF工具箱 v2.2</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.3</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -1657,6 +1739,8 @@
                     }
 
                     const arrayBuffer = await file.arrayBuffer();
+                    if (await blockIfEncrypted(arrayBuffer, 'merge', `檔案 ${file.name}`)) continue;
+
                     const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
                     const pageCount = pdfDoc.getPageCount();
 
@@ -1796,9 +1880,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.2 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.2 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.3 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.3 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.3 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -1906,6 +1990,11 @@
                 showProgress('split');
 
                 const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'split', '這份PDF')) {
+                    hideProgress('split');
+                    return;
+                }
+
                 const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { 
                     ignoreEncryption: true,
                     updateMetadata: false 
@@ -2134,8 +2223,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.2 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.3 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.3 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -2512,6 +2601,11 @@
                 showStatus('載入中，正在準備頁面預覽…', 'success', 'editor');
 
                 const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'editor', '這份PDF')) {
+                    hideProgress('editor');
+                    return;
+                }
+
                 const probe = await PDFLib.PDFDocument.load(arrayBuffer, {
                     ignoreEncryption: true,
                     updateMetadata: false,
@@ -3442,8 +3536,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.2 by Tso KY');
-            out.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.3 by Tso KY');
+            out.setProducer('PDF工具箱 v2.3 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -3729,8 +3823,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.2 by Tso KY');
-                out.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.3 by Tso KY');
+                out.setProducer('PDF工具箱 v2.3 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -3795,6 +3889,11 @@
                 showStatus('載入中…', 'success', 'pdf2img');
 
                 const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'pdf2img', '這份PDF')) {
+                    hideProgress('pdf2img');
+                    return;
+                }
+
                 p2iPdfjs = await openWithPdfjs(arrayBuffer);
                 p2iFile = { name: file.name, size: file.size, pages: p2iPdfjs.numPages };
 
@@ -3899,6 +3998,285 @@
             }
         }
 
+        // ==================== 解除密碼 ====================
+        /* 現有的 pdf-lib 1.17.1 讀不了有密碼的 PDF（連載入都會丟錯），所以這裡另外
+           用 @cantoo/pdf-lib——它是 pdf-lib 的維護分支，多了真正的解密實作。
+           做法是「用正確密碼打開，再存成沒有加密的檔」，文字與排版都原封不動，
+           不像轉成影像那樣會把文字弄不見。 */
+
+        let unlockFile = null;   // { name, rawSize, arrayBuffer, kind, pageCount }
+
+        /* 解密版函式庫的 UMD 全域名稱同樣是 PDFLib，直接載入會蓋掉現有的那一份。
+           載入前後把全域換回來，兩份就能並存。 */
+        let cryptoLibReady = null;
+        function loadCryptoLib() {
+            if (cryptoLibReady) return cryptoLibReady;
+            cryptoLibReady = (async () => {
+                const prev = window.PDFLib;
+                await injectScript('vendor/pdf-lib-crypto.min.js');
+                const lib = window.PDFLib;
+                window.PDFLib = prev;
+                if (!lib || lib === prev || !lib.PDFDocument) {
+                    throw new Error('解密函式庫載入後取不到 PDFDocument');
+                }
+                return lib;
+            })().catch((err) => {
+                cryptoLibReady = null;   // 讓下次還能重試
+                throw err;
+            });
+            return cryptoLibReady;
+        }
+
+        function setupUnlockListeners() {
+            const uploadArea = document.getElementById('unlockUploadArea');
+            const fileInput = document.getElementById('unlockFileInput');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) await loadUnlockPDF(file);
+                e.target.value = '';
+            });
+            uploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'unlock'));
+            uploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'unlock'));
+            uploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(f =>
+                    f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                );
+                if (!files.length) {
+                    showStatus('請拖拽PDF檔案！', 'error', 'unlock');
+                    return;
+                }
+                await loadUnlockPDF(files[0]);
+            });
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') fileInput.click();
+            });
+
+            document.getElementById('unlockShowPassword').addEventListener('change', (e) => {
+                document.getElementById('unlockPassword').type = e.target.checked ? 'text' : 'password';
+            });
+
+            // 在密碼欄按 Enter 直接解
+            document.getElementById('unlockPassword').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    unlockPDF();
+                }
+            });
+        }
+
+        /* 分辨這份檔案是哪一種：
+           none  = 根本沒有加密
+           user  = 有開啟密碼，不給密碼連開都開不了
+           owner = 只有權限密碼，可以直接開但限制列印／複製
+
+           判斷靠 pdf.js：沒給密碼就開 → 丟 PasswordException 代表有開啟密碼；
+           開得起來再看 getPermissions()，回 null 是沒加密、回陣列是有權限限制。
+           （@cantoo 的 `isEncrypted` 指的是「存檔時要不要加密」，不是來源狀態，
+             拿來判斷會一律得到 false。） */
+        async function detectEncryption(arrayBuffer) {
+            await loadPdfJs();
+            try {
+                const doc = await pdfjsLib.getDocument({
+                    data: arrayBuffer.slice(0),
+                    isEvalSupported: false,
+                }).promise;
+                const perms = await doc.getPermissions();
+                return {
+                    kind: perms === null ? 'none' : 'owner',
+                    pageCount: doc.numPages,
+                };
+            } catch (err) {
+                if (err && err.name === 'PasswordException') {
+                    return { kind: 'user', pageCount: null };
+                }
+                throw err;
+            }
+        }
+
+        async function loadUnlockPDF(file) {
+            try {
+                if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showStatus('請選擇PDF檔案', 'error', 'unlock');
+                    return;
+                }
+
+                showProgress('unlock');
+                setProgressNote('unlock', '檢查檔案的加密方式…');
+
+                const arrayBuffer = await file.arrayBuffer();
+                const info = await detectEncryption(arrayBuffer);
+
+                unlockFile = {
+                    name: file.name,
+                    rawSize: file.size,
+                    arrayBuffer,
+                    kind: info.kind,
+                    pageCount: info.pageCount,
+                };
+
+                document.getElementById('unlockFileName').textContent = file.name;
+                document.getElementById('unlockOutName').value =
+                    file.name.replace(/\.pdf$/i, '') + '_unlocked';
+                document.getElementById('unlockContent').hidden = false;
+                document.getElementById('unlockUploadArea').hidden = true;
+
+                const pwBox = document.getElementById('unlockPasswordBox');
+                const btn = document.getElementById('unlockButton');
+                const infoEl = document.getElementById('unlockFileInfo');
+
+                if (info.kind === 'user') {
+                    pwBox.hidden = false;
+                    btn.disabled = false;
+                    btn.textContent = '🔓 解除密碼並下載';
+                    infoEl.textContent = `${formatFileSize(file.size)} • 有開啟密碼，需要輸入密碼才能解開`;
+                    hideProgress('unlock');
+                    showStatus('這份檔案有開啟密碼，請在下面輸入密碼', 'success', 'unlock');
+                    document.getElementById('unlockPassword').focus();
+
+                } else if (info.kind === 'owner') {
+                    pwBox.hidden = true;
+                    btn.disabled = false;
+                    btn.textContent = '🔓 移除限制並下載';
+                    infoEl.textContent =
+                        `${formatFileSize(file.size)} • ${info.pageCount} 頁 • 只有權限密碼（限制列印／複製）`;
+                    hideProgress('unlock');
+                    showStatus('這份檔案可以直接開啟，只是被限制了操作權限，不必輸入密碼', 'success', 'unlock');
+
+                } else {
+                    pwBox.hidden = true;
+                    btn.disabled = true;
+                    btn.textContent = '這份檔案沒有密碼';
+                    infoEl.textContent =
+                        `${formatFileSize(file.size)} • ${info.pageCount} 頁 • 沒有加密`;
+                    hideProgress('unlock');
+                    showStatus('這份檔案本來就沒有密碼，不需要解除。可以直接拿去用其他分頁的功能', 'error', 'unlock');
+                }
+
+            } catch (error) {
+                console.error('載入PDF錯誤:', error);
+                showStatus('載入PDF時發生錯誤：' + error.message, 'error', 'unlock');
+                hideProgress('unlock');
+            }
+        }
+
+        function clearUnlockPDF() {
+            unlockFile = null;
+            document.getElementById('unlockContent').hidden = true;
+            document.getElementById('unlockUploadArea').hidden = false;
+            document.getElementById('unlockPassword').value = '';
+            document.getElementById('unlockPasswordBox').hidden = true;
+            showStatus('已清除PDF', 'success', 'unlock');
+        }
+
+        async function unlockPDF() {
+            if (!unlockFile || unlockFile.kind === 'none') return;
+
+            const btn = document.getElementById('unlockButton');
+            const pwInput = document.getElementById('unlockPassword');
+            const password = unlockFile.kind === 'user' ? pwInput.value : '';
+
+            if (unlockFile.kind === 'user' && !password) {
+                showStatus('請先輸入密碼', 'error', 'unlock');
+                pwInput.focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '解除中...';
+
+            try {
+                showProgress('unlock');
+                setProgressNote('unlock', '正在解開檔案…');
+                updateProgress(30, 'unlock');
+
+                const lib = await loadCryptoLib();
+
+                let doc;
+                try {
+                    doc = await lib.PDFDocument.load(unlockFile.arrayBuffer, {
+                        password,
+                        updateMetadata: false,
+                    });
+                } catch (err) {
+                    // 密碼錯誤是最常見的情況，要講清楚而不是丟一串英文
+                    const msg = String(err && err.message || '');
+                    if (/password/i.test(msg)) {
+                        showStatus('密碼不正確，請再確認一次', 'error', 'unlock');
+                        pwInput.select();
+                        return;
+                    }
+                    throw err;
+                }
+
+                updateProgress(70, 'unlock');
+                setProgressNote('unlock', '正在存成沒有密碼的版本…');
+
+                // 不呼叫 encrypt()，存出來就是沒有加密的檔
+                const bytes = await doc.save();
+                updateProgress(100, 'unlock');
+
+                const base = document.getElementById('unlockOutName').value.trim() || 'unlocked';
+                downloadFile(bytes, `${base}.pdf`);
+
+                const pages = doc.getPageCount();
+                showStatus(
+                    unlockFile.kind === 'user'
+                        ? `已解除開啟密碼，共 ${pages} 頁。下載的檔案不用密碼就能開，文字也都保留著`
+                        : `已移除列印／複製限制，共 ${pages} 頁`,
+                    'success', 'unlock'
+                );
+
+            } catch (error) {
+                console.error('解除密碼錯誤:', error);
+                showStatus('解除密碼時發生錯誤：' + error.message, 'error', 'unlock');
+            } finally {
+                hideProgress('unlock');
+                btn.disabled = false;
+                btn.textContent = unlockFile && unlockFile.kind === 'owner'
+                    ? '🔓 移除限制並下載'
+                    : '🔓 解除密碼並下載';
+            }
+        }
+
+        /* 其他分頁碰到有密碼的檔案時，pdf-lib 1.17.1 不會解密也不會報錯——
+           `ignoreEncryption: true` 只是跳過檢查，照樣「載入成功」、頁數也對，
+           但複製出來的頁面內容是加密的原始位元組，文字全空。
+           也就是說使用者會拿到一份默默壞掉的檔案。所以要在載入前主動擋下來。 */
+
+        /* 粗篩：加密的 PDF 一定會在 trailer 字典裡放 /Encrypt（交互參照串流的
+           字典本身不壓縮，所以這幾個位元組一定是明文）。先掃過一遍，沒有就直接
+           放行，免得每個正常檔案都要為此把 1.4MB 的 pdf.js 載進來。 */
+        function mayBeEncrypted(arrayBuffer) {
+            const bytes = new Uint8Array(arrayBuffer);
+            const pat = [0x2F, 0x45, 0x6E, 0x63, 0x72, 0x79, 0x70, 0x74]; // "/Encrypt"
+            const last = bytes.length - pat.length;
+            outer: for (let i = 0; i <= last; i++) {
+                if (bytes[i] !== 0x2F) continue;
+                for (let j = 1; j < pat.length; j++) {
+                    if (bytes[i + j] !== pat[j]) continue outer;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        async function blockIfEncrypted(arrayBuffer, type, what) {
+            if (!mayBeEncrypted(arrayBuffer)) return false;
+            let info;
+            try {
+                info = await detectEncryption(arrayBuffer);
+            } catch (err) {
+                console.warn('加密偵測失敗，放行:', err);
+                return false;   // 偵測不出來就不要擋住正常檔案
+            }
+            if (info.kind === 'none') return false;
+            showStatus(`${what}有密碼，請先到「🔓 解密」分頁把密碼拿掉再回來`, 'error', type);
+            return true;
+        }
+
         // ==================== 通用功能 ====================
 
         /* 解析「3, 7, 10-15」這種頁碼範圍。
@@ -3967,6 +4345,7 @@
             merge: 'mergeUploadArea',
             split: 'splitUploadArea',
             editor: 'editorUploadArea',
+            unlock: 'unlockUploadArea',
         };
 
         function handleDragOver(event, type) {
@@ -4053,7 +4432,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.2 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.3 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
@@ -4074,6 +4453,7 @@
             setupEditorListeners();
             setupImg2PdfListeners();
             setupPdf2ImgListeners();
+            setupUnlockListeners();
         });
 
         // 防止頁面拖拽

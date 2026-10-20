@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.2 端到端測試
+/* PDF工具箱 v2.3 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -39,7 +39,7 @@ function ok(n, c, d) {
   }
 
   console.log('— 分頁切換 —');
-  for (const t of ['split', 'editor', 'convert', 'merge']) {
+  for (const t of ['split', 'editor', 'convert', 'unlock', 'merge']) {
     await page.click(`.tab[data-tab="${t}"]`);
     const active = await page.evaluate(id => {
       const el = document.getElementById(id);
@@ -642,6 +642,185 @@ function ok(n, c, d) {
     await page.evaluate(() => !document.getElementById('addBookmarks')));
   ok('會用到的「保留原檔案資訊」還在',
     await page.evaluate(() => !!document.getElementById('preserveMetadata')));
+
+  console.log('— 🔓 解除密碼（v2.3）—');
+  await page.click('.tab[data-tab="unlock"]');
+  ok('切到「unlock」分頁', await page.evaluate(() => {
+    const el = document.getElementById('unlockTab');
+    return el.classList.contains('active') && getComputedStyle(el).display !== 'none';
+  }));
+
+  // 造三份測試檔：有開啟密碼、只有權限密碼、沒有密碼
+  const lockedPdfs = await page.evaluate(async () => {
+    const lib = await loadCryptoLib();
+    const mk = async (label, sec) => {
+      const doc = await lib.PDFDocument.create();
+      const font = await doc.embedFont(lib.StandardFonts.Helvetica);
+      for (let i = 1; i <= 2; i++) {
+        const p = doc.addPage([595, 842]);
+        p.drawText(`${label}-${i}`, { x: 60, y: 742, size: 24, font });
+      }
+      if (sec) doc.encrypt(sec);
+      return Array.from(await doc.save());
+    };
+    return {
+      user: await mk('LOCKED', { userPassword: 'secret123', ownerPassword: 'owner999' }),
+      owner: await mk('RESTRICTED', { ownerPassword: 'owner999', permissions: { printing: false } }),
+      plain: await mk('PLAIN', null),
+    };
+  });
+  ok('解密函式庫載得起來，而且沒有蓋掉原本的 PDFLib', await page.evaluate(async () => {
+    const lib = await loadCryptoLib();
+    return lib !== window.PDFLib && typeof window.PDFLib.PDFDocument.create === 'function';
+  }));
+
+  const feedUnlock = async (arr) => {
+    await page.evaluate(() => { unlockFile = null; });
+    await page.evaluate((a) => {
+      const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'locked.pdf', { type: 'application/pdf' }));
+      const inp = document.getElementById('unlockFileInput');
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event('change'));
+    }, arr);
+    await page.waitForFunction(() => unlockFile !== null, null, { timeout: 30000 });
+  };
+
+  console.log('  · 有開啟密碼的檔案');
+  await feedUnlock(lockedPdfs.user);
+  ok('辨識出需要開啟密碼', await page.evaluate(() => unlockFile.kind) === 'user');
+  ok('密碼輸入框有出現', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('unlockPasswordBox')).display !== 'none'));
+
+  await page.fill('#unlockPassword', 'WRONG-PASSWORD');
+  await page.click('#unlockButton');
+  await page.waitForFunction(
+    () => /密碼不正確/.test(document.getElementById('unlockStatusMessage').textContent),
+    null, { timeout: 30000 });
+  ok('密碼錯誤會明確告知，不是丟一串英文', await page.evaluate(() =>
+    document.getElementById('unlockStatusMessage').textContent),
+    await page.textContent('#unlockStatusMessage'));
+  ok('按鈕恢復可用，可以再試', await page.evaluate(() =>
+    !document.getElementById('unlockButton').disabled));
+
+  await page.fill('#unlockPassword', 'secret123');
+  const [dlUnlock] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#unlockButton'),
+  ]);
+  const unlockedPath = path.join(OUT, 'unlocked.pdf');
+  await dlUnlock.saveAs(unlockedPath);
+
+  const unlockedCheck = await page.evaluate(async (arr) => {
+    const bytes = new Uint8Array(arr);
+    const out = {};
+    // 不給密碼就要能開
+    try {
+      const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+      out.opensWithoutPassword = true;
+      out.pages = doc.numPages;
+      const texts = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        texts.push((await doc.getPage(i)).getTextContent
+          ? (await (await doc.getPage(i)).getTextContent()).items.map(t => t.str).join('')
+          : '');
+      }
+      out.text = texts.join('|');
+    } catch (e) {
+      out.opensWithoutPassword = 'FAILED: ' + e.name;
+    }
+    // 工具箱其他功能用的舊 pdf-lib 也要讀得動
+    try {
+      const d = await window.PDFLib.PDFDocument.load(bytes);
+      out.oldLibPages = d.getPageCount();
+    } catch (e) {
+      out.oldLibPages = 'FAILED: ' + e.message.slice(0, 50);
+    }
+    return out;
+  }, Array.from(fs.readFileSync(unlockedPath)));
+
+  ok('解出來的檔案不用密碼就能開', unlockedCheck.opensWithoutPassword === true,
+    String(unlockedCheck.opensWithoutPassword));
+  ok('頁數正確', unlockedCheck.pages === 2);
+  ok('文字完整保留（不是轉成圖片）',
+    /LOCKED-1/.test(unlockedCheck.text) && /LOCKED-2/.test(unlockedCheck.text),
+    unlockedCheck.text);
+  ok('解開後其他分頁的 pdf-lib 也讀得動', unlockedCheck.oldLibPages === 2,
+    String(unlockedCheck.oldLibPages));
+
+  console.log('  · 只有權限密碼的檔案');
+  await feedUnlock(lockedPdfs.owner);
+  ok('辨識出只有權限密碼', await page.evaluate(() => unlockFile.kind) === 'owner');
+  ok('不會要求輸入密碼', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('unlockPasswordBox')).display === 'none'));
+  ok('按鈕文字改成「移除限制」', await page.evaluate(() =>
+    document.getElementById('unlockButton').textContent.includes('移除限制')));
+
+  const [dlOwner] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#unlockButton'),
+  ]);
+  const ownerPath = path.join(OUT, 'unrestricted.pdf');
+  await dlOwner.saveAs(ownerPath);
+  const ownerText = await page.evaluate(async (arr) => {
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr) }).promise;
+    return (await (await doc.getPage(1)).getTextContent()).items.map(t => t.str).join('');
+  }, Array.from(fs.readFileSync(ownerPath)));
+  ok('限制移除後文字仍在', /RESTRICTED-1/.test(ownerText), ownerText);
+
+  console.log('  · 本來就沒有密碼的檔案');
+  await feedUnlock(lockedPdfs.plain);
+  ok('辨識出沒有加密', await page.evaluate(() => unlockFile.kind) === 'none');
+  ok('按鈕停用，不會讓人白按', await page.evaluate(() =>
+    document.getElementById('unlockButton').disabled));
+  ok('有說明這份檔案不需要解除', await page.evaluate(() =>
+    /本來就沒有密碼/.test(document.getElementById('unlockStatusMessage').textContent)));
+
+  console.log('  · 其他分頁碰到加密檔要擋下來（不能默默產出壞檔）');
+  /* pdf-lib 1.17.1 不解密，ignoreEncryption 只是跳過檢查：
+     照樣「載入成功」、頁數也對，但複製出來的頁面文字全空。
+     使用者會拿到一份默默壞掉的檔案，所以必須在載入前擋下。 */
+  await page.evaluate(() => clearUnlockPDF());
+
+  for (const [tab, inputId, statusId, kind] of [
+    ['split',   'splitFileInput',  'splitStatusMessage',   'user'],
+    ['editor',  'editorFileInput', 'editorStatusMessage',  'user'],
+    ['merge',   'mergeFileInput',  'mergeStatusMessage',   'user'],
+    ['split',   'splitFileInput',  'splitStatusMessage',   'owner'],
+  ]) {
+    await page.click(`.tab[data-tab="${tab}"]`);
+    await page.evaluate((id) => {
+      const el = document.getElementById(id);
+      el.textContent = '';
+      el.style.display = 'none';
+    }, statusId);
+    await page.evaluate(({ a, id }) => {
+      const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'locked.pdf', { type: 'application/pdf' }));
+      const inp = document.getElementById(id);
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event('change'));
+    }, { a: lockedPdfs[kind], id: inputId });
+
+    let msg = '';
+    try {
+      await page.waitForFunction(
+        (id) => /解密/.test(document.getElementById(id).textContent),
+        statusId, { timeout: 20000 });
+      msg = await page.textContent('#' + statusId);
+      ok(`${tab} 分頁擋下${kind === 'user' ? '開啟密碼' : '權限密碼'}的檔案並指路`, true, msg.trim());
+    } catch (_) {
+      msg = await page.textContent('#' + statusId);
+      ok(`${tab} 分頁擋下${kind === 'user' ? '開啟密碼' : '權限密碼'}的檔案並指路`, false, msg.trim() || '(沒有任何訊息)');
+    }
+  }
+
+  ok('擋下來之後沒有把壞檔載進編輯分頁', await page.evaluate(() =>
+    !editorFile || editorFile.name !== 'locked.pdf'));
+  ok('擋下來之後合併清單沒有被加進壞檔', await page.evaluate(() =>
+    !mergePdfFiles.some(f => f.name === 'locked.pdf')));
 
   console.log('— [hidden] 不會被自訂 class 蓋掉 —');
   ok('隱藏的面板 computed display 是 none', await page.evaluate(() => {
