@@ -1087,7 +1087,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉、轉換與密碼 v2.4 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換與密碼 v2.5 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1719,7 +1719,19 @@
                         </p>
                     </div>
 
-                    <button class="merge-button" id="encryptButton" onclick="encryptPDF()">
+                    <div class="redact-warning" style="margin-bottom: 15px;">
+                        <strong>⚠️ 重要：密碼請自己記牢。</strong><br>
+                        這個工具只能用正確的密碼解開，<strong>沒有、也不會有破解功能</strong>——
+                        一旦忘記密碼，這份加密檔就永遠打不開了，誰都救不回來。
+                        強烈建議另外保留一份<strong>沒有加密的原始檔</strong>，
+                        密碼也存進你自己的密碼管理工具或記在安全的地方。
+                        <label style="display:flex; align-items:center; gap:8px; margin-top:12px; cursor:pointer;">
+                            <input type="checkbox" id="encryptAck" />
+                            <span>我了解密碼忘記就無法復原，並已保留原始檔</span>
+                        </label>
+                    </div>
+
+                    <button class="merge-button" id="encryptButton" onclick="encryptPDF()" disabled>
                         🔒 加上密碼並下載
                     </button>
 
@@ -1734,7 +1746,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>PDF工具箱 v2.4</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.5</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -1994,9 +2006,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.4 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.4 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.4 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.5 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.5 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.5 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2337,8 +2349,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.4 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.4 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.5 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.5 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -3650,8 +3662,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.4 by Tso KY');
-            out.setProducer('PDF工具箱 v2.4 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.5 by Tso KY');
+            out.setProducer('PDF工具箱 v2.5 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -3937,8 +3949,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.4 by Tso KY');
-                out.setProducer('PDF工具箱 v2.4 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.5 by Tso KY');
+                out.setProducer('PDF工具箱 v2.5 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -4442,28 +4454,37 @@
                     }
                 });
             });
+
+            document.getElementById('encryptAck').addEventListener('change', updateEncryptButton);
         }
 
         function updateEncryptPasswordHint() {
             const a = document.getElementById('encryptPassword').value;
             const b = document.getElementById('encryptPassword2').value;
             const hint = document.getElementById('encryptPasswordHint');
-            const btn = document.getElementById('encryptButton');
 
             if (a && b && a !== b) {
                 hint.textContent = '⚠️ 兩次輸入的密碼不一樣';
                 hint.style.color = '#c92a2a';
-                btn.disabled = true;
             } else if (a && b && a === b) {
                 hint.textContent = '✓ 兩次輸入一致';
                 hint.style.color = '#2b8a3e';
-                btn.disabled = false;
             } else {
                 hint.textContent = '兩次輸入要一致。AES-256 需要 Acrobat X（2010）以後的閱讀器；'
                     + '如果對方用的軟體很舊打不開，再改用 AES-128。';
                 hint.style.color = '';
-                btn.disabled = false;
             }
+            updateEncryptButton();
+        }
+
+        /* 兩個條件都成立才能按：密碼兩次一致（且非空）＋已勾選「我了解忘記就打不開」。
+           提醒必須真的擋住操作才有用，純文字放著沒人會停下來看。 */
+        function updateEncryptButton() {
+            const a = document.getElementById('encryptPassword').value;
+            const b = document.getElementById('encryptPassword2').value;
+            const ack = document.getElementById('encryptAck').checked;
+            const btn = document.getElementById('encryptButton');
+            btn.disabled = !(a && b && a === b && ack);
         }
 
         async function loadEncryptPDF(file) {
@@ -4523,6 +4544,7 @@
             document.getElementById('encryptUploadArea').hidden = false;
             document.getElementById('encryptPassword').value = '';
             document.getElementById('encryptPassword2').value = '';
+            document.getElementById('encryptAck').checked = false;
             updateEncryptPasswordHint();
             showStatus('已清除PDF', 'success', 'encrypt');
         }
@@ -4589,8 +4611,8 @@
                 showStatus(msg, 'error', 'encrypt');
             } finally {
                 hideProgress('encrypt');
-                btn.disabled = false;
                 btn.textContent = '🔒 加上密碼並下載';
+                updateEncryptButton();   // 回到看密碼與勾選狀態決定的 disabled
             }
         }
 
@@ -4750,7 +4772,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.4 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.5 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
