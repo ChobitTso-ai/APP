@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.4 端到端測試
+/* PDF工具箱 v2.5 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -822,7 +822,7 @@ function ok(n, c, d) {
   ok('擋下來之後合併清單沒有被加進壞檔', await page.evaluate(() =>
     !mergePdfFiles.some(f => f.name === 'locked.pdf')));
 
-  console.log('— 🔒 設定密碼（v2.4）—');
+  console.log('— 🔒 設定密碼（v2.5）—');
   await page.click('.tab[data-tab="unlock"]');
   await page.click('.sub-tab[data-sub="encrypt"]');
   ok('切到「設定密碼」子分頁', await page.evaluate(() =>
@@ -873,8 +873,21 @@ function ok(n, c, d) {
   await page.fill('#encryptPassword2', 'abc12345');
   ok('改成一致後提示轉為確認', await page.evaluate(() =>
     /一致/.test(document.getElementById('encryptPasswordHint').textContent)));
-  ok('按鈕恢復可用', await page.evaluate(() =>
+
+  console.log('  · 沒勾「我了解」確認框，按鈕還是不能按（v2.5 提醒）');
+  ok('密碼一致但還沒勾確認，按鈕仍停用', await page.evaluate(() =>
+    document.getElementById('encryptButton').disabled));
+  await page.check('#encryptAck');
+  ok('勾了確認框後按鈕才啟用', await page.evaluate(() =>
     !document.getElementById('encryptButton').disabled));
+  ok('取消勾選又會停用', await page.evaluate(() => {
+    document.getElementById('encryptAck').checked = false;
+    document.getElementById('encryptAck').dispatchEvent(new Event('change'));
+    const off = document.getElementById('encryptButton').disabled;
+    document.getElementById('encryptAck').checked = true;
+    document.getElementById('encryptAck').dispatchEvent(new Event('change'));
+    return off && !document.getElementById('encryptButton').disabled;
+  }));
 
   console.log('  · 加密後的檔案真的要密碼');
   const [dlEnc] = await Promise.all([
