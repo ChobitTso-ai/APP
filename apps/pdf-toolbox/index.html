@@ -1139,7 +1139,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.8 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.9 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -2039,7 +2039,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>PDF工具箱 v2.8</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.9</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -2299,9 +2299,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.8 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.8 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.8 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.9 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.9 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.9 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2642,8 +2642,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.8 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.8 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.9 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.9 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -3955,8 +3955,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.8 by Tso KY');
-            out.setProducer('PDF工具箱 v2.8 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.9 by Tso KY');
+            out.setProducer('PDF工具箱 v2.9 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -4242,8 +4242,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.8 by Tso KY');
-                out.setProducer('PDF工具箱 v2.8 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.9 by Tso KY');
+                out.setProducer('PDF工具箱 v2.9 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -5623,7 +5623,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.8 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.9 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');

@@ -225,6 +225,9 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   **去背做法**：白底 logo 用 ImageMagick 從四角 `-floodfill white -fill none` 只去除邊緣連過來的白，
   內部的白（牙齒、十字白花瓣）保留；已是 RGBA 透明底的則 floodfill 不命中、安全略過。
   SVG（公衛）轉 PNG 用 Chromium 渲染〔ImageMagick 無 SVG delegate〕。端到端測試共 141 項。〕
+  v2.9 公衛 3 個字標 logo 換成官方彩色主色版〔深藍 #1e2b4c＋公衛青 #75c5ad，取自品牌包
+  「主色」SVG；z 系列 4 個 SVG zip 分別是主色／單色青／單色青／反白，挑主色雙色版〕，
+  檔名不變故程式與測試不動；3 個圖騰版品牌包只給黑白故維持黑白〔日後拿到彩色圖騰 SVG 再換〕。〕
   遮蔽「套用到多頁」經評估暫緩，使用者說先不用）。
 
 ## 併入新網頁工具的標準流程
