@@ -211,6 +211,13 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   真實掃描檔的 XMP 多半壓縮過，等於「看不到但還在」（踩過，測試有驗 raw 位元組）。
   載入時先列出目前藏了哪些資訊給使用者看。兩個分頁都用 `blockIfEncrypted()` 擋加密檔。
   端到端測試共 127 項。〕
+  v2.7 浮水印加「圖片」模式〔文字／圖片以 `.mode-toggle`〔`wmMode()`〕切換；
+  圖片模式上傳 logo／印章／簽名〔讀成 dataURL→`Image`，存 `wmImage`〕，位置可選
+  置中斜向／鋪滿／角落〔`watermarkCorner` 右下左下右上左上置中〕、大小與濃淡可調。
+  `buildWatermarkCanvas()` 依 `opts.mode` 分兩路：圖片用 `drawImage`＋`globalAlpha`，
+  PNG 去背保留故印章不會有白框；文字維持原本的 canvas 繪字。顏色只對文字顯示、
+  大小只對圖片顯示、角落只在位置=corner 時顯示〔`updateWatermarkControls()`〕。
+  嵌入與預覽都走同一個 `buildWatermarkCanvas`，所以預覽＝輸出。端到端測試共 135 項。〕
   遮蔽「套用到多頁」經評估暫緩，使用者說先不用）。
 
 ## 併入新網頁工具的標準流程

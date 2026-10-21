@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.6 端到端測試
+/* PDF工具箱 v2.7 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -1042,6 +1042,84 @@ function ok(n, c, d) {
   ok('原文字完整保留（浮水印是疊上去的圖層）',
     /CHART-PAGE-1/.test(wmCheck.text) && /CHART-PAGE-3/.test(wmCheck.text), wmCheck.text);
   ok('每頁確實多了浮水印圖層', wmCheck.hasImage === true);
+
+  console.log('— 🖼️ 圖片浮水印（v2.7）—');
+  // 切到圖片模式：顏色選單收起、大小選單出現、文字設定收起
+  await page.click('#watermarkMode button[data-wmmode="image"]');
+  ok('切到圖片模式：大小出現、顏色收起、文字設定收起', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('wmImageOpts')).display !== 'none' &&
+    getComputedStyle(document.getElementById('wmTextOpts')).display === 'none' &&
+    document.getElementById('wmSizeWrap').hidden === false &&
+    document.getElementById('wmColorWrap').hidden === true));
+
+  ok('圖片模式沒選圖就按，會提示先選圖', await page.evaluate(() => {
+    applyWatermark();
+    return /選擇.*圖片|請先選/.test(document.getElementById('watermarkStatusMessage').textContent);
+  }));
+
+  // 餵一張生成的 PNG（帶透明背景）給圖片輸入
+  await page.evaluate(async () => {
+    const c = document.createElement('canvas');
+    c.width = 200; c.height = 120;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(0,100,200,0.9)';
+    g.fillRect(10, 10, 180, 100);
+    g.fillStyle = '#fff'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center';
+    g.fillText('LOGO', 100, 75);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], 'logo.png', { type: 'image/png' }));
+    const inp = document.getElementById('watermarkImageInput');
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() => wmImage !== null, null, { timeout: 15000 });
+  ok('圖片載入後顯示檔名', await page.evaluate(() =>
+    document.getElementById('watermarkImageName').textContent === 'logo.png'));
+
+  // 角落模式（右下印章）
+  await page.evaluate(() => {
+    document.getElementById('watermarkLayout').value = 'corner';
+    document.getElementById('watermarkLayout').dispatchEvent(new Event('change'));
+    document.getElementById('watermarkCorner').value = 'br';
+    document.getElementById('watermarkCorner').dispatchEvent(new Event('change'));
+  });
+  ok('選「角落」後出現角落選單', await page.evaluate(() =>
+    document.getElementById('wmCornerWrap').hidden === false));
+
+  const [dlWmImg] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#watermarkButton'),
+  ]);
+  const wmImgPath = path.join(OUT, 'watermarked-image.pdf');
+  await dlWmImg.saveAs(wmImgPath);
+  const wmImgCheck = await page.evaluate(async (arr) => {
+    const bytes = new Uint8Array(arr);
+    const out = {};
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+    out.pages = doc.numPages;
+    const t = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      t.push((await (await doc.getPage(i)).getTextContent()).items.map(x => x.str).join(''));
+    }
+    out.text = t.join('|');
+    const ops = await (await doc.getPage(1)).getOperatorList();
+    out.hasImage = ops.fnArray.includes(pdfjsLib.OPS.paintImageXObject);
+    return out;
+  }, Array.from(fs.readFileSync(wmImgPath)));
+  ok('圖片浮水印後頁數不變', wmImgCheck.pages === 3);
+  ok('圖片浮水印：原文字保留', /CHART-PAGE-1/.test(wmImgCheck.text), wmImgCheck.text);
+  ok('圖片浮水印：每頁確實嵌了圖', wmImgCheck.hasImage === true);
+
+  // 切回文字模式，確認控制項復原
+  await page.click('#watermarkMode button[data-wmmode="text"]');
+  await page.evaluate(() => {
+    document.getElementById('watermarkLayout').value = 'diagonal';
+    document.getElementById('watermarkLayout').dispatchEvent(new Event('change'));
+  });
+  ok('切回文字模式：顏色回來、大小收起', await page.evaluate(() =>
+    document.getElementById('wmColorWrap').hidden === false &&
+    document.getElementById('wmSizeWrap').hidden === true));
 
   console.log('— 🧹 清除檔案資訊（v2.6）—');
   await page.click('.sub-tab[data-sub="scrub"]');
