@@ -890,6 +890,58 @@
             background: #6c757d;
         }
 
+        /* 內建 logo 選擇格 */
+        .wm-logo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .wm-logo {
+            width: 96px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #fff;
+            padding: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .wm-logo:hover {
+            border-color: #4facfe;
+        }
+
+        .wm-logo.active {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 2px rgba(79,172,254,0.25);
+        }
+
+        .wm-logo-thumb {
+            width: 100%;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wm-logo-thumb img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .wm-logo-cap {
+            font-size: 0.68rem;
+            color: #666;
+            text-align: center;
+            line-height: 1.2;
+        }
+
         .redact-warning {
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -1087,7 +1139,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.7 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.8 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1824,15 +1876,18 @@
 
                         <!-- 圖片浮水印設定 -->
                         <div id="wmImageOpts" hidden>
-                            <div class="option-row">
+                            <p class="hint-text" style="margin-top:0;">選內建 logo：</p>
+                            <div class="wm-logo-grid" id="wmLogoGrid"></div>
+
+                            <div class="option-row" style="margin-top:16px;">
                                 <button class="upload-button" type="button" style="margin-top:0;"
                                         onclick="document.getElementById('watermarkImageInput').click()">
-                                    🖼️ 選擇圖片（logo／印章／簽名）
+                                    🖼️ 或上傳自己的圖片
                                 </button>
                                 <input type="file" id="watermarkImageInput" class="file-input" accept="image/*" />
                                 <span id="watermarkImageName" class="hint-text" style="margin-top:0;">尚未選擇圖片</span>
                             </div>
-                            <p class="hint-text">建議用去背的 PNG（透明背景），印章、簽名蓋上去才不會有白框。</p>
+                            <p class="hint-text">自己的圖片建議用去背的 PNG（透明背景），印章、簽名蓋上去才不會有白框。</p>
                         </div>
                     </div>
 
@@ -1984,7 +2039,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>PDF工具箱 v2.7</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.8</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -2244,9 +2299,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.7 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.7 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.7 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.8 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.8 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.8 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2587,8 +2642,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.7 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.7 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.8 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.8 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -3900,8 +3955,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.7 by Tso KY');
-            out.setProducer('PDF工具箱 v2.7 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.8 by Tso KY');
+            out.setProducer('PDF工具箱 v2.8 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -4187,8 +4242,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.7 by Tso KY');
-                out.setProducer('PDF工具箱 v2.7 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.8 by Tso KY');
+                out.setProducer('PDF工具箱 v2.8 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -4865,6 +4920,38 @@
 
         const WM_COLORS = { gray: [128, 128, 128], red: [192, 57, 43], blue: [44, 90, 160] };
 
+        /* 內建 logo：官方品牌檔，已去背、減色最佳化後放在 assets/logos/。
+           公衛的品牌包只提供黑白版，故這裡也是黑白。 */
+        const WM_LOGOS = [
+            { src: 'assets/logos/nckuh-seal.png',   label: '成大醫院院徽' },
+            { src: 'assets/logos/nckuh-h.png',      label: '成大醫院（橫式）' },
+            { src: 'assets/logos/ncku-med.png',     label: '成大醫學院' },
+            { src: 'assets/logos/stomatology.png',  label: '牙科部院徽' },
+            { src: 'assets/logos/dentistry.png',    label: '牙醫學系' },
+            { src: 'assets/logos/oral-inst.png',    label: '口腔醫學研究所' },
+            { src: 'assets/logos/nckuph-h.png',     label: '成大公衛（橫）' },
+            { src: 'assets/logos/nckuph-v.png',     label: '成大公衛（直）' },
+            { src: 'assets/logos/nckuph-full.png',  label: '成大公衛（全名）' },
+            { src: 'assets/logos/nckuph-sym-h.png', label: '公衛圖騰（橫）' },
+            { src: 'assets/logos/nckuph-sym.png',   label: '公衛圖騰' },
+            { src: 'assets/logos/nckuph-sym-v.png', label: '公衛圖騰（直）' },
+        ];
+
+        /* 把圖片載進來當浮水印（內建 logo 與上傳共用）。
+           src 可以是 assets 路徑或 dataURL。 */
+        function setWatermarkImageFromSrc(src, name) {
+            const img = new Image();
+            img.onload = () => {
+                wmImage = img;
+                document.getElementById('watermarkImageName').textContent = name || '已選擇圖片';
+                renderWatermarkPreview();
+            };
+            img.onerror = () => showStatus('圖片讀取失敗', 'error', 'watermark');
+            img.src = src;
+        }
+        // 內建 logo 用（與上傳區分只是為了語意清楚）
+        const setWatermarkImage = setWatermarkImageFromSrc;
+
         function wmMode() {
             const b = document.querySelector('#watermarkMode button.active');
             return b ? b.dataset.wmmode : 'text';
@@ -4922,7 +5009,25 @@
                 });
             });
 
-            // 上傳圖片浮水印
+            // 內建 logo 選擇格
+            const grid = document.getElementById('wmLogoGrid');
+            WM_LOGOS.forEach(lg => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'wm-logo';
+                btn.dataset.src = lg.src;
+                btn.innerHTML =
+                    `<span class="wm-logo-thumb"><img src="${lg.src}" alt="${lg.label}" loading="lazy"></span>` +
+                    `<span class="wm-logo-cap">${lg.label}</span>`;
+                btn.addEventListener('click', () => {
+                    setWatermarkImage(lg.src, lg.label);
+                    grid.querySelectorAll('.wm-logo').forEach(b =>
+                        b.classList.toggle('active', b === btn));
+                });
+                grid.appendChild(btn);
+            });
+
+            // 上傳自己的圖片
             document.getElementById('watermarkImageInput').addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 e.target.value = '';
@@ -4931,17 +5036,11 @@
                     showStatus('請選擇圖片檔案', 'error', 'watermark');
                     return;
                 }
+                // 自己上傳就取消內建的選取狀態
+                document.querySelectorAll('#wmLogoGrid .wm-logo.active').forEach(b => b.classList.remove('active'));
                 const reader = new FileReader();
-                reader.onload = () => {
-                    const img = new Image();
-                    img.onload = () => {
-                        wmImage = img;
-                        document.getElementById('watermarkImageName').textContent = file.name;
-                        renderWatermarkPreview();
-                    };
-                    img.onerror = () => showStatus('圖片讀取失敗', 'error', 'watermark');
-                    img.src = reader.result;
-                };
+                reader.onload = () => setWatermarkImageFromSrc(reader.result, file.name);
+                reader.onerror = () => showStatus('圖片讀取失敗', 'error', 'watermark');
                 reader.readAsDataURL(file);
             });
 
@@ -5524,7 +5623,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.7 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.8 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
