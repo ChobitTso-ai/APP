@@ -1087,7 +1087,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.6 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.7 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1757,10 +1757,11 @@
             <div id="watermarkPane" data-pane="watermark">
                 <div class="info-box">
                     <h4>🖋️ 蓋上浮水印</h4>
-                    <p>在每一頁蓋上「影本」「機密」之類的字樣，寄影本或標示用途時很方便。</p>
+                    <p>在每一頁蓋上文字（「影本」「機密」）或自己的圖片（logo／印章／簽名），寄影本或標示用途時很方便。</p>
                     <ul>
-                        <li>✅ 文字與排版完全保留，浮水印是疊在上層的半透明文字</li>
-                        <li>🈶 支援中文（用畫布繪製再嵌入，不會變亂碼）</li>
+                        <li>🔤 <strong>文字</strong>：支援中文（用畫布繪製再嵌入，不會變亂碼）</li>
+                        <li>🖼️ <strong>圖片</strong>：上傳 logo／印章／簽名，可放角落當章或斜向鋪滿</li>
+                        <li>✅ 原文字與排版完全保留，浮水印是疊在上層的圖層</li>
                         <li>🔒 全程在自己的電腦處理，不會上傳</li>
                     </ul>
                     <p class="hint-text">
@@ -1796,19 +1797,42 @@
                     </div>
 
                     <div class="option-box">
-                        <h4>🖋️ 浮水印文字</h4>
-                        <div class="option-row">
-                            <div class="control-group" style="min-width: 240px;">
-                                <input type="text" id="watermarkText" class="control-input"
-                                       placeholder="例如 影本、機密、僅供參考" value="影本" maxlength="20" />
+                        <h4>🖋️ 浮水印內容</h4>
+                        <div class="option-row" style="margin-bottom: 14px;">
+                            <div class="mode-toggle" id="watermarkMode">
+                                <button type="button" data-wmmode="text" class="active">🔤 文字</button>
+                                <button type="button" data-wmmode="image">🖼️ 圖片</button>
                             </div>
                         </div>
-                        <div class="option-row" style="margin-top: 10px; gap: 8px;">
-                            <button type="button" class="tool-button wm-preset" data-text="影本">影本</button>
-                            <button type="button" class="tool-button wm-preset" data-text="機密">機密</button>
-                            <button type="button" class="tool-button wm-preset" data-text="僅供參考">僅供參考</button>
-                            <button type="button" class="tool-button wm-preset" data-text="作廢">作廢</button>
-                            <button type="button" class="tool-button wm-preset" data-text="副本勿發">副本勿發</button>
+
+                        <!-- 文字浮水印設定 -->
+                        <div id="wmTextOpts">
+                            <div class="option-row">
+                                <div class="control-group" style="min-width: 240px;">
+                                    <input type="text" id="watermarkText" class="control-input"
+                                           placeholder="例如 影本、機密、僅供參考" value="影本" maxlength="20" />
+                                </div>
+                            </div>
+                            <div class="option-row" style="margin-top: 10px; gap: 8px;">
+                                <button type="button" class="tool-button wm-preset" data-text="影本">影本</button>
+                                <button type="button" class="tool-button wm-preset" data-text="機密">機密</button>
+                                <button type="button" class="tool-button wm-preset" data-text="僅供參考">僅供參考</button>
+                                <button type="button" class="tool-button wm-preset" data-text="作廢">作廢</button>
+                                <button type="button" class="tool-button wm-preset" data-text="副本勿發">副本勿發</button>
+                            </div>
+                        </div>
+
+                        <!-- 圖片浮水印設定 -->
+                        <div id="wmImageOpts" hidden>
+                            <div class="option-row">
+                                <button class="upload-button" type="button" style="margin-top:0;"
+                                        onclick="document.getElementById('watermarkImageInput').click()">
+                                    🖼️ 選擇圖片（logo／印章／簽名）
+                                </button>
+                                <input type="file" id="watermarkImageInput" class="file-input" accept="image/*" />
+                                <span id="watermarkImageName" class="hint-text" style="margin-top:0;">尚未選擇圖片</span>
+                            </div>
+                            <p class="hint-text">建議用去背的 PNG（透明背景），印章、簽名蓋上去才不會有白框。</p>
                         </div>
                     </div>
 
@@ -1816,18 +1840,37 @@
                         <h4>⚙️ 樣式</h4>
                         <div class="option-row">
                             <label>
-                                排列
+                                位置
                                 <select id="watermarkLayout">
-                                    <option value="diagonal" selected>置中斜向（單個大字）</option>
+                                    <option value="diagonal" selected>置中斜向</option>
                                     <option value="tiled">斜向鋪滿整頁</option>
+                                    <option value="corner">角落</option>
                                 </select>
                             </label>
-                            <label>
+                            <label id="wmCornerWrap" hidden>
+                                放哪個角
+                                <select id="watermarkCorner">
+                                    <option value="br" selected>右下</option>
+                                    <option value="bl">左下</option>
+                                    <option value="tr">右上</option>
+                                    <option value="tl">左上</option>
+                                    <option value="center">正中央</option>
+                                </select>
+                            </label>
+                            <label id="wmColorWrap">
                                 顏色
                                 <select id="watermarkColor">
                                     <option value="gray" selected>灰色</option>
                                     <option value="red">紅色</option>
                                     <option value="blue">藍色</option>
+                                </select>
+                            </label>
+                            <label id="wmSizeWrap" hidden>
+                                大小
+                                <select id="watermarkSize">
+                                    <option value="0.18">小</option>
+                                    <option value="0.3" selected>中</option>
+                                    <option value="0.5">大</option>
                                 </select>
                             </label>
                             <label>
@@ -1836,6 +1879,8 @@
                                     <option value="0.08">很淡</option>
                                     <option value="0.15" selected>適中</option>
                                     <option value="0.28">明顯</option>
+                                    <option value="0.6">濃</option>
+                                    <option value="1">不透明</option>
                                 </select>
                             </label>
                         </div>
@@ -1939,7 +1984,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>PDF工具箱 v2.6</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.7</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -2199,9 +2244,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.6 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.6 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.6 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.7 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.7 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.7 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2542,8 +2587,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.6 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.6 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.7 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.7 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -3855,8 +3900,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.6 by Tso KY');
-            out.setProducer('PDF工具箱 v2.6 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.7 by Tso KY');
+            out.setProducer('PDF工具箱 v2.7 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -4142,8 +4187,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.6 by Tso KY');
-                out.setProducer('PDF工具箱 v2.6 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.7 by Tso KY');
+                out.setProducer('PDF工具箱 v2.7 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -4816,8 +4861,26 @@
 
         let watermarkFile = null;    // { name, rawSize, arrayBuffer, pageCount }
         let watermarkPdfjs = null;   // 預覽用
+        let wmImage = null;          // 圖片浮水印用的 HTMLImageElement
 
         const WM_COLORS = { gray: [128, 128, 128], red: [192, 57, 43], blue: [44, 90, 160] };
+
+        function wmMode() {
+            const b = document.querySelector('#watermarkMode button.active');
+            return b ? b.dataset.wmmode : 'text';
+        }
+
+        /* 依「文字／圖片」與「位置」顯示對應的設定，並重畫預覽 */
+        function updateWatermarkControls() {
+            const mode = wmMode();
+            const layout = document.getElementById('watermarkLayout').value;
+            document.getElementById('wmTextOpts').hidden = (mode !== 'text');
+            document.getElementById('wmImageOpts').hidden = (mode !== 'image');
+            document.getElementById('wmColorWrap').hidden = (mode !== 'text');   // 顏色只對文字有意義
+            document.getElementById('wmSizeWrap').hidden = (mode !== 'image');   // 大小只對圖片有意義
+            document.getElementById('wmCornerWrap').hidden = (layout !== 'corner');
+            renderWatermarkPreview();
+        }
 
         function setupWatermarkListeners() {
             const uploadArea = document.getElementById('watermarkUploadArea');
@@ -4849,12 +4912,46 @@
                     renderWatermarkPreview();
                 });
             });
-            // 任何設定改動就重畫預覽
-            ['watermarkText', 'watermarkLayout', 'watermarkColor', 'watermarkOpacity'].forEach(id => {
+
+            // 文字／圖片 模式切換
+            document.querySelectorAll('#watermarkMode button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#watermarkMode button').forEach(b =>
+                        b.classList.toggle('active', b === btn));
+                    updateWatermarkControls();
+                });
+            });
+
+            // 上傳圖片浮水印
+            document.getElementById('watermarkImageInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                e.target.value = '';
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    showStatus('請選擇圖片檔案', 'error', 'watermark');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        wmImage = img;
+                        document.getElementById('watermarkImageName').textContent = file.name;
+                        renderWatermarkPreview();
+                    };
+                    img.onerror = () => showStatus('圖片讀取失敗', 'error', 'watermark');
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // 任何設定改動就重畫預覽；排列變更要連帶更新「角落」選項的顯示
+            ['watermarkText', 'watermarkColor', 'watermarkOpacity', 'watermarkCorner', 'watermarkSize'].forEach(id => {
                 const el = document.getElementById(id);
                 el.addEventListener('input', renderWatermarkPreview);
                 el.addEventListener('change', renderWatermarkPreview);
             });
+            document.getElementById('watermarkLayout').addEventListener('change', updateWatermarkControls);
         }
 
         async function loadWatermarkPDF(file) {
@@ -4906,27 +5003,82 @@
 
         function currentWatermarkOpts() {
             return {
+                mode: wmMode(),
                 text: (document.getElementById('watermarkText').value || '影本').trim(),
                 layout: document.getElementById('watermarkLayout').value,
                 color: document.getElementById('watermarkColor').value,
                 opacity: Number(document.getElementById('watermarkOpacity').value),
+                corner: document.getElementById('watermarkCorner').value,
+                size: Number(document.getElementById('watermarkSize').value),
+                image: wmImage,
             };
         }
 
         /* 畫一張和頁面同尺寸、背景透明的浮水印圖層。
-           字級依畫布大小等比例算，所以小預覽與實際整頁看起來一致。 */
+           文字模式字級、圖片模式尺寸都依畫布大小等比例算，
+           所以小預覽與實際整頁看起來一致。 */
         function buildWatermarkCanvas(w, h, opts) {
             const c = document.createElement('canvas');
             c.width = Math.max(1, Math.round(w));
             c.height = Math.max(1, Math.round(h));
             const g = c.getContext('2d');
+            const angle = -Math.PI / 6;   // -30°
+
+            // ---- 圖片浮水印 ----
+            if (opts.mode === 'image') {
+                const img = opts.image;
+                if (!img || !img.width) return c;   // 還沒選圖
+                const ar = img.width / img.height;
+                g.globalAlpha = opts.opacity;
+
+                if (opts.layout === 'corner') {
+                    const tw = w * opts.size;
+                    const th = tw / ar;
+                    const m = Math.min(w, h) * 0.04;
+                    let x, y;
+                    switch (opts.corner) {
+                        case 'bl': x = m;          y = h - th - m; break;
+                        case 'tr': x = w - tw - m; y = m;          break;
+                        case 'tl': x = m;          y = m;          break;
+                        case 'center': x = (w - tw) / 2; y = (h - th) / 2; break;
+                        default:   x = w - tw - m; y = h - th - m;    // 右下
+                    }
+                    g.drawImage(img, x, y, tw, th);
+                } else if (opts.layout === 'tiled') {
+                    const tw = w * Math.min(opts.size, 0.22);
+                    const th = tw / ar;
+                    const stepX = tw * 1.8;
+                    const stepY = th * 2.4;
+                    g.save();
+                    g.translate(w / 2, h / 2);
+                    g.rotate(angle);
+                    g.translate(-w / 2, -h / 2);
+                    for (let y = -h * 0.5; y < h * 1.5; y += stepY) {
+                        for (let x = -w * 0.5; x < w * 1.5; x += stepX) {
+                            g.drawImage(img, x, y, tw, th);
+                        }
+                    }
+                    g.restore();
+                } else {
+                    // 置中斜向單張
+                    const tw = w * opts.size;
+                    const th = tw / ar;
+                    g.save();
+                    g.translate(w / 2, h / 2);
+                    g.rotate(angle);
+                    g.drawImage(img, -tw / 2, -th / 2, tw, th);
+                    g.restore();
+                }
+                g.globalAlpha = 1;
+                return c;
+            }
+
+            // ---- 文字浮水印 ----
             const [r, gg, b] = WM_COLORS[opts.color] || WM_COLORS.gray;
             g.fillStyle = `rgba(${r},${gg},${b},${opts.opacity})`;
             g.textAlign = 'center';
             g.textBaseline = 'middle';
-
             const text = opts.text || '影本';
-            const angle = -Math.PI / 6;   // -30°
             const fontFamily = '"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC","Heiti TC",sans-serif';
 
             if (opts.layout === 'tiled') {
@@ -4945,6 +5097,21 @@
                     }
                 }
                 g.restore();
+            } else if (opts.layout === 'corner') {
+                const fs = Math.max(12, Math.min(w, h) * 0.04);
+                g.font = `bold ${fs}px ${fontFamily}`;
+                const tw = g.measureText(text).width;
+                const m = Math.min(w, h) * 0.04;
+                g.textBaseline = 'middle';
+                let x, y;
+                switch (opts.corner) {
+                    case 'bl': g.textAlign = 'left';   x = m;     y = h - m - fs / 2; break;
+                    case 'tr': g.textAlign = 'right';  x = w - m; y = m + fs / 2;     break;
+                    case 'tl': g.textAlign = 'left';   x = m;     y = m + fs / 2;     break;
+                    case 'center': g.textAlign = 'center'; x = w / 2; y = h / 2;      break;
+                    default:   g.textAlign = 'right';  x = w - m; y = h - m - fs / 2;  // 右下
+                }
+                g.fillText(text, x, y);
             } else {
                 // 置中單個大字：字級放到對角線約 62% 寬
                 const target = Math.sqrt(w * w + h * h) * 0.62;
@@ -4981,7 +5148,12 @@
         async function applyWatermark() {
             if (!watermarkFile) return;
             const opts = currentWatermarkOpts();
-            if (!opts.text) {
+            if (opts.mode === 'image') {
+                if (!opts.image) {
+                    showStatus('請先選擇要當浮水印的圖片', 'error', 'watermark');
+                    return;
+                }
+            } else if (!opts.text) {
                 showStatus('請先輸入浮水印文字', 'error', 'watermark');
                 return;
             }
@@ -5020,7 +5192,8 @@
                 updateProgress(100, 'watermark');
                 const base = document.getElementById('watermarkOutName').value.trim() || 'watermarked';
                 downloadFile(bytes, `${base}.pdf`);
-                showStatus(`已蓋上「${opts.text}」浮水印，共 ${pages.length} 頁`, 'success', 'watermark');
+                const label = opts.mode === 'image' ? '圖片' : `「${opts.text}」`;
+                showStatus(`已蓋上${label}浮水印，共 ${pages.length} 頁`, 'success', 'watermark');
 
             } catch (error) {
                 console.error('浮水印錯誤:', error);
@@ -5351,7 +5524,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.6 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.7 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
