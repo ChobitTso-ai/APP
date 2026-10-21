@@ -1087,7 +1087,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉、轉換與密碼 v2.5 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.6 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1097,6 +1097,7 @@
             <div class="tab" data-tab="editor">🖍️ 編輯</div>
             <div class="tab" data-tab="convert">🔄 轉換</div>
             <div class="tab" data-tab="unlock">🔐 密碼</div>
+            <div class="tab" data-tab="prep">📤 寄出前</div>
         </div>
 
         <!-- 合併功能 -->
@@ -1745,8 +1746,200 @@
             </div>
         </div>
 
+        <!-- 寄出前整理（浮水印／清除檔案資訊） -->
+        <div id="prepTab" class="tab-content">
+            <div class="sub-tabs">
+                <div class="sub-tab active" data-sub="watermark">🖋️ 浮水印</div>
+                <div class="sub-tab" data-sub="scrub">🧹 清除檔案資訊</div>
+            </div>
+
+            <!-- 浮水印 -->
+            <div id="watermarkPane" data-pane="watermark">
+                <div class="info-box">
+                    <h4>🖋️ 蓋上浮水印</h4>
+                    <p>在每一頁蓋上「影本」「機密」之類的字樣，寄影本或標示用途時很方便。</p>
+                    <ul>
+                        <li>✅ 文字與排版完全保留，浮水印是疊在上層的半透明文字</li>
+                        <li>🈶 支援中文（用畫布繪製再嵌入，不會變亂碼）</li>
+                        <li>🔒 全程在自己的電腦處理，不會上傳</li>
+                    </ul>
+                    <p class="hint-text">
+                        浮水印只是視覺標示，拿到檔案的人用工具仍可能移除——它的用途是「標明這份文件的性質」，
+                        不是防竄改。真的要防人改動，請搭配「🔐 密碼」加密。
+                    </p>
+                </div>
+
+                <div class="upload-area" id="watermarkUploadArea">
+                    <div class="upload-icon">🖋️</div>
+                    <div class="upload-text">點擊選擇要蓋浮水印的PDF檔案</div>
+                    <div class="upload-hint">檔案若有密碼，請先用「🔐 密碼」解除</div>
+                    <button class="upload-button" onclick="document.getElementById('watermarkFileInput').click()">
+                        🖋️ 選擇PDF檔案
+                    </button>
+                    <input type="file" id="watermarkFileInput" class="file-input" accept=".pdf,application/pdf" />
+                </div>
+
+                <div id="watermarkContent" hidden>
+                    <div class="pdf-item">
+                        <div class="pdf-info">
+                            <div class="pdf-icon">📄</div>
+                            <div class="pdf-details">
+                                <h3 id="watermarkFileName">-</h3>
+                                <p id="watermarkFileInfo">-</p>
+                            </div>
+                        </div>
+                        <div class="pdf-actions">
+                            <button class="action-button remove-button" onclick="clearWatermarkPDF()">
+                                🗑️ 清除
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>🖋️ 浮水印文字</h4>
+                        <div class="option-row">
+                            <div class="control-group" style="min-width: 240px;">
+                                <input type="text" id="watermarkText" class="control-input"
+                                       placeholder="例如 影本、機密、僅供參考" value="影本" maxlength="20" />
+                            </div>
+                        </div>
+                        <div class="option-row" style="margin-top: 10px; gap: 8px;">
+                            <button type="button" class="tool-button wm-preset" data-text="影本">影本</button>
+                            <button type="button" class="tool-button wm-preset" data-text="機密">機密</button>
+                            <button type="button" class="tool-button wm-preset" data-text="僅供參考">僅供參考</button>
+                            <button type="button" class="tool-button wm-preset" data-text="作廢">作廢</button>
+                            <button type="button" class="tool-button wm-preset" data-text="副本勿發">副本勿發</button>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>⚙️ 樣式</h4>
+                        <div class="option-row">
+                            <label>
+                                排列
+                                <select id="watermarkLayout">
+                                    <option value="diagonal" selected>置中斜向（單個大字）</option>
+                                    <option value="tiled">斜向鋪滿整頁</option>
+                                </select>
+                            </label>
+                            <label>
+                                顏色
+                                <select id="watermarkColor">
+                                    <option value="gray" selected>灰色</option>
+                                    <option value="red">紅色</option>
+                                    <option value="blue">藍色</option>
+                                </select>
+                            </label>
+                            <label>
+                                濃淡
+                                <select id="watermarkOpacity">
+                                    <option value="0.08">很淡</option>
+                                    <option value="0.15" selected>適中</option>
+                                    <option value="0.28">明顯</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="redact-wrap" style="margin-top: 16px;">
+                            <canvas id="watermarkPreview" style="max-width:100%; border:1px solid #e9ecef; border-radius:6px; background:#fff;"></canvas>
+                            <p class="hint-text">↑ 預覽（以第 1 頁為例）</p>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>💾 輸出</h4>
+                        <div class="option-row">
+                            <div class="control-group" style="min-width: 260px;">
+                                <label for="watermarkOutName">輸出檔名：</label>
+                                <input type="text" id="watermarkOutName" class="control-input" placeholder="watermarked" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="merge-button" id="watermarkButton" onclick="applyWatermark()">
+                        🖋️ 蓋上浮水印並下載
+                    </button>
+
+                    <div class="progress-bar" id="watermarkProgressBar">
+                        <div class="progress-fill" id="watermarkProgressFill"></div>
+                    </div>
+                    <div class="hint-text progress-note" id="watermarkProgressNote" hidden></div>
+
+                    <div class="status-message" id="watermarkStatusMessage"></div>
+                </div>
+            </div>
+
+            <!-- 清除檔案資訊 -->
+            <div id="scrubPane" data-pane="scrub" hidden>
+                <div class="info-box">
+                    <h4>🧹 清除檔案裡藏的資訊</h4>
+                    <p>遮蔽拿掉的是看得到的內容，但 PDF 檔案裡還藏著一些文字看不到的欄位：</p>
+                    <ul>
+                        <li>📝 <strong>作者、標題、主旨、關鍵字</strong>——常留著承辦人姓名或內部註記</li>
+                        <li>🏷️ <strong>製作軟體、建立／修改時間</strong></li>
+                        <li>🗂️ <strong>XMP 中繼資料</strong>——掃描軟體另外存的一份，可能重複上面的資訊</li>
+                    </ul>
+                    <p class="hint-text">
+                        把病歷、轉診單寄出去之前清一清，這些隱藏欄位就不會跟著外流。文字與排版不受影響。
+                    </p>
+                </div>
+
+                <div class="upload-area" id="scrubUploadArea">
+                    <div class="upload-icon">🧹</div>
+                    <div class="upload-text">點擊選擇要清除資訊的PDF檔案</div>
+                    <div class="upload-hint">載入後會先列出目前藏了哪些資訊</div>
+                    <button class="upload-button" onclick="document.getElementById('scrubFileInput').click()">
+                        🧹 選擇PDF檔案
+                    </button>
+                    <input type="file" id="scrubFileInput" class="file-input" accept=".pdf,application/pdf" />
+                </div>
+
+                <div id="scrubContent" hidden>
+                    <div class="pdf-item">
+                        <div class="pdf-info">
+                            <div class="pdf-icon">📄</div>
+                            <div class="pdf-details">
+                                <h3 id="scrubFileName">-</h3>
+                                <p id="scrubFileInfo">-</p>
+                            </div>
+                        </div>
+                        <div class="pdf-actions">
+                            <button class="action-button remove-button" onclick="clearScrubPDF()">
+                                🗑️ 清除
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>🔍 目前藏了這些資訊</h4>
+                        <div id="scrubMetaList" class="split-list"></div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>💾 輸出</h4>
+                        <div class="option-row">
+                            <div class="control-group" style="min-width: 260px;">
+                                <label for="scrubOutName">輸出檔名：</label>
+                                <input type="text" id="scrubOutName" class="control-input" placeholder="cleaned" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="merge-button" id="scrubButton" onclick="scrubMetadata()">
+                        🧹 清除資訊並下載
+                    </button>
+
+                    <div class="progress-bar" id="scrubProgressBar">
+                        <div class="progress-fill" id="scrubProgressFill"></div>
+                    </div>
+                    <div class="hint-text progress-note" id="scrubProgressNote" hidden></div>
+
+                    <div class="status-message" id="scrubStatusMessage"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="footer">
-            <p><strong>PDF工具箱 v2.5</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.6</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -2006,9 +2199,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.5 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.5 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.5 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.6 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.6 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.6 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2349,8 +2542,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.5 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.5 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.6 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.6 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -3662,8 +3855,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.5 by Tso KY');
-            out.setProducer('PDF工具箱 v2.5 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.6 by Tso KY');
+            out.setProducer('PDF工具箱 v2.6 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -3949,8 +4142,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.5 by Tso KY');
-                out.setProducer('PDF工具箱 v2.5 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.6 by Tso KY');
+                out.setProducer('PDF工具箱 v2.6 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -4399,7 +4592,7 @@
                 return false;   // 偵測不出來就不要擋住正常檔案
             }
             if (info.kind === 'none') return false;
-            showStatus(`${what}有密碼，請先到「🔓 解密」分頁把密碼拿掉再回來`, 'error', type);
+            showStatus(`${what}有密碼，請先到「🔐 密碼」分頁的「解除密碼」把密碼拿掉再回來`, 'error', type);
             return true;
         }
 
@@ -4616,6 +4809,390 @@
             }
         }
 
+        // ==================== 浮水印 ====================
+        /* 用基本 pdf-lib 就夠（不需要解密）。中文沒辦法用內建字型畫，
+           改成「把文字畫在畫布上 → 嵌成半透明 PNG → 疊到每一頁」，
+           這樣中英文一視同仁、不會變亂碼。相同尺寸的頁面共用同一張嵌入圖。 */
+
+        let watermarkFile = null;    // { name, rawSize, arrayBuffer, pageCount }
+        let watermarkPdfjs = null;   // 預覽用
+
+        const WM_COLORS = { gray: [128, 128, 128], red: [192, 57, 43], blue: [44, 90, 160] };
+
+        function setupWatermarkListeners() {
+            const uploadArea = document.getElementById('watermarkUploadArea');
+            const fileInput = document.getElementById('watermarkFileInput');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) await loadWatermarkPDF(file);
+                e.target.value = '';
+            });
+            uploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'watermark'));
+            uploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'watermark'));
+            uploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(f =>
+                    f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                );
+                if (files.length) await loadWatermarkPDF(files[0]);
+            });
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') fileInput.click();
+            });
+
+            // 預設字樣
+            document.querySelectorAll('.wm-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('watermarkText').value = btn.dataset.text;
+                    renderWatermarkPreview();
+                });
+            });
+            // 任何設定改動就重畫預覽
+            ['watermarkText', 'watermarkLayout', 'watermarkColor', 'watermarkOpacity'].forEach(id => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', renderWatermarkPreview);
+                el.addEventListener('change', renderWatermarkPreview);
+            });
+        }
+
+        async function loadWatermarkPDF(file) {
+            try {
+                if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showStatus('請選擇PDF檔案', 'error', 'watermark');
+                    return;
+                }
+                showProgress('watermark');
+                const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'watermark', '這份PDF')) {
+                    hideProgress('watermark');
+                    return;
+                }
+
+                const probe = await PDFLib.PDFDocument.load(arrayBuffer, { updateMetadata: false });
+                watermarkFile = {
+                    name: file.name, rawSize: file.size, arrayBuffer,
+                    pageCount: probe.getPageCount(),
+                };
+                watermarkPdfjs = await openWithPdfjs(arrayBuffer);
+
+                document.getElementById('watermarkFileName').textContent = file.name;
+                document.getElementById('watermarkFileInfo').textContent =
+                    `${formatFileSize(file.size)} • ${watermarkFile.pageCount} 頁`;
+                document.getElementById('watermarkOutName').value =
+                    file.name.replace(/\.pdf$/i, '') + '_watermarked';
+                document.getElementById('watermarkContent').hidden = false;
+                document.getElementById('watermarkUploadArea').hidden = true;
+
+                hideProgress('watermark');
+                await renderWatermarkPreview();
+                showStatus('請設定浮水印文字與樣式', 'success', 'watermark');
+
+            } catch (error) {
+                console.error('載入PDF錯誤:', error);
+                showStatus('載入PDF時發生錯誤：' + error.message, 'error', 'watermark');
+                hideProgress('watermark');
+            }
+        }
+
+        function clearWatermarkPDF() {
+            watermarkFile = null;
+            watermarkPdfjs = null;
+            document.getElementById('watermarkContent').hidden = true;
+            document.getElementById('watermarkUploadArea').hidden = false;
+            showStatus('已清除PDF', 'success', 'watermark');
+        }
+
+        function currentWatermarkOpts() {
+            return {
+                text: (document.getElementById('watermarkText').value || '影本').trim(),
+                layout: document.getElementById('watermarkLayout').value,
+                color: document.getElementById('watermarkColor').value,
+                opacity: Number(document.getElementById('watermarkOpacity').value),
+            };
+        }
+
+        /* 畫一張和頁面同尺寸、背景透明的浮水印圖層。
+           字級依畫布大小等比例算，所以小預覽與實際整頁看起來一致。 */
+        function buildWatermarkCanvas(w, h, opts) {
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w));
+            c.height = Math.max(1, Math.round(h));
+            const g = c.getContext('2d');
+            const [r, gg, b] = WM_COLORS[opts.color] || WM_COLORS.gray;
+            g.fillStyle = `rgba(${r},${gg},${b},${opts.opacity})`;
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
+
+            const text = opts.text || '影本';
+            const angle = -Math.PI / 6;   // -30°
+            const fontFamily = '"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC","Heiti TC",sans-serif';
+
+            if (opts.layout === 'tiled') {
+                const fs = Math.max(12, Math.min(w, h) * 0.05);
+                g.font = `bold ${fs}px ${fontFamily}`;
+                const tw = g.measureText(text).width;
+                const stepX = Math.max(tw + fs * 2, fs * 4);
+                const stepY = fs * 3.2;
+                g.save();
+                g.translate(w / 2, h / 2);
+                g.rotate(angle);
+                g.translate(-w / 2, -h / 2);
+                for (let y = -h * 0.5; y < h * 1.5; y += stepY) {
+                    for (let x = -w * 0.5; x < w * 1.5; x += stepX) {
+                        g.fillText(text, x, y);
+                    }
+                }
+                g.restore();
+            } else {
+                // 置中單個大字：字級放到對角線約 62% 寬
+                const target = Math.sqrt(w * w + h * h) * 0.62;
+                let fs = Math.min(w, h) * 0.3;
+                g.font = `bold ${fs}px ${fontFamily}`;
+                const measured = g.measureText(text).width || 1;
+                fs = Math.max(16, Math.min(fs, fs * target / measured));
+                g.font = `bold ${fs}px ${fontFamily}`;
+                g.save();
+                g.translate(w / 2, h / 2);
+                g.rotate(angle);
+                g.fillText(text, 0, 0);
+                g.restore();
+            }
+            return c;
+        }
+
+        async function renderWatermarkPreview() {
+            if (!watermarkPdfjs) return;
+            const canvas = document.getElementById('watermarkPreview');
+            try {
+                const pageCanvas = await renderPdfPage(watermarkPdfjs, 1, { targetWidth: 420 });
+                canvas.width = pageCanvas.width;
+                canvas.height = pageCanvas.height;
+                const g = canvas.getContext('2d');
+                g.drawImage(pageCanvas, 0, 0);
+                const wm = buildWatermarkCanvas(canvas.width, canvas.height, currentWatermarkOpts());
+                g.drawImage(wm, 0, 0);
+            } catch (err) {
+                console.warn('浮水印預覽失敗:', err);
+            }
+        }
+
+        async function applyWatermark() {
+            if (!watermarkFile) return;
+            const opts = currentWatermarkOpts();
+            if (!opts.text) {
+                showStatus('請先輸入浮水印文字', 'error', 'watermark');
+                return;
+            }
+
+            const btn = document.getElementById('watermarkButton');
+            btn.disabled = true;
+            btn.textContent = '處理中...';
+            try {
+                showProgress('watermark');
+                const doc = await PDFLib.PDFDocument.load(watermarkFile.arrayBuffer, { updateMetadata: false });
+                const pages = doc.getPages();
+                const embedCache = new Map();   // 同尺寸頁面共用一張嵌入圖
+
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    const { width, height } = page.getSize();
+                    const key = `${Math.round(width)}x${Math.round(height)}`;
+                    let img = embedCache.get(key);
+                    if (!img) {
+                        // 以 1.5 倍頁面點數當像素，文字夠清楚、檔案又不會太肥
+                        const scale = 1.5;
+                        const wm = buildWatermarkCanvas(width * scale, height * scale, opts);
+                        const bytes = await canvasToBytes(wm, 'image/png');
+                        img = await doc.embedPng(bytes);
+                        embedCache.set(key, img);
+                    }
+                    page.drawImage(img, { x: 0, y: 0, width, height });
+                    if (pages.length >= 10) {
+                        setProgressNote('watermark',
+                            `第 ${i + 1} / ${pages.length} 頁（${Math.round((i + 1) / pages.length * 100)}%）`);
+                    }
+                    updateProgress((i + 1) / pages.length * 95, 'watermark');
+                }
+
+                const bytes = await doc.save();
+                updateProgress(100, 'watermark');
+                const base = document.getElementById('watermarkOutName').value.trim() || 'watermarked';
+                downloadFile(bytes, `${base}.pdf`);
+                showStatus(`已蓋上「${opts.text}」浮水印，共 ${pages.length} 頁`, 'success', 'watermark');
+
+            } catch (error) {
+                console.error('浮水印錯誤:', error);
+                showStatus('蓋浮水印時發生錯誤：' + error.message, 'error', 'watermark');
+            } finally {
+                hideProgress('watermark');
+                btn.disabled = false;
+                btn.textContent = '🖋️ 蓋上浮水印並下載';
+            }
+        }
+
+        // ==================== 清除檔案資訊 ====================
+        /* Info 字典的欄位清空就好；XMP 中繼資料串流要連物件一起從檔案刪掉——
+           光移除 catalog 的 /Metadata 參照，孤兒物件仍會被寫進檔案（pdf-lib 不回收），
+           真實掃描檔的 XMP 多半壓縮過，等於「看不到但還在」。 */
+
+        let scrubFile = null;   // { name, rawSize, arrayBuffer, pageCount, meta, hasXMP }
+
+        function setupScrubListeners() {
+            const uploadArea = document.getElementById('scrubUploadArea');
+            const fileInput = document.getElementById('scrubFileInput');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) await loadScrubPDF(file);
+                e.target.value = '';
+            });
+            uploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'scrub'));
+            uploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'scrub'));
+            uploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(f =>
+                    f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                );
+                if (files.length) await loadScrubPDF(files[0]);
+            });
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') fileInput.click();
+            });
+        }
+
+        function readPdfMeta(doc) {
+            const fmt = (d) => {
+                try { return d ? d.toISOString().slice(0, 10) : ''; } catch (_) { return ''; }
+            };
+            return {
+                '標題': doc.getTitle() || '',
+                '作者': doc.getAuthor() || '',
+                '主旨': doc.getSubject() || '',
+                '關鍵字': doc.getKeywords() || '',
+                '製作軟體': doc.getProducer() || '',
+                '建立程式': doc.getCreator() || '',
+                '建立時間': fmt(doc.getCreationDate()),
+                '修改時間': fmt(doc.getModificationDate()),
+            };
+        }
+
+        async function loadScrubPDF(file) {
+            try {
+                if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showStatus('請選擇PDF檔案', 'error', 'scrub');
+                    return;
+                }
+                showProgress('scrub');
+                const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'scrub', '這份PDF')) {
+                    hideProgress('scrub');
+                    return;
+                }
+
+                const doc = await PDFLib.PDFDocument.load(arrayBuffer, { updateMetadata: false });
+                const meta = readPdfMeta(doc);
+                const hasXMP = doc.catalog.has(PDFLib.PDFName.of('Metadata'));
+
+                scrubFile = {
+                    name: file.name, rawSize: file.size, arrayBuffer,
+                    pageCount: doc.getPageCount(), meta, hasXMP,
+                };
+
+                document.getElementById('scrubFileName').textContent = file.name;
+                document.getElementById('scrubFileInfo').textContent =
+                    `${formatFileSize(file.size)} • ${scrubFile.pageCount} 頁`;
+                document.getElementById('scrubOutName').value =
+                    file.name.replace(/\.pdf$/i, '') + '_cleaned';
+                document.getElementById('scrubContent').hidden = false;
+                document.getElementById('scrubUploadArea').hidden = true;
+
+                renderScrubMetaList();
+                hideProgress('scrub');
+
+                const anything = Object.values(meta).some(v => v) || hasXMP;
+                showStatus(anything ? '以下是目前藏在檔案裡的資訊，按下方按鈕清除'
+                                    : '這份檔案幾乎沒有可清的資訊，清除後仍會重寫一次確保乾淨',
+                    anything ? 'success' : 'success', 'scrub');
+
+            } catch (error) {
+                console.error('載入PDF錯誤:', error);
+                showStatus('載入PDF時發生錯誤：' + error.message, 'error', 'scrub');
+                hideProgress('scrub');
+            }
+        }
+
+        function renderScrubMetaList() {
+            const list = document.getElementById('scrubMetaList');
+            const meta = scrubFile.meta;
+            let html = '';
+            Object.keys(meta).forEach(k => {
+                const v = meta[k];
+                html += `
+                    <div class="split-item">
+                        <div class="split-item-info">${k}</div>
+                        <div class="split-item-pages">${v ? escapeHtmlText(v) : '（空）'}</div>
+                    </div>`;
+            });
+            html += `
+                <div class="split-item">
+                    <div class="split-item-info">XMP 中繼資料</div>
+                    <div class="split-item-pages">${scrubFile.hasXMP ? '有，會一併移除' : '（無）'}</div>
+                </div>`;
+            list.innerHTML = html;
+        }
+
+        function clearScrubPDF() {
+            scrubFile = null;
+            document.getElementById('scrubContent').hidden = true;
+            document.getElementById('scrubUploadArea').hidden = false;
+            showStatus('已清除PDF', 'success', 'scrub');
+        }
+
+        async function scrubMetadata() {
+            if (!scrubFile) return;
+            const btn = document.getElementById('scrubButton');
+            btn.disabled = true;
+            btn.textContent = '清除中...';
+            try {
+                showProgress('scrub');
+                updateProgress(40, 'scrub');
+
+                const doc = await PDFLib.PDFDocument.load(scrubFile.arrayBuffer, { updateMetadata: false });
+                doc.setTitle('');
+                doc.setAuthor('');
+                doc.setSubject('');
+                doc.setKeywords([]);
+                doc.setProducer('');
+                doc.setCreator('');
+
+                // XMP：把 /Metadata 指到的物件從檔案刪掉，不只是移除參照
+                const mref = doc.catalog.get(PDFLib.PDFName.of('Metadata'));
+                if (mref) {
+                    try { doc.context.delete(mref); } catch (_) {}
+                    doc.catalog.delete(PDFLib.PDFName.of('Metadata'));
+                }
+
+                updateProgress(80, 'scrub');
+                const bytes = await doc.save({ updateMetadata: false });
+                updateProgress(100, 'scrub');
+
+                const base = document.getElementById('scrubOutName').value.trim() || 'cleaned';
+                downloadFile(bytes, `${base}.pdf`);
+                showStatus(`已清除檔案資訊，共 ${scrubFile.pageCount} 頁，文字與排版不受影響`, 'success', 'scrub');
+
+            } catch (error) {
+                console.error('清除資訊錯誤:', error);
+                showStatus('清除資訊時發生錯誤：' + error.message, 'error', 'scrub');
+            } finally {
+                hideProgress('scrub');
+                btn.disabled = false;
+                btn.textContent = '🧹 清除資訊並下載';
+            }
+        }
+
         // ==================== 通用功能 ====================
 
         /* 解析「3, 7, 10-15」這種頁碼範圍。
@@ -4686,6 +5263,8 @@
             editor: 'editorUploadArea',
             unlock: 'unlockUploadArea',
             encrypt: 'encryptUploadArea',
+            watermark: 'watermarkUploadArea',
+            scrub: 'scrubUploadArea',
         };
 
         function handleDragOver(event, type) {
@@ -4772,7 +5351,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.5 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.6 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
@@ -4795,6 +5374,8 @@
             setupPdf2ImgListeners();
             setupUnlockListeners();
             setupEncryptListeners();
+            setupWatermarkListeners();
+            setupScrubListeners();
         });
 
         // 防止頁面拖拽
