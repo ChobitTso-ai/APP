@@ -218,6 +218,13 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   PNG 去背保留故印章不會有白框；文字維持原本的 canvas 繪字。顏色只對文字顯示、
   大小只對圖片顯示、角落只在位置=corner 時顯示〔`updateWatermarkControls()`〕。
   嵌入與預覽都走同一個 `buildWatermarkCanvas`，所以預覽＝輸出。端到端測試共 135 項。〕
+  v2.8 圖片浮水印加 12 個內建 logo〔`WM_LOGOS`，官方品牌檔，去背＋減色〔PNG8 palette〕
+  最佳化後放 `assets/logos/`，12 個共約 150K〕：成大醫院院徽／橫式、成大醫學院、牙科部院徽、
+  牙醫學系、口腔醫學研究所、成大公衛 6 款〔公衛品牌包只給黑白版故為黑白〕。
+  點內建或上傳自己的圖都走 `setWatermarkImageFromSrc(src,name)`〔src 可為 assets 路徑或 dataURL〕。
+  **去背做法**：白底 logo 用 ImageMagick 從四角 `-floodfill white -fill none` 只去除邊緣連過來的白，
+  內部的白（牙齒、十字白花瓣）保留；已是 RGBA 透明底的則 floodfill 不命中、安全略過。
+  SVG（公衛）轉 PNG 用 Chromium 渲染〔ImageMagick 無 SVG delegate〕。端到端測試共 141 項。〕
   遮蔽「套用到多頁」經評估暫緩，使用者說先不用）。
 
 ## 併入新網頁工具的標準流程

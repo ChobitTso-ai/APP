@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.7 端到端測試
+/* PDF工具箱 v2.8 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -1110,6 +1110,42 @@ function ok(n, c, d) {
   ok('圖片浮水印後頁數不變', wmImgCheck.pages === 3);
   ok('圖片浮水印：原文字保留', /CHART-PAGE-1/.test(wmImgCheck.text), wmImgCheck.text);
   ok('圖片浮水印：每頁確實嵌了圖', wmImgCheck.hasImage === true);
+
+  console.log('— 🏥 內建 logo（v2.8）—');
+  ok('內建 logo 格有 12 個選項', await page.evaluate(() =>
+    document.querySelectorAll('#wmLogoGrid .wm-logo').length) === 12);
+  ok('每個內建 logo 都有縮圖與說明', await page.evaluate(() =>
+    [...document.querySelectorAll('#wmLogoGrid .wm-logo')].every(b =>
+      b.querySelector('img') && b.querySelector('.wm-logo-cap').textContent.trim())));
+
+  // 點第一個內建 logo（成大醫院院徽），要能實際載入成圖
+  await page.evaluate(() => { wmImage = null; });
+  await page.click('#wmLogoGrid .wm-logo:first-child');
+  await page.waitForFunction(() => wmImage !== null && wmImage.width > 0, null, { timeout: 15000 });
+  ok('點內建 logo 後載入成圖片', await page.evaluate(() =>
+    !!wmImage && wmImage.width > 0 && wmImage.height > 0));
+  ok('被點的 logo 標記為選取中', await page.evaluate(() =>
+    document.querySelector('#wmLogoGrid .wm-logo:first-child').classList.contains('active')));
+  ok('檔名區顯示內建 logo 名稱', await page.evaluate(() =>
+    document.getElementById('watermarkImageName').textContent.includes('成大醫院院徽')));
+
+  // 內建 logo 也要能實際蓋出來
+  await page.evaluate(() => {
+    document.getElementById('watermarkLayout').value = 'corner';
+    document.getElementById('watermarkLayout').dispatchEvent(new Event('change'));
+  });
+  const [dlLogo] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#watermarkButton'),
+  ]);
+  const logoPath = path.join(OUT, 'watermarked-builtin.pdf');
+  await dlLogo.saveAs(logoPath);
+  const logoCheck = await page.evaluate(async (arr) => {
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr).slice(0) }).promise;
+    const ops = await (await doc.getPage(1)).getOperatorList();
+    return { pages: doc.numPages, hasImage: ops.fnArray.includes(pdfjsLib.OPS.paintImageXObject) };
+  }, Array.from(fs.readFileSync(logoPath)));
+  ok('內建 logo 浮水印確實嵌入', logoCheck.hasImage === true && logoCheck.pages === 3);
 
   // 切回文字模式，確認控制項復原
   await page.click('#watermarkMode button[data-wmmode="text"]');
