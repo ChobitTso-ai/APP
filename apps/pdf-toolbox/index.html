@@ -890,6 +890,58 @@
             background: #6c757d;
         }
 
+        /* 內建 logo 選擇格 */
+        .wm-logo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .wm-logo {
+            width: 96px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #fff;
+            padding: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .wm-logo:hover {
+            border-color: #4facfe;
+        }
+
+        .wm-logo.active {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 2px rgba(79,172,254,0.25);
+        }
+
+        .wm-logo-thumb {
+            width: 100%;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wm-logo-thumb img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .wm-logo-cap {
+            font-size: 0.68rem;
+            color: #666;
+            text-align: center;
+            line-height: 1.2;
+        }
+
         .redact-warning {
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -1087,7 +1139,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉與轉換 v2.2 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.10 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1096,6 +1148,8 @@
             <div class="tab" data-tab="split">✂️ 分割</div>
             <div class="tab" data-tab="editor">🖍️ 編輯</div>
             <div class="tab" data-tab="convert">🔄 轉換</div>
+            <div class="tab" data-tab="unlock">🔐 密碼</div>
+            <div class="tab" data-tab="prep">📤 寄出前</div>
         </div>
 
         <!-- 合併功能 -->
@@ -1391,7 +1445,7 @@
             </div>
 
             <!-- 圖片轉 PDF -->
-            <div id="img2pdfPane">
+            <div id="img2pdfPane" data-pane="img2pdf">
                 <div class="info-box">
                     <h4>💡 把照片組成 PDF</h4>
                     <p>可以接在「案例標記工具」後面用：標記完的照片匯出後，在這裡直接組成一份 PDF 病例報告。</p>
@@ -1467,7 +1521,7 @@
             </div>
 
             <!-- PDF 轉圖片 -->
-            <div id="pdf2imgPane" hidden>
+            <div id="pdf2imgPane" data-pane="pdf2img" hidden>
                 <div class="info-box">
                     <h4>💡 把 PDF 每一頁存成圖片</h4>
                     <ul>
@@ -1542,8 +1596,450 @@
             </div>
         </div>
 
+        <!-- 密碼（解除／設定） -->
+        <div id="unlockTab" class="tab-content">
+            <div class="sub-tabs">
+                <div class="sub-tab active" data-sub="unlock">🔓 解除密碼</div>
+                <div class="sub-tab" data-sub="encrypt">🔒 設定密碼</div>
+            </div>
+
+            <div id="unlockPane" data-pane="unlock">
+            <div class="info-box">
+                <h4>🔓 把 PDF 的密碼拿掉</h4>
+                <p>解開有密碼的 PDF，存成不用密碼就能開的版本。</p>
+                <ul>
+                    <li>✅ <strong>文字、書籤與原本的排版都會保留</strong>，不會變成圖片</li>
+                    <li>🔑 需要輸入正確的密碼才解得開——這不是破解密碼的工具</li>
+                    <li>🧾 只設了「權限密碼」（可以直接開、但不給列印或複製）的檔案，不必輸入密碼</li>
+                    <li>🔒 全程在自己的電腦處理，檔案和密碼都不會上傳</li>
+                </ul>
+                <p class="hint-text">
+                    解開之後這份檔案就能拿去用本工具箱的合併、分割、遮蔽等功能了——
+                    那些功能讀不了有密碼的檔案。請只對你本來就有權限開啟的文件使用。
+                </p>
+            </div>
+
+            <div class="upload-area" id="unlockUploadArea">
+                <div class="upload-icon">🔓</div>
+                <div class="upload-text">點擊選擇有密碼的PDF檔案</div>
+                <div class="upload-hint">載入後會先檢查它用的是哪一種密碼</div>
+                <button class="upload-button" onclick="document.getElementById('unlockFileInput').click()">
+                    🔓 選擇PDF檔案
+                </button>
+                <input type="file" id="unlockFileInput" class="file-input" accept=".pdf,application/pdf" />
+            </div>
+
+            <div id="unlockContent" hidden>
+                <div class="pdf-item">
+                    <div class="pdf-info">
+                        <div class="pdf-icon">🔒</div>
+                        <div class="pdf-details">
+                            <h3 id="unlockFileName">-</h3>
+                            <p id="unlockFileInfo">-</p>
+                        </div>
+                    </div>
+                    <div class="pdf-actions">
+                        <button class="action-button remove-button" onclick="clearUnlockPDF()">
+                            🗑️ 清除
+                        </button>
+                    </div>
+                </div>
+
+                <div class="option-box" id="unlockPasswordBox" hidden>
+                    <h4>🔑 輸入開啟密碼</h4>
+                    <div class="option-row">
+                        <div class="control-group" style="min-width: 260px;">
+                            <input type="password" id="unlockPassword" class="control-input"
+                                   placeholder="這份檔案的開啟密碼" autocomplete="off" />
+                        </div>
+                        <label>
+                            <input type="checkbox" id="unlockShowPassword" />
+                            顯示密碼
+                        </label>
+                    </div>
+                    <p class="hint-text">密碼只在這個頁面裡用來解開檔案，不會被記住也不會送出去。</p>
+                </div>
+
+                <div class="option-box">
+                    <h4>💾 輸出</h4>
+                    <div class="option-row">
+                        <div class="control-group" style="min-width: 260px;">
+                            <label for="unlockOutName">輸出檔名：</label>
+                            <input type="text" id="unlockOutName" class="control-input" placeholder="unlocked" />
+                        </div>
+                    </div>
+                </div>
+
+                <button class="merge-button" id="unlockButton" onclick="unlockPDF()">
+                    🔓 解除密碼並下載
+                </button>
+
+                <div class="progress-bar" id="unlockProgressBar">
+                    <div class="progress-fill" id="unlockProgressFill"></div>
+                </div>
+                <div class="hint-text progress-note" id="unlockProgressNote" hidden></div>
+
+                <div class="status-message" id="unlockStatusMessage"></div>
+            </div>
+            </div><!-- /unlockPane -->
+
+            <!-- 設定密碼 -->
+            <div id="encryptPane" data-pane="encrypt" hidden>
+                <div class="info-box">
+                    <h4>🔒 幫 PDF 加上密碼</h4>
+                    <p>設定開啟密碼，沒有密碼就打不開這份檔案。適合把病歷、轉診單寄出去之前先保護。</p>
+                    <ul>
+                        <li>🔐 採用 AES-256 加密，文字與排版完全保留</li>
+                        <li>🔒 全程在自己的電腦處理，檔案和密碼都不會上傳</li>
+                    </ul>
+                    <p class="hint-text">
+                        <strong>⚠️ 密碼忘記就打不開了。</strong>這個工具只能用正確的密碼解開，沒有破解功能，
+                        請務必自己保留好密碼，也建議留一份沒有加密的原始檔。
+                    </p>
+                </div>
+
+                <div class="upload-area" id="encryptUploadArea">
+                    <div class="upload-icon">🔒</div>
+                    <div class="upload-text">點擊選擇要加密的PDF檔案</div>
+                    <div class="upload-hint">檔案若本來就有密碼，請先用左邊的「解除密碼」處理</div>
+                    <button class="upload-button" onclick="document.getElementById('encryptFileInput').click()">
+                        🔒 選擇PDF檔案
+                    </button>
+                    <input type="file" id="encryptFileInput" class="file-input" accept=".pdf,application/pdf" />
+                </div>
+
+                <div id="encryptContent" hidden>
+                    <div class="pdf-item">
+                        <div class="pdf-info">
+                            <div class="pdf-icon">📄</div>
+                            <div class="pdf-details">
+                                <h3 id="encryptFileName">-</h3>
+                                <p id="encryptFileInfo">-</p>
+                            </div>
+                        </div>
+                        <div class="pdf-actions">
+                            <button class="action-button remove-button" onclick="clearEncryptPDF()">
+                                🗑️ 清除
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>🔑 設定開啟密碼</h4>
+                        <div class="option-row">
+                            <div class="control-group" style="min-width: 240px;">
+                                <label for="encryptPassword">密碼：</label>
+                                <input type="password" id="encryptPassword" class="control-input"
+                                       placeholder="要設定的密碼" autocomplete="new-password" />
+                            </div>
+                            <div class="control-group" style="min-width: 240px;">
+                                <label for="encryptPassword2">再輸入一次：</label>
+                                <input type="password" id="encryptPassword2" class="control-input"
+                                       placeholder="確認密碼" autocomplete="new-password" />
+                            </div>
+                        </div>
+                        <div class="option-row" style="margin-top: 12px;">
+                            <label>
+                                <input type="checkbox" id="encryptShowPassword" />
+                                顯示密碼
+                            </label>
+                            <label>
+                                加密強度
+                                <select id="encryptAlgorithm">
+                                    <option value="AES-256" selected>AES-256（建議）</option>
+                                    <option value="AES-128">AES-128（相容很舊的閱讀器）</option>
+                                </select>
+                            </label>
+                        </div>
+                        <p class="hint-text" id="encryptPasswordHint">
+                            兩次輸入要一致。AES-256 需要 Acrobat X（2010）以後的閱讀器；
+                            如果對方用的軟體很舊打不開，再改用 AES-128。
+                        </p>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>💾 輸出</h4>
+                        <div class="option-row">
+                            <div class="control-group" style="min-width: 260px;">
+                                <label for="encryptOutName">輸出檔名：</label>
+                                <input type="text" id="encryptOutName" class="control-input" placeholder="protected" />
+                            </div>
+                        </div>
+                        <p class="hint-text">
+                            沒有提供「禁止列印／複製」這類權限限制，因為那種限制任何 PDF 工具都能一鍵移除
+                            （這個工具箱的「解除密碼」就做得到，而且不需要密碼），
+                            放上來只會給人一種其實不存在的安全感。真正有效的是開啟密碼。
+                        </p>
+                    </div>
+
+                    <div class="redact-warning" style="margin-bottom: 15px;">
+                        <strong>⚠️ 重要：密碼請自己記牢。</strong><br>
+                        這個工具只能用正確的密碼解開，<strong>沒有、也不會有破解功能</strong>——
+                        一旦忘記密碼，這份加密檔就永遠打不開了，誰都救不回來。
+                        強烈建議另外保留一份<strong>沒有加密的原始檔</strong>，
+                        密碼也存進你自己的密碼管理工具或記在安全的地方。
+                        <label style="display:flex; align-items:center; gap:8px; margin-top:12px; cursor:pointer;">
+                            <input type="checkbox" id="encryptAck" />
+                            <span>我了解密碼忘記就無法復原，並已保留原始檔</span>
+                        </label>
+                    </div>
+
+                    <button class="merge-button" id="encryptButton" onclick="encryptPDF()" disabled>
+                        🔒 加上密碼並下載
+                    </button>
+
+                    <div class="progress-bar" id="encryptProgressBar">
+                        <div class="progress-fill" id="encryptProgressFill"></div>
+                    </div>
+                    <div class="hint-text progress-note" id="encryptProgressNote" hidden></div>
+
+                    <div class="status-message" id="encryptStatusMessage"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 寄出前整理（浮水印／清除檔案資訊） -->
+        <div id="prepTab" class="tab-content">
+            <div class="sub-tabs">
+                <div class="sub-tab active" data-sub="watermark">🖋️ 浮水印</div>
+                <div class="sub-tab" data-sub="scrub">🧹 清除檔案資訊</div>
+            </div>
+
+            <!-- 浮水印 -->
+            <div id="watermarkPane" data-pane="watermark">
+                <div class="info-box">
+                    <h4>🖋️ 蓋上浮水印</h4>
+                    <p>在每一頁蓋上文字（「影本」「機密」）或自己的圖片（logo／印章／簽名），寄影本或標示用途時很方便。</p>
+                    <ul>
+                        <li>🔤 <strong>文字</strong>：支援中文（用畫布繪製再嵌入，不會變亂碼）</li>
+                        <li>🖼️ <strong>圖片</strong>：上傳 logo／印章／簽名，可放角落當章或斜向鋪滿</li>
+                        <li>✅ 原文字與排版完全保留，浮水印是疊在上層的圖層</li>
+                        <li>🔒 全程在自己的電腦處理，不會上傳</li>
+                    </ul>
+                    <p class="hint-text">
+                        浮水印只是視覺標示，拿到檔案的人用工具仍可能移除——它的用途是「標明這份文件的性質」，
+                        不是防竄改。真的要防人改動，請搭配「🔐 密碼」加密。
+                    </p>
+                </div>
+
+                <div class="upload-area" id="watermarkUploadArea">
+                    <div class="upload-icon">🖋️</div>
+                    <div class="upload-text">點擊選擇要蓋浮水印的PDF檔案</div>
+                    <div class="upload-hint">檔案若有密碼，請先用「🔐 密碼」解除</div>
+                    <button class="upload-button" onclick="document.getElementById('watermarkFileInput').click()">
+                        🖋️ 選擇PDF檔案
+                    </button>
+                    <input type="file" id="watermarkFileInput" class="file-input" accept=".pdf,application/pdf" />
+                </div>
+
+                <div id="watermarkContent" hidden>
+                    <div class="pdf-item">
+                        <div class="pdf-info">
+                            <div class="pdf-icon">📄</div>
+                            <div class="pdf-details">
+                                <h3 id="watermarkFileName">-</h3>
+                                <p id="watermarkFileInfo">-</p>
+                            </div>
+                        </div>
+                        <div class="pdf-actions">
+                            <button class="action-button remove-button" onclick="clearWatermarkPDF()">
+                                🗑️ 清除
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>🖋️ 浮水印內容</h4>
+                        <div class="option-row" style="margin-bottom: 14px;">
+                            <div class="mode-toggle" id="watermarkMode">
+                                <button type="button" data-wmmode="text" class="active">🔤 文字</button>
+                                <button type="button" data-wmmode="image">🖼️ 圖片</button>
+                            </div>
+                        </div>
+
+                        <!-- 文字浮水印設定 -->
+                        <div id="wmTextOpts">
+                            <div class="option-row">
+                                <div class="control-group" style="min-width: 240px;">
+                                    <input type="text" id="watermarkText" class="control-input"
+                                           placeholder="例如 影本、機密、僅供參考" value="影本" maxlength="20" />
+                                </div>
+                            </div>
+                            <div class="option-row" style="margin-top: 10px; gap: 8px;">
+                                <button type="button" class="tool-button wm-preset" data-text="影本">影本</button>
+                                <button type="button" class="tool-button wm-preset" data-text="機密">機密</button>
+                                <button type="button" class="tool-button wm-preset" data-text="僅供參考">僅供參考</button>
+                                <button type="button" class="tool-button wm-preset" data-text="作廢">作廢</button>
+                                <button type="button" class="tool-button wm-preset" data-text="副本勿發">副本勿發</button>
+                            </div>
+                        </div>
+
+                        <!-- 圖片浮水印設定 -->
+                        <div id="wmImageOpts" hidden>
+                            <p class="hint-text" style="margin-top:0;">選內建 logo：</p>
+                            <div class="wm-logo-grid" id="wmLogoGrid"></div>
+
+                            <div class="option-row" style="margin-top:16px;">
+                                <button class="upload-button" type="button" style="margin-top:0;"
+                                        onclick="document.getElementById('watermarkImageInput').click()">
+                                    🖼️ 或上傳自己的圖片
+                                </button>
+                                <input type="file" id="watermarkImageInput" class="file-input" accept="image/*" />
+                                <span id="watermarkImageName" class="hint-text" style="margin-top:0;">尚未選擇圖片</span>
+                            </div>
+                            <p class="hint-text">自己的圖片建議用去背的 PNG（透明背景），印章、簽名蓋上去才不會有白框。</p>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>⚙️ 樣式</h4>
+                        <div class="option-row">
+                            <label>
+                                位置
+                                <select id="watermarkLayout">
+                                    <option value="diagonal" selected>置中斜向</option>
+                                    <option value="tiled">斜向鋪滿整頁</option>
+                                    <option value="corner">角落</option>
+                                </select>
+                            </label>
+                            <label id="wmCornerWrap" hidden>
+                                放哪個角
+                                <select id="watermarkCorner">
+                                    <option value="br" selected>右下</option>
+                                    <option value="bl">左下</option>
+                                    <option value="tr">右上</option>
+                                    <option value="tl">左上</option>
+                                    <option value="center">正中央</option>
+                                </select>
+                            </label>
+                            <label id="wmColorWrap">
+                                顏色
+                                <select id="watermarkColor">
+                                    <option value="gray" selected>灰色</option>
+                                    <option value="red">紅色</option>
+                                    <option value="blue">藍色</option>
+                                </select>
+                            </label>
+                            <label id="wmSizeWrap" hidden>
+                                大小
+                                <select id="watermarkSize">
+                                    <option value="0.18">小</option>
+                                    <option value="0.3" selected>中</option>
+                                    <option value="0.5">大</option>
+                                </select>
+                            </label>
+                            <label>
+                                濃淡
+                                <select id="watermarkOpacity">
+                                    <option value="0.08">很淡</option>
+                                    <option value="0.15" selected>適中</option>
+                                    <option value="0.28">明顯</option>
+                                    <option value="0.6">濃</option>
+                                    <option value="1">不透明</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="redact-wrap" style="margin-top: 16px;">
+                            <canvas id="watermarkPreview" style="max-width:100%; border:1px solid #e9ecef; border-radius:6px; background:#fff;"></canvas>
+                            <p class="hint-text">↑ 預覽（以第 1 頁為例）</p>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>💾 輸出</h4>
+                        <div class="option-row">
+                            <div class="control-group" style="min-width: 260px;">
+                                <label for="watermarkOutName">輸出檔名：</label>
+                                <input type="text" id="watermarkOutName" class="control-input" placeholder="watermarked" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="merge-button" id="watermarkButton" onclick="applyWatermark()">
+                        🖋️ 蓋上浮水印並下載
+                    </button>
+
+                    <div class="progress-bar" id="watermarkProgressBar">
+                        <div class="progress-fill" id="watermarkProgressFill"></div>
+                    </div>
+                    <div class="hint-text progress-note" id="watermarkProgressNote" hidden></div>
+
+                    <div class="status-message" id="watermarkStatusMessage"></div>
+                </div>
+            </div>
+
+            <!-- 清除檔案資訊 -->
+            <div id="scrubPane" data-pane="scrub" hidden>
+                <div class="info-box">
+                    <h4>🧹 清除檔案裡藏的資訊</h4>
+                    <p>遮蔽拿掉的是看得到的內容，但 PDF 檔案裡還藏著一些文字看不到的欄位：</p>
+                    <ul>
+                        <li>📝 <strong>作者、標題、主旨、關鍵字</strong>——常留著承辦人姓名或內部註記</li>
+                        <li>🏷️ <strong>製作軟體、建立／修改時間</strong></li>
+                        <li>🗂️ <strong>XMP 中繼資料</strong>——掃描軟體另外存的一份，可能重複上面的資訊</li>
+                    </ul>
+                    <p class="hint-text">
+                        把病歷、轉診單寄出去之前清一清，這些隱藏欄位就不會跟著外流。文字與排版不受影響。
+                    </p>
+                </div>
+
+                <div class="upload-area" id="scrubUploadArea">
+                    <div class="upload-icon">🧹</div>
+                    <div class="upload-text">點擊選擇要清除資訊的PDF檔案</div>
+                    <div class="upload-hint">載入後會先列出目前藏了哪些資訊</div>
+                    <button class="upload-button" onclick="document.getElementById('scrubFileInput').click()">
+                        🧹 選擇PDF檔案
+                    </button>
+                    <input type="file" id="scrubFileInput" class="file-input" accept=".pdf,application/pdf" />
+                </div>
+
+                <div id="scrubContent" hidden>
+                    <div class="pdf-item">
+                        <div class="pdf-info">
+                            <div class="pdf-icon">📄</div>
+                            <div class="pdf-details">
+                                <h3 id="scrubFileName">-</h3>
+                                <p id="scrubFileInfo">-</p>
+                            </div>
+                        </div>
+                        <div class="pdf-actions">
+                            <button class="action-button remove-button" onclick="clearScrubPDF()">
+                                🗑️ 清除
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>🔍 目前藏了這些資訊</h4>
+                        <div id="scrubMetaList" class="split-list"></div>
+                    </div>
+
+                    <div class="option-box">
+                        <h4>💾 輸出</h4>
+                        <div class="option-row">
+                            <div class="control-group" style="min-width: 260px;">
+                                <label for="scrubOutName">輸出檔名：</label>
+                                <input type="text" id="scrubOutName" class="control-input" placeholder="cleaned" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="merge-button" id="scrubButton" onclick="scrubMetadata()">
+                        🧹 清除資訊並下載
+                    </button>
+
+                    <div class="progress-bar" id="scrubProgressBar">
+                        <div class="progress-fill" id="scrubProgressFill"></div>
+                    </div>
+                    <div class="hint-text progress-note" id="scrubProgressNote" hidden></div>
+
+                    <div class="status-message" id="scrubStatusMessage"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="footer">
-            <p><strong>PDF工具箱 v2.2</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.10</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -1574,16 +2070,21 @@
                 t.addEventListener('click', () => switchTab(t.dataset.tab));
             });
             document.querySelectorAll('.sub-tab').forEach(t => {
-                t.addEventListener('click', () => switchSubTab(t.dataset.sub));
+                t.addEventListener('click', () => switchSubTab(t.dataset.sub, t));
             });
         }
 
-        function switchSubTab(sub) {
-            document.querySelectorAll('.sub-tab').forEach(t => {
+        /* 子分頁切換。範圍限定在同一個 .tab-content 裡，
+           不然多組子分頁會互相把對方關掉。 */
+        function switchSubTab(sub, fromEl) {
+            const el = fromEl || document.querySelector(`.sub-tab[data-sub="${sub}"]`);
+            const scope = el ? el.closest('.tab-content') : document;
+            scope.querySelectorAll('.sub-tab').forEach(t => {
                 t.classList.toggle('active', t.dataset.sub === sub);
             });
-            document.getElementById('img2pdfPane').hidden = (sub !== 'img2pdf');
-            document.getElementById('pdf2imgPane').hidden = (sub !== 'pdf2img');
+            scope.querySelectorAll('[data-pane]').forEach(p => {
+                p.hidden = (p.dataset.pane !== sub);
+            });
         }
 
         // ==================== 合併功能 ====================
@@ -1657,6 +2158,8 @@
                     }
 
                     const arrayBuffer = await file.arrayBuffer();
+                    if (await blockIfEncrypted(arrayBuffer, 'merge', `檔案 ${file.name}`)) continue;
+
                     const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
                     const pageCount = pdfDoc.getPageCount();
 
@@ -1796,9 +2299,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.2 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.2 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.10 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.10 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.10 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -1906,6 +2409,11 @@
                 showProgress('split');
 
                 const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'split', '這份PDF')) {
+                    hideProgress('split');
+                    return;
+                }
+
                 const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { 
                     ignoreEncryption: true,
                     updateMetadata: false 
@@ -2134,8 +2642,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.2 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.10 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.10 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -2512,6 +3020,11 @@
                 showStatus('載入中，正在準備頁面預覽…', 'success', 'editor');
 
                 const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'editor', '這份PDF')) {
+                    hideProgress('editor');
+                    return;
+                }
+
                 const probe = await PDFLib.PDFDocument.load(arrayBuffer, {
                     ignoreEncryption: true,
                     updateMetadata: false,
@@ -3442,8 +3955,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.2 by Tso KY');
-            out.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.10 by Tso KY');
+            out.setProducer('PDF工具箱 v2.10 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -3729,8 +4242,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.2 by Tso KY');
-                out.setProducer('PDF工具箱 v2.2 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.10 by Tso KY');
+                out.setProducer('PDF工具箱 v2.10 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -3795,6 +4308,11 @@
                 showStatus('載入中…', 'success', 'pdf2img');
 
                 const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'pdf2img', '這份PDF')) {
+                    hideProgress('pdf2img');
+                    return;
+                }
+
                 p2iPdfjs = await openWithPdfjs(arrayBuffer);
                 p2iFile = { name: file.name, size: file.size, pages: p2iPdfjs.numPages };
 
@@ -3899,6 +4417,1054 @@
             }
         }
 
+        // ==================== 解除密碼 ====================
+        /* 現有的 pdf-lib 1.17.1 讀不了有密碼的 PDF（連載入都會丟錯），所以這裡另外
+           用 @cantoo/pdf-lib——它是 pdf-lib 的維護分支，多了真正的解密實作。
+           做法是「用正確密碼打開，再存成沒有加密的檔」，文字與排版都原封不動，
+           不像轉成影像那樣會把文字弄不見。 */
+
+        let unlockFile = null;   // { name, rawSize, arrayBuffer, kind, pageCount }
+
+        /* 解密版函式庫的 UMD 全域名稱同樣是 PDFLib，直接載入會蓋掉現有的那一份。
+           載入前後把全域換回來，兩份就能並存。 */
+        let cryptoLibReady = null;
+        function loadCryptoLib() {
+            if (cryptoLibReady) return cryptoLibReady;
+            cryptoLibReady = (async () => {
+                const prev = window.PDFLib;
+                await injectScript('vendor/pdf-lib-crypto.min.js');
+                const lib = window.PDFLib;
+                window.PDFLib = prev;
+                if (!lib || lib === prev || !lib.PDFDocument) {
+                    throw new Error('解密函式庫載入後取不到 PDFDocument');
+                }
+                return lib;
+            })().catch((err) => {
+                cryptoLibReady = null;   // 讓下次還能重試
+                throw err;
+            });
+            return cryptoLibReady;
+        }
+
+        function setupUnlockListeners() {
+            const uploadArea = document.getElementById('unlockUploadArea');
+            const fileInput = document.getElementById('unlockFileInput');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) await loadUnlockPDF(file);
+                e.target.value = '';
+            });
+            uploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'unlock'));
+            uploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'unlock'));
+            uploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(f =>
+                    f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                );
+                if (!files.length) {
+                    showStatus('請拖拽PDF檔案！', 'error', 'unlock');
+                    return;
+                }
+                await loadUnlockPDF(files[0]);
+            });
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') fileInput.click();
+            });
+
+            document.getElementById('unlockShowPassword').addEventListener('change', (e) => {
+                document.getElementById('unlockPassword').type = e.target.checked ? 'text' : 'password';
+            });
+
+            // 在密碼欄按 Enter 直接解
+            document.getElementById('unlockPassword').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    unlockPDF();
+                }
+            });
+        }
+
+        /* 分辨這份檔案是哪一種：
+           none  = 根本沒有加密
+           user  = 有開啟密碼，不給密碼連開都開不了
+           owner = 只有權限密碼，可以直接開但限制列印／複製
+
+           判斷靠 pdf.js：沒給密碼就開 → 丟 PasswordException 代表有開啟密碼；
+           開得起來再看 getPermissions()，回 null 是沒加密、回陣列是有權限限制。
+           （@cantoo 的 `isEncrypted` 指的是「存檔時要不要加密」，不是來源狀態，
+             拿來判斷會一律得到 false。） */
+        async function detectEncryption(arrayBuffer) {
+            await loadPdfJs();
+            try {
+                const doc = await pdfjsLib.getDocument({
+                    data: arrayBuffer.slice(0),
+                    isEvalSupported: false,
+                }).promise;
+                const perms = await doc.getPermissions();
+                return {
+                    kind: perms === null ? 'none' : 'owner',
+                    pageCount: doc.numPages,
+                };
+            } catch (err) {
+                if (err && err.name === 'PasswordException') {
+                    return { kind: 'user', pageCount: null };
+                }
+                throw err;
+            }
+        }
+
+        async function loadUnlockPDF(file) {
+            try {
+                if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showStatus('請選擇PDF檔案', 'error', 'unlock');
+                    return;
+                }
+
+                showProgress('unlock');
+                setProgressNote('unlock', '檢查檔案的加密方式…');
+
+                const arrayBuffer = await file.arrayBuffer();
+                const info = await detectEncryption(arrayBuffer);
+
+                unlockFile = {
+                    name: file.name,
+                    rawSize: file.size,
+                    arrayBuffer,
+                    kind: info.kind,
+                    pageCount: info.pageCount,
+                };
+
+                document.getElementById('unlockFileName').textContent = file.name;
+                document.getElementById('unlockOutName').value =
+                    file.name.replace(/\.pdf$/i, '') + '_unlocked';
+                document.getElementById('unlockContent').hidden = false;
+                document.getElementById('unlockUploadArea').hidden = true;
+
+                const pwBox = document.getElementById('unlockPasswordBox');
+                const btn = document.getElementById('unlockButton');
+                const infoEl = document.getElementById('unlockFileInfo');
+
+                if (info.kind === 'user') {
+                    pwBox.hidden = false;
+                    btn.disabled = false;
+                    btn.textContent = '🔓 解除密碼並下載';
+                    infoEl.textContent = `${formatFileSize(file.size)} • 有開啟密碼，需要輸入密碼才能解開`;
+                    hideProgress('unlock');
+                    showStatus('這份檔案有開啟密碼，請在下面輸入密碼', 'success', 'unlock');
+                    document.getElementById('unlockPassword').focus();
+
+                } else if (info.kind === 'owner') {
+                    pwBox.hidden = true;
+                    btn.disabled = false;
+                    btn.textContent = '🔓 移除限制並下載';
+                    infoEl.textContent =
+                        `${formatFileSize(file.size)} • ${info.pageCount} 頁 • 只有權限密碼（限制列印／複製）`;
+                    hideProgress('unlock');
+                    showStatus('這份檔案可以直接開啟，只是被限制了操作權限，不必輸入密碼', 'success', 'unlock');
+
+                } else {
+                    pwBox.hidden = true;
+                    btn.disabled = true;
+                    btn.textContent = '這份檔案沒有密碼';
+                    infoEl.textContent =
+                        `${formatFileSize(file.size)} • ${info.pageCount} 頁 • 沒有加密`;
+                    hideProgress('unlock');
+                    showStatus('這份檔案本來就沒有密碼，不需要解除。可以直接拿去用其他分頁的功能', 'error', 'unlock');
+                }
+
+            } catch (error) {
+                console.error('載入PDF錯誤:', error);
+                showStatus('載入PDF時發生錯誤：' + error.message, 'error', 'unlock');
+                hideProgress('unlock');
+            }
+        }
+
+        function clearUnlockPDF() {
+            unlockFile = null;
+            document.getElementById('unlockContent').hidden = true;
+            document.getElementById('unlockUploadArea').hidden = false;
+            document.getElementById('unlockPassword').value = '';
+            document.getElementById('unlockPasswordBox').hidden = true;
+            showStatus('已清除PDF', 'success', 'unlock');
+        }
+
+        async function unlockPDF() {
+            if (!unlockFile || unlockFile.kind === 'none') return;
+
+            const btn = document.getElementById('unlockButton');
+            const pwInput = document.getElementById('unlockPassword');
+            const password = unlockFile.kind === 'user' ? pwInput.value : '';
+
+            if (unlockFile.kind === 'user' && !password) {
+                showStatus('請先輸入密碼', 'error', 'unlock');
+                pwInput.focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '解除中...';
+
+            try {
+                showProgress('unlock');
+                setProgressNote('unlock', '正在解開檔案…');
+                updateProgress(30, 'unlock');
+
+                const lib = await loadCryptoLib();
+
+                let doc;
+                try {
+                    doc = await lib.PDFDocument.load(unlockFile.arrayBuffer, {
+                        password,
+                        updateMetadata: false,
+                    });
+                } catch (err) {
+                    // 密碼錯誤是最常見的情況，要講清楚而不是丟一串英文
+                    const msg = String(err && err.message || '');
+                    if (/password/i.test(msg)) {
+                        showStatus('密碼不正確，請再確認一次', 'error', 'unlock');
+                        pwInput.select();
+                        return;
+                    }
+                    throw err;
+                }
+
+                updateProgress(70, 'unlock');
+                setProgressNote('unlock', '正在存成沒有密碼的版本…');
+
+                // 不呼叫 encrypt()，存出來就是沒有加密的檔
+                const bytes = await doc.save();
+                updateProgress(100, 'unlock');
+
+                const base = document.getElementById('unlockOutName').value.trim() || 'unlocked';
+                downloadFile(bytes, `${base}.pdf`);
+
+                const pages = doc.getPageCount();
+                showStatus(
+                    unlockFile.kind === 'user'
+                        ? `已解除開啟密碼，共 ${pages} 頁。下載的檔案不用密碼就能開，文字也都保留著`
+                        : `已移除列印／複製限制，共 ${pages} 頁`,
+                    'success', 'unlock'
+                );
+
+            } catch (error) {
+                console.error('解除密碼錯誤:', error);
+                showStatus('解除密碼時發生錯誤：' + error.message, 'error', 'unlock');
+            } finally {
+                hideProgress('unlock');
+                btn.disabled = false;
+                btn.textContent = unlockFile && unlockFile.kind === 'owner'
+                    ? '🔓 移除限制並下載'
+                    : '🔓 解除密碼並下載';
+            }
+        }
+
+        /* 其他分頁碰到有密碼的檔案時，pdf-lib 1.17.1 不會解密也不會報錯——
+           `ignoreEncryption: true` 只是跳過檢查，照樣「載入成功」、頁數也對，
+           但複製出來的頁面內容是加密的原始位元組，文字全空。
+           也就是說使用者會拿到一份默默壞掉的檔案。所以要在載入前主動擋下來。 */
+
+        /* 粗篩：加密的 PDF 一定會在 trailer 字典裡放 /Encrypt（交互參照串流的
+           字典本身不壓縮，所以這幾個位元組一定是明文）。先掃過一遍，沒有就直接
+           放行，免得每個正常檔案都要為此把 1.4MB 的 pdf.js 載進來。 */
+        function mayBeEncrypted(arrayBuffer) {
+            const bytes = new Uint8Array(arrayBuffer);
+            const pat = [0x2F, 0x45, 0x6E, 0x63, 0x72, 0x79, 0x70, 0x74]; // "/Encrypt"
+            const last = bytes.length - pat.length;
+            outer: for (let i = 0; i <= last; i++) {
+                if (bytes[i] !== 0x2F) continue;
+                for (let j = 1; j < pat.length; j++) {
+                    if (bytes[i + j] !== pat[j]) continue outer;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        async function blockIfEncrypted(arrayBuffer, type, what) {
+            if (!mayBeEncrypted(arrayBuffer)) return false;
+            let info;
+            try {
+                info = await detectEncryption(arrayBuffer);
+            } catch (err) {
+                console.warn('加密偵測失敗，放行:', err);
+                return false;   // 偵測不出來就不要擋住正常檔案
+            }
+            if (info.kind === 'none') return false;
+            showStatus(`${what}有密碼，請先到「🔐 密碼」分頁的「解除密碼」把密碼拿掉再回來`, 'error', type);
+            return true;
+        }
+
+        // ==================== 設定密碼（加密） ====================
+        /* 用的是同一份 @cantoo/pdf-lib：load() 之後呼叫 encrypt() 再 save()。
+           只提供「開啟密碼」，不做禁止列印／複製那類權限限制——
+           那種限制任何工具都能一鍵拿掉（這個工具箱自己就做得到，而且不用密碼），
+           擺上去只會給人一種其實不存在的安全感。 */
+
+        let encryptFile = null;   // { name, rawSize, arrayBuffer, pageCount }
+
+        function setupEncryptListeners() {
+            const uploadArea = document.getElementById('encryptUploadArea');
+            const fileInput = document.getElementById('encryptFileInput');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) await loadEncryptPDF(file);
+                e.target.value = '';
+            });
+            uploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'encrypt'));
+            uploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'encrypt'));
+            uploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(f =>
+                    f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                );
+                if (!files.length) {
+                    showStatus('請拖拽PDF檔案！', 'error', 'encrypt');
+                    return;
+                }
+                await loadEncryptPDF(files[0]);
+            });
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') fileInput.click();
+            });
+
+            document.getElementById('encryptShowPassword').addEventListener('change', (e) => {
+                const t = e.target.checked ? 'text' : 'password';
+                document.getElementById('encryptPassword').type = t;
+                document.getElementById('encryptPassword2').type = t;
+            });
+
+            // 兩個欄位邊打邊比對，不要等按下去才說不一致
+            ['encryptPassword', 'encryptPassword2'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateEncryptPasswordHint);
+                document.getElementById(id).addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        encryptPDF();
+                    }
+                });
+            });
+
+            document.getElementById('encryptAck').addEventListener('change', updateEncryptButton);
+        }
+
+        function updateEncryptPasswordHint() {
+            const a = document.getElementById('encryptPassword').value;
+            const b = document.getElementById('encryptPassword2').value;
+            const hint = document.getElementById('encryptPasswordHint');
+
+            if (a && b && a !== b) {
+                hint.textContent = '⚠️ 兩次輸入的密碼不一樣';
+                hint.style.color = '#c92a2a';
+            } else if (a && b && a === b) {
+                hint.textContent = '✓ 兩次輸入一致';
+                hint.style.color = '#2b8a3e';
+            } else {
+                hint.textContent = '兩次輸入要一致。AES-256 需要 Acrobat X（2010）以後的閱讀器；'
+                    + '如果對方用的軟體很舊打不開，再改用 AES-128。';
+                hint.style.color = '';
+            }
+            updateEncryptButton();
+        }
+
+        /* 兩個條件都成立才能按：密碼兩次一致（且非空）＋已勾選「我了解忘記就打不開」。
+           提醒必須真的擋住操作才有用，純文字放著沒人會停下來看。 */
+        function updateEncryptButton() {
+            const a = document.getElementById('encryptPassword').value;
+            const b = document.getElementById('encryptPassword2').value;
+            const ack = document.getElementById('encryptAck').checked;
+            const btn = document.getElementById('encryptButton');
+            btn.disabled = !(a && b && a === b && ack);
+        }
+
+        async function loadEncryptPDF(file) {
+            try {
+                if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showStatus('請選擇PDF檔案', 'error', 'encrypt');
+                    return;
+                }
+
+                showProgress('encrypt');
+                const arrayBuffer = await file.arrayBuffer();
+
+                // 已經有密碼的檔案要先解開，不然等於加兩層
+                if (mayBeEncrypted(arrayBuffer)) {
+                    let info = null;
+                    try { info = await detectEncryption(arrayBuffer); } catch (_) {}
+                    if (info && info.kind !== 'none') {
+                        hideProgress('encrypt');
+                        showStatus('這份檔案本來就有密碼了，請先用「🔓 解除密碼」處理過再回來加新密碼',
+                            'error', 'encrypt');
+                        return;
+                    }
+                }
+
+                const lib = await loadCryptoLib();
+                const probe = await lib.PDFDocument.load(arrayBuffer, { updateMetadata: false });
+
+                encryptFile = {
+                    name: file.name,
+                    rawSize: file.size,
+                    arrayBuffer,
+                    pageCount: probe.getPageCount(),
+                };
+
+                document.getElementById('encryptFileName').textContent = file.name;
+                document.getElementById('encryptFileInfo').textContent =
+                    `${formatFileSize(file.size)} • ${encryptFile.pageCount} 頁`;
+                document.getElementById('encryptOutName').value =
+                    file.name.replace(/\.pdf$/i, '') + '_protected';
+                document.getElementById('encryptContent').hidden = false;
+                document.getElementById('encryptUploadArea').hidden = true;
+
+                hideProgress('encrypt');
+                showStatus('請設定要用的密碼', 'success', 'encrypt');
+                document.getElementById('encryptPassword').focus();
+
+            } catch (error) {
+                console.error('載入PDF錯誤:', error);
+                showStatus('載入PDF時發生錯誤：' + error.message, 'error', 'encrypt');
+                hideProgress('encrypt');
+            }
+        }
+
+        function clearEncryptPDF() {
+            encryptFile = null;
+            document.getElementById('encryptContent').hidden = true;
+            document.getElementById('encryptUploadArea').hidden = false;
+            document.getElementById('encryptPassword').value = '';
+            document.getElementById('encryptPassword2').value = '';
+            document.getElementById('encryptAck').checked = false;
+            updateEncryptPasswordHint();
+            showStatus('已清除PDF', 'success', 'encrypt');
+        }
+
+        async function encryptPDF() {
+            if (!encryptFile) return;
+
+            const pw = document.getElementById('encryptPassword').value;
+            const pw2 = document.getElementById('encryptPassword2').value;
+            const btn = document.getElementById('encryptButton');
+
+            if (!pw) {
+                showStatus('請先設定密碼', 'error', 'encrypt');
+                document.getElementById('encryptPassword').focus();
+                return;
+            }
+            if (pw !== pw2) {
+                showStatus('兩次輸入的密碼不一樣，請再確認一次', 'error', 'encrypt');
+                document.getElementById('encryptPassword2').focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '加密中...';
+
+            try {
+                showProgress('encrypt');
+                setProgressNote('encrypt', '正在加密…');
+                updateProgress(40, 'encrypt');
+
+                const lib = await loadCryptoLib();
+                const doc = await lib.PDFDocument.load(encryptFile.arrayBuffer, {
+                    updateMetadata: false,
+                });
+
+                /* userPassword 與 ownerPassword 設成同一組：
+                   使用者只要記一個密碼，打開後就有完整權限。 */
+                doc.encrypt({
+                    userPassword: pw,
+                    ownerPassword: pw,
+                    algorithm: document.getElementById('encryptAlgorithm').value,
+                });
+
+                updateProgress(75, 'encrypt');
+                setProgressNote('encrypt', '正在輸出…');
+                const bytes = await doc.save();
+                updateProgress(100, 'encrypt');
+
+                const base = document.getElementById('encryptOutName').value.trim() || 'protected';
+                downloadFile(bytes, `${base}.pdf`);
+
+                showStatus(
+                    `已加上密碼，共 ${encryptFile.pageCount} 頁。請記好密碼——忘記就打不開了，`
+                    + '建議另外留一份沒有加密的原始檔',
+                    'success', 'encrypt'
+                );
+
+            } catch (error) {
+                console.error('加密錯誤:', error);
+                // 產生金鑰需要 Web Crypto，非安全來源（http、file://）會拿不到
+                const msg = (typeof crypto === 'undefined' || !crypto.getRandomValues)
+                    ? '這個瀏覽器環境不支援加密所需的亂數產生器（需要 HTTPS）'
+                    : '加密時發生錯誤：' + error.message;
+                showStatus(msg, 'error', 'encrypt');
+            } finally {
+                hideProgress('encrypt');
+                btn.textContent = '🔒 加上密碼並下載';
+                updateEncryptButton();   // 回到看密碼與勾選狀態決定的 disabled
+            }
+        }
+
+        // ==================== 浮水印 ====================
+        /* 用基本 pdf-lib 就夠（不需要解密）。中文沒辦法用內建字型畫，
+           改成「把文字畫在畫布上 → 嵌成半透明 PNG → 疊到每一頁」，
+           這樣中英文一視同仁、不會變亂碼。相同尺寸的頁面共用同一張嵌入圖。 */
+
+        let watermarkFile = null;    // { name, rawSize, arrayBuffer, pageCount }
+        let watermarkPdfjs = null;   // 預覽用
+        let wmImage = null;          // 圖片浮水印用的 HTMLImageElement
+
+        const WM_COLORS = { gray: [128, 128, 128], red: [192, 57, 43], blue: [44, 90, 160] };
+
+        /* 內建 logo：官方品牌檔，已去背、減色最佳化後放在 assets/logos/。
+           公衛的品牌包只提供黑白版，故這裡也是黑白。 */
+        const WM_LOGOS = [
+            { src: 'assets/logos/nckuh-seal.png',   label: '成大醫院院徽' },
+            { src: 'assets/logos/nckuh-h.png',      label: '成大醫院（橫式）' },
+            { src: 'assets/logos/ncku-med.png',     label: '成大醫學院' },
+            { src: 'assets/logos/stomatology.png',  label: '牙科部院徽' },
+            { src: 'assets/logos/dentistry.png',    label: '牙醫學系' },
+            { src: 'assets/logos/oral-inst.png',    label: '口腔醫學研究所' },
+            { src: 'assets/logos/nckuph-h.png',     label: '成大公衛（橫）' },
+            { src: 'assets/logos/nckuph-v.png',     label: '成大公衛（直）' },
+            { src: 'assets/logos/nckuph-full.png',  label: '成大公衛（全名）' },
+            { src: 'assets/logos/nckuph-sym-h.png', label: '公衛圖騰（橫）' },
+            { src: 'assets/logos/nckuph-sym.png',   label: '公衛圖騰' },
+            { src: 'assets/logos/nckuph-sym-v.png', label: '公衛圖騰（直）' },
+        ];
+
+        /* 把圖片載進來當浮水印（內建 logo 與上傳共用）。
+           src 可以是 assets 路徑或 dataURL。 */
+        function setWatermarkImageFromSrc(src, name) {
+            const img = new Image();
+            img.onload = () => {
+                wmImage = img;
+                document.getElementById('watermarkImageName').textContent = name || '已選擇圖片';
+                renderWatermarkPreview();
+            };
+            img.onerror = () => showStatus('圖片讀取失敗', 'error', 'watermark');
+            img.src = src;
+        }
+        // 內建 logo 用（與上傳區分只是為了語意清楚）
+        const setWatermarkImage = setWatermarkImageFromSrc;
+
+        function wmMode() {
+            const b = document.querySelector('#watermarkMode button.active');
+            return b ? b.dataset.wmmode : 'text';
+        }
+
+        /* 依「文字／圖片」與「位置」顯示對應的設定，並重畫預覽 */
+        function updateWatermarkControls() {
+            const mode = wmMode();
+            const layout = document.getElementById('watermarkLayout').value;
+            document.getElementById('wmTextOpts').hidden = (mode !== 'text');
+            document.getElementById('wmImageOpts').hidden = (mode !== 'image');
+            document.getElementById('wmColorWrap').hidden = (mode !== 'text');   // 顏色只對文字有意義
+            document.getElementById('wmSizeWrap').hidden = (mode !== 'image');   // 大小只對圖片有意義
+            document.getElementById('wmCornerWrap').hidden = (layout !== 'corner');
+            renderWatermarkPreview();
+        }
+
+        function setupWatermarkListeners() {
+            const uploadArea = document.getElementById('watermarkUploadArea');
+            const fileInput = document.getElementById('watermarkFileInput');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) await loadWatermarkPDF(file);
+                e.target.value = '';
+            });
+            uploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'watermark'));
+            uploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'watermark'));
+            uploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(f =>
+                    f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                );
+                if (files.length) await loadWatermarkPDF(files[0]);
+            });
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') fileInput.click();
+            });
+
+            // 預設字樣
+            document.querySelectorAll('.wm-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('watermarkText').value = btn.dataset.text;
+                    renderWatermarkPreview();
+                });
+            });
+
+            // 文字／圖片 模式切換
+            document.querySelectorAll('#watermarkMode button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#watermarkMode button').forEach(b =>
+                        b.classList.toggle('active', b === btn));
+                    updateWatermarkControls();
+                });
+            });
+
+            // 內建 logo 選擇格
+            const grid = document.getElementById('wmLogoGrid');
+            WM_LOGOS.forEach(lg => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'wm-logo';
+                btn.dataset.src = lg.src;
+                btn.innerHTML =
+                    `<span class="wm-logo-thumb"><img src="${lg.src}" alt="${lg.label}" loading="lazy"></span>` +
+                    `<span class="wm-logo-cap">${lg.label}</span>`;
+                btn.addEventListener('click', () => {
+                    setWatermarkImage(lg.src, lg.label);
+                    grid.querySelectorAll('.wm-logo').forEach(b =>
+                        b.classList.toggle('active', b === btn));
+                });
+                grid.appendChild(btn);
+            });
+
+            // 上傳自己的圖片
+            document.getElementById('watermarkImageInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                e.target.value = '';
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    showStatus('請選擇圖片檔案', 'error', 'watermark');
+                    return;
+                }
+                // 自己上傳就取消內建的選取狀態
+                document.querySelectorAll('#wmLogoGrid .wm-logo.active').forEach(b => b.classList.remove('active'));
+                const reader = new FileReader();
+                reader.onload = () => setWatermarkImageFromSrc(reader.result, file.name);
+                reader.onerror = () => showStatus('圖片讀取失敗', 'error', 'watermark');
+                reader.readAsDataURL(file);
+            });
+
+            // 任何設定改動就重畫預覽；排列變更要連帶更新「角落」選項的顯示
+            ['watermarkText', 'watermarkColor', 'watermarkOpacity', 'watermarkCorner', 'watermarkSize'].forEach(id => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', renderWatermarkPreview);
+                el.addEventListener('change', renderWatermarkPreview);
+            });
+            document.getElementById('watermarkLayout').addEventListener('change', updateWatermarkControls);
+        }
+
+        async function loadWatermarkPDF(file) {
+            try {
+                if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showStatus('請選擇PDF檔案', 'error', 'watermark');
+                    return;
+                }
+                showProgress('watermark');
+                const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'watermark', '這份PDF')) {
+                    hideProgress('watermark');
+                    return;
+                }
+
+                const probe = await PDFLib.PDFDocument.load(arrayBuffer, { updateMetadata: false });
+                watermarkFile = {
+                    name: file.name, rawSize: file.size, arrayBuffer,
+                    pageCount: probe.getPageCount(),
+                };
+                watermarkPdfjs = await openWithPdfjs(arrayBuffer);
+
+                document.getElementById('watermarkFileName').textContent = file.name;
+                document.getElementById('watermarkFileInfo').textContent =
+                    `${formatFileSize(file.size)} • ${watermarkFile.pageCount} 頁`;
+                document.getElementById('watermarkOutName').value =
+                    file.name.replace(/\.pdf$/i, '') + '_watermarked';
+                document.getElementById('watermarkContent').hidden = false;
+                document.getElementById('watermarkUploadArea').hidden = true;
+
+                hideProgress('watermark');
+                await renderWatermarkPreview();
+                showStatus('請設定浮水印文字與樣式', 'success', 'watermark');
+
+            } catch (error) {
+                console.error('載入PDF錯誤:', error);
+                showStatus('載入PDF時發生錯誤：' + error.message, 'error', 'watermark');
+                hideProgress('watermark');
+            }
+        }
+
+        function clearWatermarkPDF() {
+            watermarkFile = null;
+            watermarkPdfjs = null;
+            document.getElementById('watermarkContent').hidden = true;
+            document.getElementById('watermarkUploadArea').hidden = false;
+            showStatus('已清除PDF', 'success', 'watermark');
+        }
+
+        function currentWatermarkOpts() {
+            return {
+                mode: wmMode(),
+                text: (document.getElementById('watermarkText').value || '影本').trim(),
+                layout: document.getElementById('watermarkLayout').value,
+                color: document.getElementById('watermarkColor').value,
+                opacity: Number(document.getElementById('watermarkOpacity').value),
+                corner: document.getElementById('watermarkCorner').value,
+                size: Number(document.getElementById('watermarkSize').value),
+                image: wmImage,
+            };
+        }
+
+        /* 畫一張和頁面同尺寸、背景透明的浮水印圖層。
+           文字模式字級、圖片模式尺寸都依畫布大小等比例算，
+           所以小預覽與實際整頁看起來一致。 */
+        function buildWatermarkCanvas(w, h, opts) {
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w));
+            c.height = Math.max(1, Math.round(h));
+            const g = c.getContext('2d');
+            const angle = -Math.PI / 6;   // -30°
+
+            // ---- 圖片浮水印 ----
+            if (opts.mode === 'image') {
+                const img = opts.image;
+                if (!img || !img.width) return c;   // 還沒選圖
+                const ar = img.width / img.height;
+                g.globalAlpha = opts.opacity;
+
+                if (opts.layout === 'corner') {
+                    const tw = w * opts.size;
+                    const th = tw / ar;
+                    const m = Math.min(w, h) * 0.04;
+                    let x, y;
+                    switch (opts.corner) {
+                        case 'bl': x = m;          y = h - th - m; break;
+                        case 'tr': x = w - tw - m; y = m;          break;
+                        case 'tl': x = m;          y = m;          break;
+                        case 'center': x = (w - tw) / 2; y = (h - th) / 2; break;
+                        default:   x = w - tw - m; y = h - th - m;    // 右下
+                    }
+                    g.drawImage(img, x, y, tw, th);
+                } else if (opts.layout === 'tiled') {
+                    const tw = w * Math.min(opts.size, 0.22);
+                    const th = tw / ar;
+                    const stepX = tw * 1.8;
+                    const stepY = th * 2.4;
+                    g.save();
+                    g.translate(w / 2, h / 2);
+                    g.rotate(angle);
+                    g.translate(-w / 2, -h / 2);
+                    for (let y = -h * 0.5; y < h * 1.5; y += stepY) {
+                        for (let x = -w * 0.5; x < w * 1.5; x += stepX) {
+                            g.drawImage(img, x, y, tw, th);
+                        }
+                    }
+                    g.restore();
+                } else {
+                    // 置中斜向單張
+                    const tw = w * opts.size;
+                    const th = tw / ar;
+                    g.save();
+                    g.translate(w / 2, h / 2);
+                    g.rotate(angle);
+                    g.drawImage(img, -tw / 2, -th / 2, tw, th);
+                    g.restore();
+                }
+                g.globalAlpha = 1;
+                return c;
+            }
+
+            // ---- 文字浮水印 ----
+            const [r, gg, b] = WM_COLORS[opts.color] || WM_COLORS.gray;
+            g.fillStyle = `rgba(${r},${gg},${b},${opts.opacity})`;
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
+            const text = opts.text || '影本';
+            const fontFamily = '"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC","Heiti TC",sans-serif';
+
+            if (opts.layout === 'tiled') {
+                const fs = Math.max(12, Math.min(w, h) * 0.05);
+                g.font = `bold ${fs}px ${fontFamily}`;
+                const tw = g.measureText(text).width;
+                const stepX = Math.max(tw + fs * 2, fs * 4);
+                const stepY = fs * 3.2;
+                g.save();
+                g.translate(w / 2, h / 2);
+                g.rotate(angle);
+                g.translate(-w / 2, -h / 2);
+                for (let y = -h * 0.5; y < h * 1.5; y += stepY) {
+                    for (let x = -w * 0.5; x < w * 1.5; x += stepX) {
+                        g.fillText(text, x, y);
+                    }
+                }
+                g.restore();
+            } else if (opts.layout === 'corner') {
+                const fs = Math.max(12, Math.min(w, h) * 0.04);
+                g.font = `bold ${fs}px ${fontFamily}`;
+                const tw = g.measureText(text).width;
+                const m = Math.min(w, h) * 0.04;
+                g.textBaseline = 'middle';
+                let x, y;
+                switch (opts.corner) {
+                    case 'bl': g.textAlign = 'left';   x = m;     y = h - m - fs / 2; break;
+                    case 'tr': g.textAlign = 'right';  x = w - m; y = m + fs / 2;     break;
+                    case 'tl': g.textAlign = 'left';   x = m;     y = m + fs / 2;     break;
+                    case 'center': g.textAlign = 'center'; x = w / 2; y = h / 2;      break;
+                    default:   g.textAlign = 'right';  x = w - m; y = h - m - fs / 2;  // 右下
+                }
+                g.fillText(text, x, y);
+            } else {
+                // 置中單個大字：字級放到對角線約 62% 寬
+                const target = Math.sqrt(w * w + h * h) * 0.62;
+                let fs = Math.min(w, h) * 0.3;
+                g.font = `bold ${fs}px ${fontFamily}`;
+                const measured = g.measureText(text).width || 1;
+                fs = Math.max(16, Math.min(fs, fs * target / measured));
+                g.font = `bold ${fs}px ${fontFamily}`;
+                g.save();
+                g.translate(w / 2, h / 2);
+                g.rotate(angle);
+                g.fillText(text, 0, 0);
+                g.restore();
+            }
+            return c;
+        }
+
+        async function renderWatermarkPreview() {
+            if (!watermarkPdfjs) return;
+            const canvas = document.getElementById('watermarkPreview');
+            try {
+                const pageCanvas = await renderPdfPage(watermarkPdfjs, 1, { targetWidth: 420 });
+                canvas.width = pageCanvas.width;
+                canvas.height = pageCanvas.height;
+                const g = canvas.getContext('2d');
+                g.drawImage(pageCanvas, 0, 0);
+                const wm = buildWatermarkCanvas(canvas.width, canvas.height, currentWatermarkOpts());
+                g.drawImage(wm, 0, 0);
+            } catch (err) {
+                console.warn('浮水印預覽失敗:', err);
+            }
+        }
+
+        async function applyWatermark() {
+            if (!watermarkFile) return;
+            const opts = currentWatermarkOpts();
+            if (opts.mode === 'image') {
+                if (!opts.image) {
+                    showStatus('請先選擇要當浮水印的圖片', 'error', 'watermark');
+                    return;
+                }
+            } else if (!opts.text) {
+                showStatus('請先輸入浮水印文字', 'error', 'watermark');
+                return;
+            }
+
+            const btn = document.getElementById('watermarkButton');
+            btn.disabled = true;
+            btn.textContent = '處理中...';
+            try {
+                showProgress('watermark');
+                const doc = await PDFLib.PDFDocument.load(watermarkFile.arrayBuffer, { updateMetadata: false });
+                const pages = doc.getPages();
+                const embedCache = new Map();   // 同尺寸頁面共用一張嵌入圖
+
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    const { width, height } = page.getSize();
+                    const key = `${Math.round(width)}x${Math.round(height)}`;
+                    let img = embedCache.get(key);
+                    if (!img) {
+                        // 以 1.5 倍頁面點數當像素，文字夠清楚、檔案又不會太肥
+                        const scale = 1.5;
+                        const wm = buildWatermarkCanvas(width * scale, height * scale, opts);
+                        const bytes = await canvasToBytes(wm, 'image/png');
+                        img = await doc.embedPng(bytes);
+                        embedCache.set(key, img);
+                    }
+                    page.drawImage(img, { x: 0, y: 0, width, height });
+                    if (pages.length >= 10) {
+                        setProgressNote('watermark',
+                            `第 ${i + 1} / ${pages.length} 頁（${Math.round((i + 1) / pages.length * 100)}%）`);
+                    }
+                    updateProgress((i + 1) / pages.length * 95, 'watermark');
+                }
+
+                const bytes = await doc.save();
+                updateProgress(100, 'watermark');
+                const base = document.getElementById('watermarkOutName').value.trim() || 'watermarked';
+                downloadFile(bytes, `${base}.pdf`);
+                const label = opts.mode === 'image' ? '圖片' : `「${opts.text}」`;
+                showStatus(`已蓋上${label}浮水印，共 ${pages.length} 頁`, 'success', 'watermark');
+
+            } catch (error) {
+                console.error('浮水印錯誤:', error);
+                showStatus('蓋浮水印時發生錯誤：' + error.message, 'error', 'watermark');
+            } finally {
+                hideProgress('watermark');
+                btn.disabled = false;
+                btn.textContent = '🖋️ 蓋上浮水印並下載';
+            }
+        }
+
+        // ==================== 清除檔案資訊 ====================
+        /* Info 字典的欄位清空就好；XMP 中繼資料串流要連物件一起從檔案刪掉——
+           光移除 catalog 的 /Metadata 參照，孤兒物件仍會被寫進檔案（pdf-lib 不回收），
+           真實掃描檔的 XMP 多半壓縮過，等於「看不到但還在」。 */
+
+        let scrubFile = null;   // { name, rawSize, arrayBuffer, pageCount, meta, hasXMP }
+
+        function setupScrubListeners() {
+            const uploadArea = document.getElementById('scrubUploadArea');
+            const fileInput = document.getElementById('scrubFileInput');
+
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) await loadScrubPDF(file);
+                e.target.value = '';
+            });
+            uploadArea.addEventListener('dragover', (e) => handleDragOver(e, 'scrub'));
+            uploadArea.addEventListener('dragleave', (e) => handleDragLeave(e, 'scrub'));
+            uploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(f =>
+                    f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                );
+                if (files.length) await loadScrubPDF(files[0]);
+            });
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') fileInput.click();
+            });
+        }
+
+        function readPdfMeta(doc) {
+            const fmt = (d) => {
+                try { return d ? d.toISOString().slice(0, 10) : ''; } catch (_) { return ''; }
+            };
+            return {
+                '標題': doc.getTitle() || '',
+                '作者': doc.getAuthor() || '',
+                '主旨': doc.getSubject() || '',
+                '關鍵字': doc.getKeywords() || '',
+                '製作軟體': doc.getProducer() || '',
+                '建立程式': doc.getCreator() || '',
+                '建立時間': fmt(doc.getCreationDate()),
+                '修改時間': fmt(doc.getModificationDate()),
+            };
+        }
+
+        async function loadScrubPDF(file) {
+            try {
+                if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showStatus('請選擇PDF檔案', 'error', 'scrub');
+                    return;
+                }
+                showProgress('scrub');
+                const arrayBuffer = await file.arrayBuffer();
+                if (await blockIfEncrypted(arrayBuffer, 'scrub', '這份PDF')) {
+                    hideProgress('scrub');
+                    return;
+                }
+
+                const doc = await PDFLib.PDFDocument.load(arrayBuffer, { updateMetadata: false });
+                const meta = readPdfMeta(doc);
+                const hasXMP = doc.catalog.has(PDFLib.PDFName.of('Metadata'));
+
+                scrubFile = {
+                    name: file.name, rawSize: file.size, arrayBuffer,
+                    pageCount: doc.getPageCount(), meta, hasXMP,
+                };
+
+                document.getElementById('scrubFileName').textContent = file.name;
+                document.getElementById('scrubFileInfo').textContent =
+                    `${formatFileSize(file.size)} • ${scrubFile.pageCount} 頁`;
+                document.getElementById('scrubOutName').value =
+                    file.name.replace(/\.pdf$/i, '') + '_cleaned';
+                document.getElementById('scrubContent').hidden = false;
+                document.getElementById('scrubUploadArea').hidden = true;
+
+                renderScrubMetaList();
+                hideProgress('scrub');
+
+                const anything = Object.values(meta).some(v => v) || hasXMP;
+                showStatus(anything ? '以下是目前藏在檔案裡的資訊，按下方按鈕清除'
+                                    : '這份檔案幾乎沒有可清的資訊，清除後仍會重寫一次確保乾淨',
+                    anything ? 'success' : 'success', 'scrub');
+
+            } catch (error) {
+                console.error('載入PDF錯誤:', error);
+                showStatus('載入PDF時發生錯誤：' + error.message, 'error', 'scrub');
+                hideProgress('scrub');
+            }
+        }
+
+        function renderScrubMetaList() {
+            const list = document.getElementById('scrubMetaList');
+            const meta = scrubFile.meta;
+            let html = '';
+            Object.keys(meta).forEach(k => {
+                const v = meta[k];
+                html += `
+                    <div class="split-item">
+                        <div class="split-item-info">${k}</div>
+                        <div class="split-item-pages">${v ? escapeHtmlText(v) : '（空）'}</div>
+                    </div>`;
+            });
+            html += `
+                <div class="split-item">
+                    <div class="split-item-info">XMP 中繼資料</div>
+                    <div class="split-item-pages">${scrubFile.hasXMP ? '有，會一併移除' : '（無）'}</div>
+                </div>`;
+            list.innerHTML = html;
+        }
+
+        function clearScrubPDF() {
+            scrubFile = null;
+            document.getElementById('scrubContent').hidden = true;
+            document.getElementById('scrubUploadArea').hidden = false;
+            showStatus('已清除PDF', 'success', 'scrub');
+        }
+
+        async function scrubMetadata() {
+            if (!scrubFile) return;
+            const btn = document.getElementById('scrubButton');
+            btn.disabled = true;
+            btn.textContent = '清除中...';
+            try {
+                showProgress('scrub');
+                updateProgress(40, 'scrub');
+
+                const doc = await PDFLib.PDFDocument.load(scrubFile.arrayBuffer, { updateMetadata: false });
+                doc.setTitle('');
+                doc.setAuthor('');
+                doc.setSubject('');
+                doc.setKeywords([]);
+                doc.setProducer('');
+                doc.setCreator('');
+
+                // XMP：把 /Metadata 指到的物件從檔案刪掉，不只是移除參照
+                const mref = doc.catalog.get(PDFLib.PDFName.of('Metadata'));
+                if (mref) {
+                    try { doc.context.delete(mref); } catch (_) {}
+                    doc.catalog.delete(PDFLib.PDFName.of('Metadata'));
+                }
+
+                updateProgress(80, 'scrub');
+                const bytes = await doc.save({ updateMetadata: false });
+                updateProgress(100, 'scrub');
+
+                const base = document.getElementById('scrubOutName').value.trim() || 'cleaned';
+                downloadFile(bytes, `${base}.pdf`);
+                showStatus(`已清除檔案資訊，共 ${scrubFile.pageCount} 頁，文字與排版不受影響`, 'success', 'scrub');
+
+            } catch (error) {
+                console.error('清除資訊錯誤:', error);
+                showStatus('清除資訊時發生錯誤：' + error.message, 'error', 'scrub');
+            } finally {
+                hideProgress('scrub');
+                btn.disabled = false;
+                btn.textContent = '🧹 清除資訊並下載';
+            }
+        }
+
         // ==================== 通用功能 ====================
 
         /* 解析「3, 7, 10-15」這種頁碼範圍。
@@ -3967,6 +5533,10 @@
             merge: 'mergeUploadArea',
             split: 'splitUploadArea',
             editor: 'editorUploadArea',
+            unlock: 'unlockUploadArea',
+            encrypt: 'encryptUploadArea',
+            watermark: 'watermarkUploadArea',
+            scrub: 'scrubUploadArea',
         };
 
         function handleDragOver(event, type) {
@@ -4053,7 +5623,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.2 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.10 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
@@ -4074,6 +5644,10 @@
             setupEditorListeners();
             setupImg2PdfListeners();
             setupPdf2ImgListeners();
+            setupUnlockListeners();
+            setupEncryptListeners();
+            setupWatermarkListeners();
+            setupScrubListeners();
         });
 
         // 防止頁面拖拽

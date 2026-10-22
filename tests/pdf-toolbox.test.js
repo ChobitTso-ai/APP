@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.2 端到端測試
+/* PDF工具箱 v2.10 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -39,7 +39,7 @@ function ok(n, c, d) {
   }
 
   console.log('— 分頁切換 —');
-  for (const t of ['split', 'editor', 'convert', 'merge']) {
+  for (const t of ['split', 'editor', 'convert', 'unlock', 'prep', 'merge']) {
     await page.click(`.tab[data-tab="${t}"]`);
     const active = await page.evaluate(id => {
       const el = document.getElementById(id);
@@ -642,6 +642,609 @@ function ok(n, c, d) {
     await page.evaluate(() => !document.getElementById('addBookmarks')));
   ok('會用到的「保留原檔案資訊」還在',
     await page.evaluate(() => !!document.getElementById('preserveMetadata')));
+
+  console.log('— 🔓 解除密碼（v2.3）—');
+  await page.click('.tab[data-tab="unlock"]');
+  ok('切到「unlock」分頁', await page.evaluate(() => {
+    const el = document.getElementById('unlockTab');
+    return el.classList.contains('active') && getComputedStyle(el).display !== 'none';
+  }));
+
+  // 造三份測試檔：有開啟密碼、只有權限密碼、沒有密碼
+  const lockedPdfs = await page.evaluate(async () => {
+    const lib = await loadCryptoLib();
+    const mk = async (label, sec) => {
+      const doc = await lib.PDFDocument.create();
+      const font = await doc.embedFont(lib.StandardFonts.Helvetica);
+      for (let i = 1; i <= 2; i++) {
+        const p = doc.addPage([595, 842]);
+        p.drawText(`${label}-${i}`, { x: 60, y: 742, size: 24, font });
+      }
+      if (sec) doc.encrypt(sec);
+      return Array.from(await doc.save());
+    };
+    return {
+      user: await mk('LOCKED', { userPassword: 'secret123', ownerPassword: 'owner999' }),
+      owner: await mk('RESTRICTED', { ownerPassword: 'owner999', permissions: { printing: false } }),
+      plain: await mk('PLAIN', null),
+    };
+  });
+  ok('解密函式庫載得起來，而且沒有蓋掉原本的 PDFLib', await page.evaluate(async () => {
+    const lib = await loadCryptoLib();
+    return lib !== window.PDFLib && typeof window.PDFLib.PDFDocument.create === 'function';
+  }));
+
+  const feedUnlock = async (arr) => {
+    await page.evaluate(() => { unlockFile = null; });
+    await page.evaluate((a) => {
+      const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'locked.pdf', { type: 'application/pdf' }));
+      const inp = document.getElementById('unlockFileInput');
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event('change'));
+    }, arr);
+    await page.waitForFunction(() => unlockFile !== null, null, { timeout: 30000 });
+  };
+
+  console.log('  · 有開啟密碼的檔案');
+  await feedUnlock(lockedPdfs.user);
+  ok('辨識出需要開啟密碼', await page.evaluate(() => unlockFile.kind) === 'user');
+  ok('密碼輸入框有出現', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('unlockPasswordBox')).display !== 'none'));
+
+  await page.fill('#unlockPassword', 'WRONG-PASSWORD');
+  await page.click('#unlockButton');
+  await page.waitForFunction(
+    () => /密碼不正確/.test(document.getElementById('unlockStatusMessage').textContent),
+    null, { timeout: 30000 });
+  ok('密碼錯誤會明確告知，不是丟一串英文', await page.evaluate(() =>
+    document.getElementById('unlockStatusMessage').textContent),
+    await page.textContent('#unlockStatusMessage'));
+  ok('按鈕恢復可用，可以再試', await page.evaluate(() =>
+    !document.getElementById('unlockButton').disabled));
+
+  await page.fill('#unlockPassword', 'secret123');
+  const [dlUnlock] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#unlockButton'),
+  ]);
+  const unlockedPath = path.join(OUT, 'unlocked.pdf');
+  await dlUnlock.saveAs(unlockedPath);
+
+  const unlockedCheck = await page.evaluate(async (arr) => {
+    const bytes = new Uint8Array(arr);
+    const out = {};
+    // 不給密碼就要能開
+    try {
+      const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+      out.opensWithoutPassword = true;
+      out.pages = doc.numPages;
+      const texts = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        texts.push((await doc.getPage(i)).getTextContent
+          ? (await (await doc.getPage(i)).getTextContent()).items.map(t => t.str).join('')
+          : '');
+      }
+      out.text = texts.join('|');
+    } catch (e) {
+      out.opensWithoutPassword = 'FAILED: ' + e.name;
+    }
+    // 工具箱其他功能用的舊 pdf-lib 也要讀得動
+    try {
+      const d = await window.PDFLib.PDFDocument.load(bytes);
+      out.oldLibPages = d.getPageCount();
+    } catch (e) {
+      out.oldLibPages = 'FAILED: ' + e.message.slice(0, 50);
+    }
+    return out;
+  }, Array.from(fs.readFileSync(unlockedPath)));
+
+  ok('解出來的檔案不用密碼就能開', unlockedCheck.opensWithoutPassword === true,
+    String(unlockedCheck.opensWithoutPassword));
+  ok('頁數正確', unlockedCheck.pages === 2);
+  ok('文字完整保留（不是轉成圖片）',
+    /LOCKED-1/.test(unlockedCheck.text) && /LOCKED-2/.test(unlockedCheck.text),
+    unlockedCheck.text);
+  ok('解開後其他分頁的 pdf-lib 也讀得動', unlockedCheck.oldLibPages === 2,
+    String(unlockedCheck.oldLibPages));
+
+  console.log('  · 只有權限密碼的檔案');
+  await feedUnlock(lockedPdfs.owner);
+  ok('辨識出只有權限密碼', await page.evaluate(() => unlockFile.kind) === 'owner');
+  ok('不會要求輸入密碼', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('unlockPasswordBox')).display === 'none'));
+  ok('按鈕文字改成「移除限制」', await page.evaluate(() =>
+    document.getElementById('unlockButton').textContent.includes('移除限制')));
+
+  const [dlOwner] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#unlockButton'),
+  ]);
+  const ownerPath = path.join(OUT, 'unrestricted.pdf');
+  await dlOwner.saveAs(ownerPath);
+  const ownerText = await page.evaluate(async (arr) => {
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr) }).promise;
+    return (await (await doc.getPage(1)).getTextContent()).items.map(t => t.str).join('');
+  }, Array.from(fs.readFileSync(ownerPath)));
+  ok('限制移除後文字仍在', /RESTRICTED-1/.test(ownerText), ownerText);
+
+  console.log('  · 本來就沒有密碼的檔案');
+  await feedUnlock(lockedPdfs.plain);
+  ok('辨識出沒有加密', await page.evaluate(() => unlockFile.kind) === 'none');
+  ok('按鈕停用，不會讓人白按', await page.evaluate(() =>
+    document.getElementById('unlockButton').disabled));
+  ok('有說明這份檔案不需要解除', await page.evaluate(() =>
+    /本來就沒有密碼/.test(document.getElementById('unlockStatusMessage').textContent)));
+
+  console.log('  · 其他分頁碰到加密檔要擋下來（不能默默產出壞檔）');
+  /* pdf-lib 1.17.1 不解密，ignoreEncryption 只是跳過檢查：
+     照樣「載入成功」、頁數也對，但複製出來的頁面文字全空。
+     使用者會拿到一份默默壞掉的檔案，所以必須在載入前擋下。 */
+  await page.evaluate(() => clearUnlockPDF());
+
+  for (const [tab, inputId, statusId, kind] of [
+    ['split',   'splitFileInput',  'splitStatusMessage',   'user'],
+    ['editor',  'editorFileInput', 'editorStatusMessage',  'user'],
+    ['merge',   'mergeFileInput',  'mergeStatusMessage',   'user'],
+    ['split',   'splitFileInput',  'splitStatusMessage',   'owner'],
+  ]) {
+    await page.click(`.tab[data-tab="${tab}"]`);
+    await page.evaluate((id) => {
+      const el = document.getElementById(id);
+      el.textContent = '';
+      el.style.display = 'none';
+    }, statusId);
+    await page.evaluate(({ a, id }) => {
+      const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'locked.pdf', { type: 'application/pdf' }));
+      const inp = document.getElementById(id);
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event('change'));
+    }, { a: lockedPdfs[kind], id: inputId });
+
+    let msg = '';
+    try {
+      await page.waitForFunction(
+        (id) => /解除密碼/.test(document.getElementById(id).textContent),
+        statusId, { timeout: 20000 });
+      msg = await page.textContent('#' + statusId);
+      ok(`${tab} 分頁擋下${kind === 'user' ? '開啟密碼' : '權限密碼'}的檔案並指路`, true, msg.trim());
+    } catch (_) {
+      msg = await page.textContent('#' + statusId);
+      ok(`${tab} 分頁擋下${kind === 'user' ? '開啟密碼' : '權限密碼'}的檔案並指路`, false, msg.trim() || '(沒有任何訊息)');
+    }
+  }
+
+  ok('擋下來之後沒有把壞檔載進編輯分頁', await page.evaluate(() =>
+    !editorFile || editorFile.name !== 'locked.pdf'));
+  ok('擋下來之後合併清單沒有被加進壞檔', await page.evaluate(() =>
+    !mergePdfFiles.some(f => f.name === 'locked.pdf')));
+
+  console.log('— 🔒 設定密碼（v2.5）—');
+  await page.click('.tab[data-tab="unlock"]');
+  await page.click('.sub-tab[data-sub="encrypt"]');
+  ok('切到「設定密碼」子分頁', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('encryptPane')).display !== 'none' &&
+    getComputedStyle(document.getElementById('unlockPane')).display === 'none'));
+  ok('兩組子分頁互不干擾（轉換分頁的選擇沒被改掉）', await page.evaluate(() => {
+    // 先前測試選的是「PDF 轉圖片」，切換密碼分頁的子頁不該動到它
+    const convert = document.getElementById('convertTab');
+    const active = convert.querySelector('.sub-tab.active');
+    const p2i = document.getElementById('pdf2imgPane');
+    return active && active.dataset.sub === 'pdf2img' && !p2i.hidden;
+  }));
+
+  const plainPdf = await page.evaluate(async () => {
+    const lib = await loadCryptoLib();
+    const d = await lib.PDFDocument.create();
+    const f = await d.embedFont(lib.StandardFonts.Helvetica);
+    for (let i = 1; i <= 3; i++) {
+      d.addPage([595, 842]).drawText(`CLINIC-NOTE-${i}`, { x: 60, y: 742, size: 24, font: f });
+    }
+    return Array.from(await d.save());
+  });
+
+  const feedEncrypt = async (arr) => {
+    await page.evaluate(() => { encryptFile = null; });
+    await page.evaluate((a) => {
+      const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'note.pdf', { type: 'application/pdf' }));
+      const inp = document.getElementById('encryptFileInput');
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event('change'));
+    }, arr);
+  };
+
+  await feedEncrypt(plainPdf);
+  await page.waitForFunction(() => encryptFile !== null, null, { timeout: 30000 });
+  ok('載入未加密的檔案', await page.evaluate(() => encryptFile.pageCount) === 3);
+
+  console.log('  · 兩次密碼不一致要擋下來');
+  await page.fill('#encryptPassword', 'abc12345');
+  await page.fill('#encryptPassword2', 'abc99999');
+  ok('邊打邊提示不一致', await page.evaluate(() =>
+    /不一樣/.test(document.getElementById('encryptPasswordHint').textContent)));
+  ok('不一致時按鈕停用', await page.evaluate(() =>
+    document.getElementById('encryptButton').disabled));
+
+  await page.fill('#encryptPassword2', 'abc12345');
+  ok('改成一致後提示轉為確認', await page.evaluate(() =>
+    /一致/.test(document.getElementById('encryptPasswordHint').textContent)));
+
+  console.log('  · 沒勾「我了解」確認框，按鈕還是不能按（v2.5 提醒）');
+  ok('密碼一致但還沒勾確認，按鈕仍停用', await page.evaluate(() =>
+    document.getElementById('encryptButton').disabled));
+  await page.check('#encryptAck');
+  ok('勾了確認框後按鈕才啟用', await page.evaluate(() =>
+    !document.getElementById('encryptButton').disabled));
+  ok('取消勾選又會停用', await page.evaluate(() => {
+    document.getElementById('encryptAck').checked = false;
+    document.getElementById('encryptAck').dispatchEvent(new Event('change'));
+    const off = document.getElementById('encryptButton').disabled;
+    document.getElementById('encryptAck').checked = true;
+    document.getElementById('encryptAck').dispatchEvent(new Event('change'));
+    return off && !document.getElementById('encryptButton').disabled;
+  }));
+
+  console.log('  · 加密後的檔案真的要密碼');
+  const [dlEnc] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#encryptButton'),
+  ]);
+  const encPath = path.join(OUT, 'protected.pdf');
+  await dlEnc.saveAs(encPath);
+  const encBytes = Array.from(fs.readFileSync(encPath));
+
+  const encCheck = await page.evaluate(async (arr) => {
+    const bytes = new Uint8Array(arr);
+    const out = {};
+    // 沒給密碼應該開不起來
+    try {
+      await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+      out.opensWithout = 'OPENED (BAD)';
+    } catch (e) {
+      out.opensWithout = `${e.name} code=${e.code}`;
+    }
+    // 錯的密碼也要被擋
+    try {
+      await pdfjsLib.getDocument({ data: bytes.slice(0), password: 'nope' }).promise;
+      out.wrongPw = 'OPENED (BAD)';
+    } catch (e) {
+      out.wrongPw = e.name;
+    }
+    // 對的密碼要開得起來，而且文字還在
+    try {
+      const d = await pdfjsLib.getDocument({ data: bytes.slice(0), password: 'abc12345' }).promise;
+      const t = [];
+      for (let i = 1; i <= d.numPages; i++) {
+        t.push((await (await d.getPage(i)).getTextContent()).items.map(x => x.str).join(''));
+      }
+      out.rightPw = { pages: d.numPages, text: t.join('|') };
+    } catch (e) {
+      out.rightPw = 'FAILED: ' + e.name;
+    }
+    return out;
+  }, encBytes);
+
+  ok('沒有密碼打不開', /PasswordException/.test(encCheck.opensWithout), encCheck.opensWithout);
+  ok('錯誤的密碼打不開', /PasswordException/.test(encCheck.wrongPw), String(encCheck.wrongPw));
+  ok('正確的密碼打得開，頁數正確',
+    encCheck.rightPw && encCheck.rightPw.pages === 3, JSON.stringify(encCheck.rightPw).slice(0, 80));
+  ok('加密後文字完整保留（不是轉成圖片）',
+    encCheck.rightPw && /CLINIC-NOTE-1/.test(encCheck.rightPw.text) &&
+    /CLINIC-NOTE-3/.test(encCheck.rightPw.text),
+    encCheck.rightPw && encCheck.rightPw.text);
+
+  console.log('  · 加密 → 解密 來回一趟，內容要一模一樣');
+  await page.click('.sub-tab[data-sub="unlock"]');
+  await feedUnlock(encBytes);
+  ok('解除端辨識出這是有開啟密碼的檔', await page.evaluate(() => unlockFile.kind) === 'user');
+  await page.fill('#unlockPassword', 'abc12345');
+  const [dlRound] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#unlockButton'),
+  ]);
+  const roundPath = path.join(OUT, 'roundtrip.pdf');
+  await dlRound.saveAs(roundPath);
+  const roundText = await page.evaluate(async (arr) => {
+    const d = await pdfjsLib.getDocument({ data: new Uint8Array(arr) }).promise;
+    const t = [];
+    for (let i = 1; i <= d.numPages; i++) {
+      t.push((await (await d.getPage(i)).getTextContent()).items.map(x => x.str).join(''));
+    }
+    return { pages: d.numPages, text: t.join('|') };
+  }, Array.from(fs.readFileSync(roundPath)));
+  ok('來回之後頁數不變', roundText.pages === 3);
+  ok('來回之後文字一字不差', roundText.text === 'CLINIC-NOTE-1|CLINIC-NOTE-2|CLINIC-NOTE-3',
+    roundText.text);
+
+  console.log('  · 已經有密碼的檔案不給重複加密');
+  await page.click('.sub-tab[data-sub="encrypt"]');
+  await page.evaluate(() => clearEncryptPDF());
+  await feedEncrypt(encBytes);
+  await page.waitForFunction(
+    () => /本來就有密碼/.test(document.getElementById('encryptStatusMessage').textContent),
+    null, { timeout: 30000 });
+  ok('提示要先去解除密碼', true, (await page.textContent('#encryptStatusMessage')).trim());
+  ok('沒有把加密檔載進來', await page.evaluate(() => encryptFile === null));
+
+  console.log('— 🖋️ 浮水印（v2.6）—');
+  await page.click('.tab[data-tab="prep"]');
+  ok('預設在「浮水印」子分頁', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('watermarkPane')).display !== 'none' &&
+    getComputedStyle(document.getElementById('scrubPane')).display === 'none'));
+
+  const wmPdf = await page.evaluate(async () => {
+    const d = await PDFLib.PDFDocument.create();
+    const f = await d.embedFont(PDFLib.StandardFonts.Helvetica);
+    for (let i = 1; i <= 3; i++) {
+      d.addPage([595, 842]).drawText(`CHART-PAGE-${i}`, { x: 60, y: 742, size: 24, font: f });
+    }
+    return Array.from(await d.save());
+  });
+
+  await page.evaluate(() => { watermarkFile = null; });
+  await page.evaluate((a) => {
+    const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], 'chart.pdf', { type: 'application/pdf' }));
+    const inp = document.getElementById('watermarkFileInput');
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change'));
+  }, wmPdf);
+  await page.waitForFunction(() => watermarkFile !== null, null, { timeout: 30000 });
+  ok('載入後有預覽畫布', await page.evaluate(() => {
+    const c = document.getElementById('watermarkPreview');
+    return c.width > 0 && c.height > 0;
+  }));
+
+  ok('預設字樣按鈕會帶入文字', await page.evaluate(() => {
+    document.querySelector('.wm-preset[data-text="機密"]').click();
+    return document.getElementById('watermarkText').value === '機密';
+  }));
+
+  // 用中文浮水印，驗證不會因為內建字型而壞掉（走畫布嵌圖）
+  await page.evaluate(() => {
+    document.getElementById('watermarkText').value = '影本';
+    document.getElementById('watermarkText').dispatchEvent(new Event('input'));
+  });
+
+  const [dlWm] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#watermarkButton'),
+  ]);
+  const wmPath = path.join(OUT, 'watermarked.pdf');
+  await dlWm.saveAs(wmPath);
+  const wmBytes = Array.from(fs.readFileSync(wmPath));
+
+  const wmCheck = await page.evaluate(async (arr) => {
+    const bytes = new Uint8Array(arr);
+    const out = {};
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+    out.pages = doc.numPages;
+    // 文字層仍在（浮水印是疊圖層，不動原文字）
+    const t = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      t.push((await (await doc.getPage(i)).getTextContent()).items.map(x => x.str).join(''));
+    }
+    out.text = t.join('|');
+    // 每頁都多了一張圖（浮水印）：用 operatorList 數 paintImageXObject
+    const page1 = await doc.getPage(1);
+    const ops = await page1.getOperatorList();
+    const PAINT = pdfjsLib.OPS.paintImageXObject;
+    out.hasImage = ops.fnArray.includes(PAINT);
+    return out;
+  }, wmBytes);
+  ok('浮水印後頁數不變', wmCheck.pages === 3);
+  ok('原文字完整保留（浮水印是疊上去的圖層）',
+    /CHART-PAGE-1/.test(wmCheck.text) && /CHART-PAGE-3/.test(wmCheck.text), wmCheck.text);
+  ok('每頁確實多了浮水印圖層', wmCheck.hasImage === true);
+
+  console.log('— 🖼️ 圖片浮水印（v2.7）—');
+  // 切到圖片模式：顏色選單收起、大小選單出現、文字設定收起
+  await page.click('#watermarkMode button[data-wmmode="image"]');
+  ok('切到圖片模式：大小出現、顏色收起、文字設定收起', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('wmImageOpts')).display !== 'none' &&
+    getComputedStyle(document.getElementById('wmTextOpts')).display === 'none' &&
+    document.getElementById('wmSizeWrap').hidden === false &&
+    document.getElementById('wmColorWrap').hidden === true));
+
+  ok('圖片模式沒選圖就按，會提示先選圖', await page.evaluate(() => {
+    applyWatermark();
+    return /選擇.*圖片|請先選/.test(document.getElementById('watermarkStatusMessage').textContent);
+  }));
+
+  // 餵一張生成的 PNG（帶透明背景）給圖片輸入
+  await page.evaluate(async () => {
+    const c = document.createElement('canvas');
+    c.width = 200; c.height = 120;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(0,100,200,0.9)';
+    g.fillRect(10, 10, 180, 100);
+    g.fillStyle = '#fff'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center';
+    g.fillText('LOGO', 100, 75);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], 'logo.png', { type: 'image/png' }));
+    const inp = document.getElementById('watermarkImageInput');
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() => wmImage !== null, null, { timeout: 15000 });
+  ok('圖片載入後顯示檔名', await page.evaluate(() =>
+    document.getElementById('watermarkImageName').textContent === 'logo.png'));
+
+  // 角落模式（右下印章）
+  await page.evaluate(() => {
+    document.getElementById('watermarkLayout').value = 'corner';
+    document.getElementById('watermarkLayout').dispatchEvent(new Event('change'));
+    document.getElementById('watermarkCorner').value = 'br';
+    document.getElementById('watermarkCorner').dispatchEvent(new Event('change'));
+  });
+  ok('選「角落」後出現角落選單', await page.evaluate(() =>
+    document.getElementById('wmCornerWrap').hidden === false));
+
+  const [dlWmImg] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#watermarkButton'),
+  ]);
+  const wmImgPath = path.join(OUT, 'watermarked-image.pdf');
+  await dlWmImg.saveAs(wmImgPath);
+  const wmImgCheck = await page.evaluate(async (arr) => {
+    const bytes = new Uint8Array(arr);
+    const out = {};
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+    out.pages = doc.numPages;
+    const t = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      t.push((await (await doc.getPage(i)).getTextContent()).items.map(x => x.str).join(''));
+    }
+    out.text = t.join('|');
+    const ops = await (await doc.getPage(1)).getOperatorList();
+    out.hasImage = ops.fnArray.includes(pdfjsLib.OPS.paintImageXObject);
+    return out;
+  }, Array.from(fs.readFileSync(wmImgPath)));
+  ok('圖片浮水印後頁數不變', wmImgCheck.pages === 3);
+  ok('圖片浮水印：原文字保留', /CHART-PAGE-1/.test(wmImgCheck.text), wmImgCheck.text);
+  ok('圖片浮水印：每頁確實嵌了圖', wmImgCheck.hasImage === true);
+
+  console.log('— 🏥 內建 logo（v2.8）—');
+  ok('內建 logo 格有 12 個選項', await page.evaluate(() =>
+    document.querySelectorAll('#wmLogoGrid .wm-logo').length) === 12);
+  ok('每個內建 logo 都有縮圖與說明', await page.evaluate(() =>
+    [...document.querySelectorAll('#wmLogoGrid .wm-logo')].every(b =>
+      b.querySelector('img') && b.querySelector('.wm-logo-cap').textContent.trim())));
+
+  // 點第一個內建 logo（成大醫院院徽），要能實際載入成圖
+  await page.evaluate(() => { wmImage = null; });
+  await page.click('#wmLogoGrid .wm-logo:first-child');
+  await page.waitForFunction(() => wmImage !== null && wmImage.width > 0, null, { timeout: 15000 });
+  ok('點內建 logo 後載入成圖片', await page.evaluate(() =>
+    !!wmImage && wmImage.width > 0 && wmImage.height > 0));
+  ok('被點的 logo 標記為選取中', await page.evaluate(() =>
+    document.querySelector('#wmLogoGrid .wm-logo:first-child').classList.contains('active')));
+  ok('檔名區顯示內建 logo 名稱', await page.evaluate(() =>
+    document.getElementById('watermarkImageName').textContent.includes('成大醫院院徽')));
+
+  // 內建 logo 也要能實際蓋出來
+  await page.evaluate(() => {
+    document.getElementById('watermarkLayout').value = 'corner';
+    document.getElementById('watermarkLayout').dispatchEvent(new Event('change'));
+  });
+  const [dlLogo] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#watermarkButton'),
+  ]);
+  const logoPath = path.join(OUT, 'watermarked-builtin.pdf');
+  await dlLogo.saveAs(logoPath);
+  const logoCheck = await page.evaluate(async (arr) => {
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr).slice(0) }).promise;
+    const ops = await (await doc.getPage(1)).getOperatorList();
+    return { pages: doc.numPages, hasImage: ops.fnArray.includes(pdfjsLib.OPS.paintImageXObject) };
+  }, Array.from(fs.readFileSync(logoPath)));
+  ok('內建 logo 浮水印確實嵌入', logoCheck.hasImage === true && logoCheck.pages === 3);
+
+  // 切回文字模式，確認控制項復原
+  await page.click('#watermarkMode button[data-wmmode="text"]');
+  await page.evaluate(() => {
+    document.getElementById('watermarkLayout').value = 'diagonal';
+    document.getElementById('watermarkLayout').dispatchEvent(new Event('change'));
+  });
+  ok('切回文字模式：顏色回來、大小收起', await page.evaluate(() =>
+    document.getElementById('wmColorWrap').hidden === false &&
+    document.getElementById('wmSizeWrap').hidden === true));
+
+  console.log('— 🧹 清除檔案資訊（v2.6）—');
+  await page.click('.sub-tab[data-sub="scrub"]');
+  ok('切到「清除檔案資訊」子分頁', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('scrubPane')).display !== 'none' &&
+    getComputedStyle(document.getElementById('watermarkPane')).display === 'none'));
+
+  // 造一份帶滿中繼資料＋XMP 的檔
+  const dirtyPdf = await page.evaluate(async () => {
+    const { PDFDocument, PDFName } = PDFLib;
+    const d = await PDFDocument.create();
+    const f = await d.embedFont(PDFLib.StandardFonts.Helvetica);
+    d.addPage([595, 842]).drawText('REPORT-BODY', { x: 60, y: 742, size: 24, font: f });
+    d.setTitle('某病人病歷'); d.setAuthor('承辦人王小明');
+    d.setProducer('HospitalScan-Pro-9'); d.setCreator('院內系統v3');
+    const xmp = `<x:xmpmeta xmlns:x="adobe:ns:meta/"><dc:creator>XMP-SECRET-NAME</dc:creator></x:xmpmeta>`;
+    const stream = d.context.stream(xmp, { Type: 'Metadata', Subtype: 'XML' });
+    d.catalog.set(PDFName.of('Metadata'), d.context.register(stream));
+    return Array.from(await d.save());
+  });
+
+  await page.evaluate(() => { scrubFile = null; });
+  await page.evaluate((a) => {
+    const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], 'report.pdf', { type: 'application/pdf' }));
+    const inp = document.getElementById('scrubFileInput');
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change'));
+  }, dirtyPdf);
+  await page.waitForFunction(() => scrubFile !== null, null, { timeout: 30000 });
+
+  ok('載入時列出目前的中繼資料', await page.evaluate(() => {
+    const txt = document.getElementById('scrubMetaList').textContent;
+    return txt.includes('承辦人王小明') && txt.includes('HospitalScan-Pro-9');
+  }));
+  ok('有偵測到 XMP 並標示會移除', await page.evaluate(() =>
+    /有，會一併移除/.test(document.getElementById('scrubMetaList').textContent)));
+
+  const [dlScrub] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#scrubButton'),
+  ]);
+  const scrubPath = path.join(OUT, 'cleaned.pdf');
+  await dlScrub.saveAs(scrubPath);
+  const scrubBytes = Array.from(fs.readFileSync(scrubPath));
+
+  const scrubCheck = await page.evaluate(async (arr) => {
+    const bytes = new Uint8Array(arr);
+    const out = {};
+    const doc = await PDFLib.PDFDocument.load(bytes, { updateMetadata: false });
+    out.title = doc.getTitle() || '';
+    out.author = doc.getAuthor() || '';
+    out.producer = doc.getProducer() || '';
+    out.creator = doc.getCreator() || '';
+    // 原始位元組裡不該再找得到任何身分字串
+    const raw = new TextDecoder('latin1').decode(bytes);
+    const rawU16 = new TextDecoder('utf-16be').decode(bytes);
+    out.rawHasProducer = raw.includes('HospitalScan-Pro-9');
+    out.rawHasXMP = raw.includes('XMP-SECRET-NAME');
+    out.rawHasAuthorU16 = rawU16.includes('承辦人王小明');
+    // 內文還在
+    const d2 = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+    out.body = (await (await d2.getPage(1)).getTextContent()).items.map(x => x.str).join('');
+    out.pages = d2.numPages;
+    return out;
+  }, scrubBytes);
+  ok('作者欄位清空', scrubCheck.author === '', JSON.stringify(scrubCheck.author));
+  ok('製作軟體欄位清空', scrubCheck.producer === '' && scrubCheck.creator === '');
+  ok('製作軟體名稱不再出現在檔案位元組裡', !scrubCheck.rawHasProducer);
+  ok('XMP 作者整段從檔案移除（不是只拔參照）', !scrubCheck.rawHasXMP);
+  ok('UTF-16 存的中文作者名也不在了', !scrubCheck.rawHasAuthorU16);
+  ok('內文與頁數不受影響', scrubCheck.pages === 1 && /REPORT-BODY/.test(scrubCheck.body), scrubCheck.body);
+
+  console.log('— 寄出前分頁也擋加密檔 —');
+  await page.click('.sub-tab[data-sub="watermark"]');
+  await page.evaluate(() => { watermarkFile = null; });
+  await page.evaluate((a) => {
+    const blob = new Blob([new Uint8Array(a)], { type: 'application/pdf' });
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], 'locked.pdf', { type: 'application/pdf' }));
+    const inp = document.getElementById('watermarkFileInput');
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change'));
+  }, lockedPdfs.user);
+  await page.waitForFunction(
+    () => /解除密碼/.test(document.getElementById('watermarkStatusMessage').textContent),
+    null, { timeout: 30000 });
+  ok('浮水印分頁擋下加密檔並指路', true, (await page.textContent('#watermarkStatusMessage')).trim());
 
   console.log('— [hidden] 不會被自訂 class 蓋掉 —');
   ok('隱藏的面板 computed display 是 none', await page.evaluate(() => {

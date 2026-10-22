@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v2.4
+  案例標記工具 v2.6
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v2.4</title>
+<title>案例標記工具 v2.6</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -133,7 +133,7 @@
     margin-left:auto; border:0; background:transparent; color:#7a4a00;
     font-size:14px; cursor:pointer; padding:2px 4px; line-height:1;
   }
-  .btn.is-new::after{
+  .btn.is-new::after, .tag.is-new::after{
     content:"新"; position:absolute; top:-6px; right:-4px;
     background:#e53935; color:#fff; font-size:10px; font-weight:700; line-height:1;
     padding:3px 5px; border-radius:9px; border:1.5px solid #fff;
@@ -197,6 +197,46 @@
     padding:7px 12px; cursor:pointer; min-height:36px;
   }
   .tag.on{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;}
+  .tag{position:relative;}
+  /* ── 標準照模板（依槽位排版） ── */
+  .tpl-box{padding:0 16px 4px;}
+  .tpl-tip{font-size:12px; line-height:1.6; color:var(--ink-2); margin:2px 0 8px;}
+  .tpl-map{position:relative; width:100%; background:#cfd6de; border-radius:12px; overflow:hidden;}
+  .tpl-slot{position:absolute; box-sizing:border-box; padding:2px; cursor:pointer;}
+  .tpl-slot .in{
+    position:relative; width:100%; height:100%; box-sizing:border-box; overflow:hidden;
+    border:1.5px dashed #8d99a8; border-radius:6px; background:#f5f7fa no-repeat center;
+  }
+  .tpl-slot.has .in{border:1.5px solid #14171c; background-color:#14171c;}
+  .tpl-slot.act .in{outline:3px solid var(--accent); outline-offset:-1px;}
+  .tpl-slot .no{
+    position:absolute; top:1px; left:2px; font-size:9px; font-weight:800; color:#fff;
+    background:rgba(20,23,28,.72); border-radius:7px; padding:1px 4px; line-height:1.2;
+  }
+  .tpl-slot .lb{
+    position:absolute; left:0; right:0; bottom:0; font-size:8px; line-height:1.2; text-align:center;
+    padding:1px 0; color:#2d3643; background:rgba(255,255,255,.88); white-space:nowrap; overflow:hidden;
+  }
+  .tpl-slot .lb i{display:block; font-style:normal; font-size:7.5px; color:#5b6776;}
+  .tpl-slot .x{
+    position:absolute; top:1px; right:1px; width:17px; height:17px; border-radius:50%; border:0;
+    background:rgba(0,0,0,.65); color:#fff; font-size:9px; line-height:17px; padding:0; cursor:pointer;
+  }
+  @media (min-width:700px){      /* 桌機：地圖很寬，字可以放大 */
+    .tpl-slot .lb{font-size:12px; padding:2px 0;}
+    .tpl-slot .lb i{font-size:11px;}
+    .tpl-slot .no{font-size:11px;}
+    .tpl-slot .x{width:22px; height:22px; line-height:22px; font-size:12px;}
+  }
+  .tpl-msg{font-size:12px; color:var(--ink-2); min-height:18px; margin:4px 0 2px; line-height:1.6;}
+  .tpl-learn{font-size:12px; color:var(--ink-2); margin:2px 0 0; line-height:1.6;}
+  .tpl-learn button{border:0; background:none; color:var(--accent); font-size:12px; cursor:pointer; padding:0 0 0 6px; text-decoration:underline;}
+  .tpl-slot .cf{
+    position:absolute; left:50%; top:1px; transform:translateX(-50%); font-size:8px; font-weight:800; line-height:1.3;
+    color:#fff; padding:0 4px; border-radius:7px; white-space:nowrap; pointer-events:none;
+  }
+  .tpl-slot .cf.hi{background:#2e9e5b;} .tpl-slot .cf.mid{background:#d99a00;} .tpl-slot .cf.lo{background:#e5702a;}
+  @media (min-width:700px){ .tpl-slot .cf{font-size:11px;} }
   .col-act{padding:14px; display:flex; gap:10px; flex-wrap:wrap;}
   /* ── 進階版面面板 ── */
   .opt-grid{display:flex; flex-direction:column; gap:12px; padding:0 16px;}
@@ -308,7 +348,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.4</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.6</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -417,7 +457,27 @@
   <!-- 組圖 -->
   <section id="vGrid" class="view">
     <div class="col-scroll">
-      <div class="sec-t">① 依順序點選照片（最多 8 張，含已完成的標記）</div>
+      <div class="sec-t">標準照模板（選填：依牙位排版）</div>
+      <div class="tags" style="padding:0 16px" id="tplPick">
+        <button class="tag tplb on" data-tpl="">一般組圖</button>
+        <button class="tag tplb" data-tpl="fmx18" id="btnTplFmx18">🦷 根尖片 18 張（全口）</button>
+        <button class="tag tplb" data-tpl="intra5" id="btnTplIntra5">📷 口內照 5 張</button>
+      </div>
+      <div class="tpl-box" id="tplBox" hidden>
+        <div class="tpl-tip" id="tplTip"></div>
+        <div class="tpl-map" id="tplMap"></div>
+        <div class="col-act" style="padding:10px 0 0">
+          <button class="btn" id="btnTplAuto">⚡ 依照片庫順序自動填入</button>
+          <button class="btn" id="btnTplClear">清空格子</button>
+        </div>
+        <div class="col-act" style="padding:6px 0 0">
+          <button class="btn" id="btnTplSuggest" title="實驗功能：拿這批照片跟你確認過的排列比對後建議，不是影像辨識模型">🔍 依學過的排列建議（實驗）</button>
+          <button class="btn" id="btnTplLearn">✓ 這個排列正確，讓 App 學起來</button>
+        </div>
+        <div class="tpl-msg" id="tplMsg"></div>
+        <div class="tpl-learn"><span id="tplLearn"></span><button id="btnTplForget">清除學習資料</button></div>
+      </div>
+      <div class="sec-t" id="pickTitle">① 依順序點選照片（最多 8 張，含已完成的標記）</div>
       <div class="case-bar" style="padding-bottom:6px"><div class="case-chips" id="pickChips"></div></div>
       <div class="grid-thumbs pick" id="pickGrid"></div>
       <div class="hint" id="pickHint" style="margin:20px 16px">請先在「照片庫」加入照片</div>
@@ -467,6 +527,22 @@
           <input type="range" id="optTitleScale" min="0.6" max="1.8" step="0.1">
           <span class="val" id="optTitleScaleV"></span>
         </div>
+        <div class="opt-row" id="optFitRow" hidden>
+          <label>照片顯示</label>
+          <select id="optFit">
+            <option value="">依模板預設</option>
+            <option value="contain">完整顯示（不裁切）</option>
+            <option value="cover">填滿格子（可能裁切）</option>
+          </select>
+        </div>
+        <div class="opt-row" id="optLabelRow" hidden>
+          <label>格子名稱</label>
+          <select id="optSlotLabel">
+            <option value="">依模板預設</option>
+            <option value="1">顯示牙位名稱</option>
+            <option value="0">不顯示</option>
+          </select>
+        </div>
         <button class="btn" id="optReset" style="justify-self:start">↺ 回到預設</button>
       </div>
 
@@ -486,7 +562,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v2.4　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v2.6　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -738,7 +814,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v2.4
+   案例標記工具 v2.6
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -767,15 +843,16 @@ var state = {
   colSel: [],          // photo id 依點選順序
   colTitle: {},        // id -> title
   colFocus: {},        // id -> {fx,fy} 每格取景焦點（0~1，預設置中 0.5）
-  colFormat: "std",    // std｜row｜col3｜story（快速版型）
-  colOpt: {            // 進階版面設定
-    cols: 0,           // 0=依版型自動，1~4=強制欄數
-    gap: 20,           // 格間距（px）
-    bg: "#ffffff",     // 背景色
-    titlePos: "tl",    // 標題位置：tl 左上｜bl 左下｜tc 上中｜none 隱藏
-    titleScale: 1      // 標題字級倍率
-  }
+  colFormat: "std",    // std｜row｜col3｜story（快速版型）｜tpl:<模板id>（標準照模板）
+  colSlots: {},        // 模板 id -> [photo id | null …]（依槽位排版，可留空）
+  slotActive: -1,      // 模板模式：下一張照片要放的格子（-1＝第一個空格）
+  colOpt: defColOpt()  // 進階版面設定
 };
+/* 進階版面預設值：cols 0=依版型自動／gap 格間距px／titlePos tl|bl|tc|none／
+   fit ""=依模板預設｜contain｜cover（僅模板模式）／slotLabel ""=依模板預設｜"1"｜"0" */
+function defColOpt(){
+  return { cols:0, gap:20, bg:"#ffffff", titlePos:"tl", titleScale:1, fit:"", slotLabel:"" };
+}
 var seq = 1;
 function colFocusOf(id){ return state.colFocus[id] || {fx:0.5, fy:0.5}; }
 /* 幾何改變（裁切／旋轉／拉平／牙齒對齊）時，組圖的每格取景焦點要一併換算，
@@ -1144,6 +1221,8 @@ function makeThumb(p){
    加新功能時在 NEW_FEATURES 補一筆，並把 NEW_SINCE 設成要提示的最舊版本。 */
 var NEW_SINCE = 2.1;                 // 只提示這個版本（含）之後新增的功能
 var NEW_FEATURES = [
+  { el:"btnTplSuggest", ver:2.6, name:"依學過的排列建議（實驗）" },
+  { el:"btnTplFmx18",   ver:2.5, name:"標準照模板（根尖片 18 張／口內照）" },
   { el:"btnTeeth",      ver:2.3, name:"牙齒對齊" },
   { el:"btnCaseExport", ver:2.1, name:"匯出此病例" },
   { el:"btnSortMode",   ver:2.0, name:"照片排序" },
@@ -1451,6 +1530,7 @@ function renderLib(){
         if(!confirm("刪除照片「"+p.name+"」？")) return;
         state.photos = state.photos.filter(function(q){ return q.id!==p.id; });
         state.colSel = state.colSel.filter(function(id){ return id!==p.id; });
+        purgeSlots(p.id);
         idbDel(p.id);
         markAllOrder();
         if(state.curId===p.id) state.curId = state.photos.length ? state.photos[0].id : null;
@@ -2497,13 +2577,405 @@ function renderPickChips(){
   // 病例只有 0 個時不需要這排
   w.parentElement.style.display = state.cases.length ? "" : "none";
 }
+/* ───────── 標準照模板（依槽位排版） ─────────
+   一般組圖是「點選順序＝格子順序」的均勻格狀。標準照（全口根尖片、口內照）要的是
+   固定的牙位排法、可以留空、而且 X 光不能被裁掉邊緣，所以另外用「槽位」：
+   每個模板是一組矩形（單位座標），每格放一張照片或留空。
+   · 這裡不做任何影像辨識——照片是依你點的順序或照片庫順序放進格子，
+     名稱只是格子本身的位置標示，放對不對由使用者確認。
+   · 畫面左邊＝病人右側（與 X 光／口內照標準看片方向相同）。
+   · 要加新模板只要在 TEMPLATES 補一筆（w/h 是單位格寬高，u 是每單位的像素）。 */
+var TEMPLATES = (function(){
+  var T = {};
+  var S = function(x, y, w, h, name, fdi){ return { x:x, y:y, w:w, h:h, name:name, fdi:fdi||"" }; };
+  // 全口 18 張：上排 7 張根尖片、中間 4 張咬翼片（中央留空）、下排 7 張根尖片
+  var up = [["右上臼齒","17–16"],["右上小臼齒","15–14"],["右上犬齒","13"],["上顎前牙","12–22"],
+            ["左上犬齒","23"],["左上小臼齒","24–25"],["左上臼齒","26–27"]];
+  var lo = [["右下臼齒","47–46"],["右下小臼齒","45–44"],["右下犬齒","43"],["下顎前牙","42–32"],
+            ["左下犬齒","33"],["左下小臼齒","34–35"],["左下臼齒","36–37"]];
+  var fm = [];
+  up.forEach(function(a, i){ fm.push(S(i, 0, 1, 1, a[0], a[1])); });
+  fm.push(S(0,   1, 1.5, 1.3, "右臼齒咬翼"),   S(1.5, 1, 1.5, 1.3, "右小臼齒咬翼"),
+          S(4,   1, 1.5, 1.3, "左小臼齒咬翼"), S(5.5, 1, 1.5, 1.3, "左臼齒咬翼"));
+  lo.forEach(function(a, i){ fm.push(S(i, 2.3, 1, 1, a[0], a[1])); });
+  T.fmx18 = { id:"fmx18", name:"根尖片 18 張（全口）", prefix:"根尖片組圖_", w:7, h:3.3, u:360,
+              fit:"contain", cellBg:"#14171c", label:false, slots:fm };
+  // 口內照 5 張：依一般拍攝順序（正面→右→左→上顎→下顎）編號，排版是標準的十字形
+  T.intra5 = { id:"intra5", name:"口內照 5 張", prefix:"口內照組圖_", w:3, h:2.25, u:520,
+               fit:"cover", cellBg:"#14171c", label:true, slots:[
+    S(1, .75, 1, .75, "正面"), S(0, .75, 1, .75, "右側面"), S(2, .75, 1, .75, "左側面"),
+    S(1, 0,   1, .75, "上顎咬合面"), S(1, 1.5, 1, .75, "下顎咬合面")
+  ]};
+  return T;
+})();
+function curTplId(){
+  var f = state.colFormat || "";
+  return (f.indexOf("tpl:")===0 && TEMPLATES[f.slice(4)]) ? f.slice(4) : null;
+}
+/* 取得（必要時補齊）某模板的槽位陣列；已被刪除的照片自動清成空格 */
+function slotArr(tid){
+  var t = TEMPLATES[tid], a = state.colSlots[tid] || (state.colSlots[tid] = []);
+  while(a.length < t.slots.length) a.push(null);
+  a.length = t.slots.length;
+  for(var i=0; i<a.length; i++) if(a[i] && !photoById(a[i])) a[i] = null;
+  return a;
+}
+function tplAssigned(tid){
+  var out = [];
+  slotArr(tid).forEach(function(pid, i){ if(pid) out.push({ i:i, id:pid }); });
+  return out;
+}
+function nextEmptySlot(tid, from){
+  var a = slotArr(tid), n = a.length;
+  for(var k=0; k<n; k++){ var i = (from + k) % n; if(!a[i]) return i; }
+  return -1;
+}
+function purgeSlots(pid){
+  for(var k in state.colSlots){
+    var a = state.colSlots[k];
+    for(var i=0; i<a.length; i++) if(a[i] === pid) a[i] = null;
+  }
+}
+function slotText(sl){ return sl.name + (sl.fdi ? " " + sl.fdi : ""); }
+function tplFit(tid){ return state.colOpt.fit || TEMPLATES[tid].fit; }
+function tplShowLabel(tid){
+  var v = state.colOpt.slotLabel;
+  return v === "1" || (v !== "0" && TEMPLATES[tid].label);
+}
+var tplMsgTxt = "";
+/* 點照片：放進目前的格子並跳到下一個空格；再點一次已放入的照片＝拿出來 */
+function tplPickPhoto(tid, p){
+  var a = slotArr(tid), at = a.indexOf(p.id);
+  tplMsgTxt = "";
+  if(at >= 0){ a[at] = null; state.slotActive = at; dropConf(tid, at); return; }
+  var target = state.slotActive;
+  if(!(target >= 0 && target < a.length)) target = nextEmptySlot(tid, 0);
+  if(target < 0){
+    alert("格子都滿了。\n點格子右上角的 ✕ 清掉一格，或先點要換的格子再點新照片。");
+    return;
+  }
+  a[target] = p.id;
+  dropConf(tid, target);                     // 手動放的就不是「建議」了
+  state.slotActive = nextEmptySlot(tid, target + 1);
+}
+function dropConf(tid, i){ if(slotConf[tid]) delete slotConf[tid][i]; }
+function renderTplMap(){
+  var tid = curTplId(), box = $("tplBox");
+  box.hidden = !tid;
+  if(!tid) return;
+  var t = TEMPLATES[tid], a = slotArr(tid);
+  var act = (state.slotActive >= 0 && state.slotActive < a.length) ? state.slotActive : nextEmptySlot(tid, 0);
+  var fit = tplFit(tid);
+  $("tplTip").textContent = "畫面左邊是病人的右側。先點要放的格子（藍框），再點下面的照片；" +
+    "放好會自動跳到下一個空格，再點一次已放入的照片可以拿出來。";
+  $("tplMsg").textContent = tplMsgTxt;
+  $("tplLearn").textContent = learnSummary(tid);
+  var m = $("tplMap"); m.innerHTML = "";
+  m.style.aspectRatio = t.w + " / " + t.h;
+  t.slots.forEach(function(sl, i){
+    var d = document.createElement("div");
+    d.className = "tpl-slot" + (a[i] ? " has" : "") + (i === act ? " act" : "");
+    d.setAttribute("data-slot", i);
+    d.style.left = (sl.x/t.w*100) + "%";   d.style.top = (sl.y/t.h*100) + "%";
+    d.style.width = (sl.w/t.w*100) + "%";  d.style.height = (sl.h/t.h*100) + "%";
+    var inn = document.createElement("div"); inn.className = "in";
+    var p = a[i] ? photoById(a[i]) : null;
+    if(p){
+      inn.style.backgroundImage = "url(" + makeThumb(p) + ")";
+      inn.style.backgroundSize = fit;
+    }
+    var no = document.createElement("div"); no.className = "no"; no.textContent = i + 1; inn.appendChild(no);
+    var lb = document.createElement("div"); lb.className = "lb"; lb.textContent = sl.name;
+    if(sl.fdi){ var fi = document.createElement("i"); fi.textContent = sl.fdi; lb.appendChild(fi); }
+    inn.appendChild(lb);
+    var cf = slotConf[tid] && slotConf[tid][i];
+    if(cf && cf.id === a[i]){                 // 只在照片還是建議的那張時顯示把握度
+      var cb = document.createElement("div");
+      cb.className = "cf " + (cf.score >= SUG_OK ? "hi" : "mid");
+      cb.textContent = Math.round(cf.score*100) + "%";
+      cb.title = "跟你學過的排列有多像（不是正確率；高通常代表是同一個病人）";
+      inn.appendChild(cb);
+    }
+    if(p){
+      var x = document.createElement("button"); x.className = "x"; x.textContent = "✕"; x.title = "清空這一格";
+      x.onclick = function(ev){ ev.stopPropagation(); a[i] = null; state.slotActive = i; tplMsgTxt = ""; dropConf(tid, i); renderCollage(); };
+      inn.appendChild(x);
+    }
+    d.appendChild(inn);
+    d.onclick = function(){ state.slotActive = i; renderCollage(); };
+    m.appendChild(d);
+  });
+}
+$("btnTplAuto").onclick = function(){
+  var tid = curTplId(); if(!tid) return;
+  var a = slotArr(tid), used = {};
+  a.forEach(function(id){ if(id) used[id] = 1; });
+  var pool = photosOfCase(state.pickCase).filter(function(p){ return !used[p.id]; });
+  var filled = 0;
+  for(var i=0; i<a.length && pool.length; i++){
+    if(!a[i]){ a[i] = pool.shift().id; filled++; }
+  }
+  state.slotActive = nextEmptySlot(tid, 0);
+  var empty = a.filter(function(x){ return !x; }).length;
+  tplMsgTxt = "已依照片庫順序填入 " + filled + " 格" +
+    (pool.length ? "，還有 " + pool.length + " 張放不下" : "") +
+    (empty ? "，還有 " + empty + " 個空格" : "") +
+    "。這是依順序放的、不會辨識內容，請檢查每一格的位置對不對。";
+  renderCollage();
+};
+$("btnTplClear").onclick = function(){
+  var tid = curTplId(); if(!tid) return;
+  state.colSlots[tid] = []; state.slotActive = -1; tplMsgTxt = "";
+  slotConf[tid] = {}; lastSuggest = null;
+  renderCollage();
+};
+
+/* ───────── 依學過的排列建議（實驗） ─────────
+   檔名與檔案時間在使用者的流程裡都沒有牙位資訊（匯出時間相同、檔名自訂），
+   所以只能看影像本身。**這不是影像辨識模型**——沒有任何預訓練或外部資料，
+   只是「你確認過哪張照片放在哪一格，App 就在這台裝置上記下它的小特徵，
+   下次拿新的一組去比對、建議放哪格」。
+   · 特徵：灰階縮成 24×24、去平均、正規化（對亮度／對比不敏感）＋外框長寬比
+   · 相似度：皮爾森相關 ×0.75 ＋ 長寬比相似 ×0.25；每格取該格所有範例中最像的一個
+   · 指派：匈牙利演算法求總分最高、每張照片與每格都只用一次（貪婪法會被搶走最佳配對）
+   · **結構相關性必須先過 R_MIN 才算數，長寬比不能補**：白雜訊與任一範例的相關性約為 0±0.04，
+     若讓形狀分（最多 0.25）加上隨機相關性去碰總門檻，雜訊圖會有可觀的機率被硬放。
+     白雜訊 r 的標準差 σ≈1/√576≈0.042；一個模板最多 18 格×6 個範例＝108 個比對對象，
+     要讓單張雜訊被誤放的機率壓到約萬分之一，門檻要到 4.8σ≈0.20。實測 R_MIN=0.15 時
+     200 張隨機雜訊有 3 張被放進去（1.5%），所以才拉到 0.20。再加總分門檻 SUG_MIN 當第二道
+   · **可靠度限制**：同一個病人追蹤前後（補綴物、牙齒形狀一致）會比較準；
+     不同病人之間，左右側幾乎只能靠運氣——所以一律只是建議，顯示把握度、要你確認。
+     SUG_MIN／SUG_OK 是未經真實 X 光驗證的暫定值，準確度以畫面上的累計「保留比例」為準。
+   · **把握度分不出對錯，只分得出「是不是同一個病人」**（合成壓力測試：病人差異一大，
+     對的格子平均 0.51、錯的 0.47，幾乎重疊；同病人追蹤則 0.73~0.95）。所以 SUG_MIN 訂在
+     同病人等級（0.60），不夠的留空，**不是「放了再標橘色」**——標橘色會讓人以為它知道自己不確定。
+     沒放的格子會回報最高相似度，方便用真實資料校準。
+   · 隱私：記的是 24×24 灰階小圖特徵（量化成位元組），不含照片、檔名、病例代號，
+     只存在這台裝置的 localStorage，不進備份、不上傳；可一鍵清除。 */
+var DESC_N = 24, MEM_KEY = "cm_tplmem", MEM_CAP = 6, R_MIN = 0.20, SUG_MIN = 0.60, SUG_OK = 0.80;
+var memCache = null, decCache = new WeakMap();
+var slotConf = {};            // 模板 id -> { 格子編號: {id, score} }（建議當下的把握度，照片被換掉就不顯示）
+var lastSuggest = null;       // { tid, map:{格子編號: 建議的照片 id} }：確認時用來算「保留幾格」
+function memGet(){
+  if(memCache) return memCache;
+  try{
+    var m = JSON.parse(localStorage.getItem(MEM_KEY) || "null");
+    if(m && m.v === 1 && m.tpl) { m.stat = m.stat || {}; memCache = m; return m; }
+  }catch(e){}
+  memCache = { v:1, tpl:{}, stat:{} };
+  return memCache;
+}
+function memSave(){
+  try{ localStorage.setItem(MEM_KEY, JSON.stringify(memGet())); return true; }catch(e){ return false; }
+}
+function photoDesc(p){
+  if(p.descBmp === p.bmp && p.desc) return p.desc;
+  var W = bw(p.bmp), H = bh(p.bmp), N = DESC_N;
+  // 分兩段縮：一次縮太多倍會鋸齒、特徵不穩。去掉外圈 5%（截圖常帶視窗邊框）
+  var big = document.createElement("canvas"); big.width = big.height = N*4;
+  var gb = big.getContext("2d"); gb.imageSmoothingQuality = "high";
+  var mx = W*0.05, my = H*0.05;
+  gb.drawImage(p.bmp, mx, my, W - 2*mx, H - 2*my, 0, 0, N*4, N*4);
+  var sm = document.createElement("canvas"); sm.width = sm.height = N;
+  var gs = sm.getContext("2d"); gs.imageSmoothingQuality = "high";
+  gs.drawImage(big, 0, 0, N, N);
+  var px = gs.getImageData(0, 0, N, N).data, v = new Float32Array(N*N), mean = 0, i;
+  for(i=0; i<N*N; i++){ v[i] = 0.299*px[i*4] + 0.587*px[i*4+1] + 0.114*px[i*4+2]; mean += v[i]; }
+  mean /= N*N;
+  var norm = 0;
+  for(i=0; i<N*N; i++){ v[i] -= mean; norm += v[i]*v[i]; }
+  norm = Math.sqrt(norm);
+  var flat = (norm / N) < 2;                // 標準差不到 2 個灰階＝幾乎一片純色，沒有可比對的結構
+  if(!flat) for(i=0; i<N*N; i++) v[i] /= norm;
+  var d = { v:v, a:Math.log(W/H), flat:flat };
+  p.desc = d; p.descBmp = p.bmp;
+  return d;
+}
+function encDesc(d){
+  var m = 0, i;
+  for(i=0; i<d.v.length; i++) m = Math.max(m, Math.abs(d.v[i]));
+  var s = "";
+  for(i=0; i<d.v.length; i++) s += String.fromCharCode(Math.round(d.v[i]/m*127) + 128);
+  return { q:btoa(s), m:m, a:Math.round(d.a*1000)/1000 };
+}
+function decDesc(e){
+  var c = decCache.get(e); if(c) return c;
+  var s = atob(e.q), v = new Float32Array(s.length), norm = 0, i;
+  for(i=0; i<s.length; i++){ v[i] = (s.charCodeAt(i) - 128)/127*e.m; norm += v[i]*v[i]; }
+  norm = Math.sqrt(norm) || 1;
+  for(i=0; i<s.length; i++) v[i] /= norm;
+  c = { v:v, a:e.a }; decCache.set(e, c);
+  return c;
+}
+function descSim(d, ex){
+  var dot = 0, i;
+  for(i=0; i<d.v.length; i++) dot += d.v[i]*ex.v[i];      // 兩者皆單位向量 → 皮爾森相關
+  if(dot < R_MIN) return 0;                                // 結構對不上就是對不上，不讓形狀補分
+  var da = d.a - ex.a, as = Math.exp(-(da*da)/(2*0.25*0.25));
+  return 0.75*dot + 0.25*as;
+}
+/* 匈牙利演算法（最小成本，列數 ≤ 欄數） */
+function hungarianMin(cost, n, m){
+  var INF = 1e9, u = [], v = [], p = [], way = [], i, j;
+  for(j=0; j<=m; j++){ v[j] = 0; p[j] = 0; way[j] = 0; }
+  for(i=0; i<=n; i++) u[i] = 0;
+  for(i=1; i<=n; i++){
+    p[0] = i;
+    var j0 = 0, minv = [], used = [];
+    for(j=0; j<=m; j++){ minv[j] = INF; used[j] = false; }
+    do{
+      used[j0] = true;
+      var i0 = p[j0], delta = INF, j1 = 0;
+      for(j=1; j<=m; j++) if(!used[j]){
+        var cur = cost[i0-1][j-1] - u[i0] - v[j];
+        if(cur < minv[j]){ minv[j] = cur; way[j] = j0; }
+        if(minv[j] < delta){ delta = minv[j]; j1 = j; }
+      }
+      for(j=0; j<=m; j++){
+        if(used[j]){ u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
+      }
+      j0 = j1;
+    }while(p[j0] !== 0);
+    do{ var jj = way[j0]; p[j0] = p[jj]; j0 = jj; }while(j0);
+  }
+  var res = [];
+  for(i=0; i<n; i++) res[i] = -1;
+  for(j=1; j<=m; j++) if(p[j]) res[p[j]-1] = j-1;
+  return res;
+}
+/* 分數矩陣（列＝照片、欄＝格子）→ 每張照片分到的格子（-1＝沒分到），總分最高 */
+function assignMax(S){
+  var n = S.length; if(!n) return [];
+  var m = S[0].length; if(!m) return S.map(function(){ return -1; });
+  var i, j, cost = [];
+  if(n <= m){
+    for(i=0; i<n; i++){ cost[i] = []; for(j=0; j<m; j++) cost[i][j] = -S[i][j]; }
+    return hungarianMin(cost, n, m);
+  }
+  for(j=0; j<m; j++){ cost[j] = []; for(i=0; i<n; i++) cost[j][i] = -S[i][j]; }
+  var colToRow = hungarianMin(cost, m, n), res = [];       // 這裡 colToRow[格子]＝照片
+  for(i=0; i<n; i++) res[i] = -1;
+  colToRow.forEach(function(row, col){ if(row >= 0) res[row] = col; });
+  return res;
+}
+function learnSummary(tid){
+  var m = memGet(), t = m.tpl[tid] || {}, slots = 0, ex = 0, k;
+  for(k in t) if(t[k] && t[k].length){ slots++; ex += t[k].length; }
+  var s = slots ? "已學過 " + slots + "／" + TEMPLATES[tid].slots.length + " 格的範例（共 " + ex + " 個）"
+                : "還沒學過任何排列";
+  var st = m.stat[tid];
+  if(st && st.sug) s += "；累計建議 " + st.sug + " 格，你保留了 " + st.kept + " 格（" + Math.round(st.kept/st.sug*100) + "%）";
+  return s;
+}
+$("btnTplLearn").onclick = function(){
+  var tid = curTplId(); if(!tid) return;
+  var a = slotArr(tid), m = memGet(), t = m.tpl[tid] || (m.tpl[tid] = {}), n = 0;
+  if(!tplAssigned(tid).length){ tplMsgTxt = "還沒有放任何照片，沒有可以學的排列。"; renderCollage(); return; }
+  a.forEach(function(pid, i){
+    var p = pid && photoById(pid); if(!p) return;
+    var d = photoDesc(p); if(d.flat) return;
+    var e = encDesc(d), list = t[i] || (t[i] = []);
+    if(list.some(function(x){ return x.q === e.q; })) return;     // 同一張重複確認不重複記
+    list.push(e);
+    while(list.length > MEM_CAP) list.shift();
+    n++;
+  });
+  var extra = "";
+  if(lastSuggest && lastSuggest.tid === tid){
+    var sug = 0, kept = 0, k;
+    for(k in lastSuggest.map){ sug++; if(a[k] === lastSuggest.map[k]) kept++; }
+    var st = m.stat[tid] || (m.stat[tid] = { runs:0, sug:0, kept:0 });
+    st.runs++; st.sug += sug; st.kept += kept;
+    extra = "本次建議 " + sug + " 格，你保留了 " + kept + " 格。";
+    lastSuggest = null;
+  }
+  tplMsgTxt = memSave()
+    ? "已學起來：這組排列記下 " + n + " 格的新範例。" + extra
+    : "存不進這台裝置的儲存空間，沒有學起來。";
+  renderCollage();
+};
+$("btnTplForget").onclick = function(){
+  if(!confirm("清除 App 學過的所有排列？\n\n只會清掉比對用的小特徵與累計數字，不影響任何照片、組圖或專案。")) return;
+  memCache = { v:1, tpl:{}, stat:{} }; memSave();
+  lastSuggest = null; slotConf = {};
+  tplMsgTxt = "已清除學習資料。";
+  renderCollage();
+};
+$("btnTplSuggest").onclick = function(){
+  var tid = curTplId(); if(!tid) return;
+  var m = memGet(), t = m.tpl[tid] || {}, a = slotArr(tid);
+  var learned = Object.keys(t).filter(function(k){ return t[k] && t[k].length; });
+  if(!learned.length){
+    tplMsgTxt = "還沒有學過這個模板的排列。先手動排好一組（可以先用「依照片庫順序自動填入」再調整），" +
+                "確認每一格都對，按「✓ 這個排列正確」，下次匯入新的一組時就能建議。";
+    renderCollage(); return;
+  }
+  var slots = [];                                   // 只處理「還空著而且學過」的格子，不動你已經放的
+  a.forEach(function(pid, i){ if(!pid && t[i] && t[i].length) slots.push(i); });
+  var pool = photosOfCase(state.pickCase).filter(function(p){ return a.indexOf(p.id) < 0; });
+  if(!slots.length || !pool.length){
+    tplMsgTxt = !slots.length ? "沒有可以建議的空格（空格都還沒學過，或格子已經滿了）。"
+      : "沒有可以放的照片（目前篩選範圍內的照片都已經放進格子了）。想只辨識某個病例，先在上面選那個病例。";
+    renderCollage(); return;
+  }
+  var S = pool.map(function(p){
+    var d = photoDesc(p);
+    return slots.map(function(si){
+      if(d.flat) return 0;
+      var best = 0;
+      t[si].forEach(function(e){ var sc = descSim(d, decDesc(e)); if(sc > best) best = sc; });
+      return best;
+    });
+  });
+  var asg = assignMax(S), placed = 0, bestBelow = 0;
+  slotConf[tid] = {};
+  if(!lastSuggest || lastSuggest.tid !== tid) lastSuggest = { tid:tid, map:{} };
+  asg.forEach(function(ci, pi){
+    if(ci < 0) return;
+    var sc = S[pi][ci];
+    if(sc < SUG_MIN){ bestBelow = Math.max(bestBelow, sc); return; }    // 不夠像寧可留空，不硬放
+    var si = slots[ci];
+    a[si] = pool[pi].id;
+    slotConf[tid][si] = { id:pool[pi].id, score:sc };
+    lastSuggest.map[si] = pool[pi].id;
+    placed++;
+  });
+  state.slotActive = nextEmptySlot(tid, 0);
+  var blank = slots.length - placed;
+  var why = blank && bestBelow ? "（沒放的最高只有 " + Math.floor(bestBelow*100) + "%，要 " + Math.round(SUG_MIN*100) + "% 以上才放）" : "";
+  tplMsgTxt = placed
+    ? "建議放入 " + placed + " 格" + (blank ? "；另 " + blank + " 格不夠像，留空" + why : "") +
+      "。這是跟你學過的排列比對的結果，不是影像辨識；通常同一個病人的追蹤前後才準，" +
+      "左右側特別容易搞混，請逐格確認，沒問題再按「✓ 這個排列正確」。"
+    : "沒有任何一張跟學過的排列夠像" + why + "，所以沒有放。換成同一個病人的追蹤照片通常才比得起來。";
+  renderCollage();
+};
+/* 格式按鈕的亮燈：一般版型與標準照模板兩排共用同一個 state.colFormat */
+var lastPlainFmt = "std";
+function syncFmtButtons(){
+  var tid = curTplId();
+  Array.prototype.forEach.call(document.querySelectorAll(".fmt"), function(q){
+    q.classList.toggle("on", !tid && q.getAttribute("data-fmt") === state.colFormat);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".tplb"), function(q){
+    q.classList.toggle("on", q.getAttribute("data-tpl") === (tid || ""));
+  });
+}
 function renderCollage(){
+  var tid = curTplId();
   var g = $("pickGrid"); g.innerHTML = "";
   $("pickHint").style.display = state.photos.length ? "none" : "block";
+  $("pickTitle").textContent = tid
+    ? "① 點格子，再點照片放進去（共 " + TEMPLATES[tid].slots.length + " 格，可以留空）"
+    : "① 依順序點選照片（最多 8 張，含已完成的標記）";
+  $("optFitRow").hidden = !tid;
+  $("optLabelRow").hidden = !tid;
+  syncFmtButtons();
+  renderTplMap();
   renderPickChips();
   photosOfCase(state.pickCase).forEach(function(p){
     var d = document.createElement("div"); d.className = "thumb";
-    var idx = state.colSel.indexOf(p.id);
+    var idx = tid ? slotArr(tid).indexOf(p.id) : state.colSel.indexOf(p.id);
     if(idx>=0) d.classList.add("sel");
     var im = document.createElement("img"); im.src = makeThumb(p); d.appendChild(im);
     if(idx>=0){
@@ -2515,6 +2987,7 @@ function renderCollage(){
     }
     var nm = document.createElement("div"); nm.className = "nm"; nm.textContent = p.name; d.appendChild(nm);
     d.onclick = function(){
+      if(tid){ tplPickPhoto(tid, p); renderCollage(); return; }
       var k = state.colSel.indexOf(p.id);
       if(k>=0){ state.colSel.splice(k,1); }
       else{
@@ -2525,19 +2998,23 @@ function renderCollage(){
     };
     g.appendChild(d);
   });
-  // 已選清單
+  // 已選清單（模板模式：依格子順序列出已放入的照片）
   var list = $("selList"); list.innerHTML = "";
-  $("selTitle").style.display = state.colSel.length ? "block" : "none";
-  $("btnBuild").disabled = state.colSel.length < 2;
-  $("btnPptx").disabled = !state.colSel.length;
-  $("btnProjSave").disabled = !state.colSel.length;
-  state.colSel.forEach(function(id, i){
+  var entries = tid
+    ? tplAssigned(tid).map(function(e){ return { n:e.i+1, id:e.id, ph:slotText(TEMPLATES[tid].slots[e.i]) }; })
+    : state.colSel.map(function(id, i){ return { n:i+1, id:id, ph:"此格標題（例：Before）" }; });
+  $("selTitle").style.display = entries.length ? "block" : "none";
+  $("btnBuild").disabled = tid ? entries.length < 1 : entries.length < 2;
+  $("btnPptx").disabled = !entries.length;
+  $("btnProjSave").disabled = !entries.length;
+  entries.forEach(function(en){
+    var id = en.id;
     var p = photoById(id); if(!p) return;
     var row = document.createElement("div"); row.className = "sel-row";
-    var no = document.createElement("div"); no.className = "no"; no.textContent = i+1; row.appendChild(no);
-    row.appendChild(makeFocusControl(p, id));
+    var no = document.createElement("div"); no.className = "no"; no.textContent = en.n; row.appendChild(no);
+    if(!tid || tplFit(tid) === "cover") row.appendChild(makeFocusControl(p, id));   // 完整顯示時沒有取景可調
     var inp = document.createElement("input");
-    inp.placeholder = "此格標題（例：Before）";
+    inp.placeholder = en.ph;
     inp.value = state.colTitle[id] || "";
     inp.oninput = function(){ state.colTitle[id] = inp.value; markDirty(p); };
     row.appendChild(inp);
@@ -2595,16 +3072,21 @@ function syncColOpt(){
   $("optBg").value = state.colOpt.bg;
   $("optTitlePos").value = state.colOpt.titlePos;
   $("optTitleScale").value = state.colOpt.titleScale; $("optTitleScaleV").textContent = "×"+state.colOpt.titleScale.toFixed(1);
+  $("optFit").value = state.colOpt.fit || "";
+  $("optSlotLabel").value = state.colOpt.slotLabel || "";
   renderBgSwatches();
 }
+$("optFit").onchange = function(){ state.colOpt.fit = this.value; renderCollage(); };
+$("optSlotLabel").onchange = function(){ state.colOpt.slotLabel = this.value; };
 $("optCols").onchange = function(){ state.colOpt.cols = parseInt(this.value,10)||0; };
 $("optGap").oninput = function(){ state.colOpt.gap = parseInt(this.value,10)||0; $("optGapV").textContent = state.colOpt.gap+"px"; };
 $("optBg").oninput = function(){ state.colOpt.bg = this.value; renderBgSwatches(); };
 $("optTitlePos").onchange = function(){ state.colOpt.titlePos = this.value; };
 $("optTitleScale").oninput = function(){ state.colOpt.titleScale = parseFloat(this.value); $("optTitleScaleV").textContent = "×"+state.colOpt.titleScale.toFixed(1); };
 $("optReset").onclick = function(){
-  state.colOpt = { cols:0, gap:20, bg:"#ffffff", titlePos:"tl", titleScale:1 };
+  state.colOpt = defColOpt();
   syncColOpt();
+  renderCollage();
 };
 /* ── 組圖專案 ── */
 function renderProjects(){
@@ -2637,20 +3119,23 @@ function renderProjects(){
   });
 }
 $("btnProjSave").onclick = function(){
-  if(!state.colSel.length) return;
+  var tid = curTplId();
+  var picked = tid ? tplAssigned(tid).map(function(e){ return e.id; }) : state.colSel.slice();
+  if(!picked.length) return;
   var name = (prompt("組圖專案名稱","案例組圖 "+ (new Date().getMonth()+1) +"/"+ new Date().getDate()) || "").trim();
   if(!name) return;
   var rec = {
     id: "proj"+Date.now(),
     name: name,
     ts: Date.now(),
-    sel: state.colSel.slice(),
+    sel: picked,            // 模板模式存「已放入的照片」，單一病例匯出等邏輯才找得到
     title: {},
     focus: {},
     format: state.colFormat,
     opt: JSON.parse(JSON.stringify(state.colOpt))
   };
-  state.colSel.forEach(function(id){
+  if(tid){ rec.slots = {}; rec.slots[tid] = slotArr(tid).slice(); }   // 格子位置（含空格）
+  picked.forEach(function(id){
     if(state.colTitle[id]) rec.title[id] = state.colTitle[id];
     if(state.colFocus[id]) rec.focus[id] = state.colFocus[id];
   });
@@ -2666,30 +3151,51 @@ function loadProject(r){
   for(var k in (r.title||{})) if(photoById(k)) state.colTitle[k] = r.title[k];
   for(var k2 in (r.focus||{})) if(photoById(k2)) state.colFocus[k2] = r.focus[k2];
   state.colFormat = r.format || "std";
-  state.colOpt = Object.assign({ cols:0, gap:20, bg:"#ffffff", titlePos:"tl", titleScale:1 }, r.opt||{});
-  Array.prototype.forEach.call(document.querySelectorAll(".fmt"), function(q){
-    q.classList.toggle("on", q.getAttribute("data-fmt")===state.colFormat);
-  });
+  if(state.colFormat.indexOf("tpl:")===0 && !TEMPLATES[state.colFormat.slice(4)]) state.colFormat = "std";
+  state.colSlots = {};
+  for(var tk in (r.slots||{})){
+    if(!TEMPLATES[tk]) continue;
+    state.colSlots[tk] = (r.slots[tk]||[]).map(function(id){ return (id && photoById(id)) ? id : null; });
+  }
+  state.slotActive = -1; tplMsgTxt = "";
+  state.colOpt = Object.assign(defColOpt(), r.opt||{});
   syncColOpt();
   renderCollage();
   var miss = (r.sel||[]).length - state.colSel.length;
   if(miss>0) alert("已載入「"+r.name+"」。有 "+miss+" 張照片已不在照片庫，略過。");
 }
-$("btnClearSel").onclick = function(){ state.colSel = []; renderCollage(); };
+$("btnClearSel").onclick = function(){
+  var tid = curTplId();
+  if(tid){ state.colSlots[tid] = []; state.slotActive = -1; tplMsgTxt = ""; }
+  else state.colSel = [];
+  renderCollage();
+};
 Array.prototype.forEach.call(document.querySelectorAll(".fmt"), function(b){
   b.onclick = function(){
-    state.colFormat = b.getAttribute("data-fmt");
-    Array.prototype.forEach.call(document.querySelectorAll(".fmt"), function(q){
-      q.classList.toggle("on", q===b);
-    });
+    state.colFormat = lastPlainFmt = b.getAttribute("data-fmt");
+    renderCollage();
+  };
+});
+Array.prototype.forEach.call(document.querySelectorAll(".tplb"), function(b){
+  b.onclick = function(){
+    var t = b.getAttribute("data-tpl");
+    state.colFormat = t ? "tpl:" + t : lastPlainFmt;
+    state.slotActive = -1; tplMsgTxt = "";
+    renderCollage();
   };
 });
 $("btnBuild").onclick = function(){
+  var tid = curTplId();
+  var d = new Date();
+  var stamp = d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + "_" + p2(d.getHours()) + p2(d.getMinutes());
+  if(tid){
+    if(!tplAssigned(tid).length){ alert("請先把照片放進格子"); return; }
+    openExport(function(clean){ return buildTemplateCollage(tid, clean); }, TEMPLATES[tid].prefix + stamp + ".jpg");
+    return;
+  }
   if(state.colSel.length<2){ alert("請至少選擇 2 張照片"); return; }
   var ids = state.colSel.slice();
   var fmt = state.colFormat;
-  var d = new Date();
-  var stamp = d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + "_" + p2(d.getHours()) + p2(d.getMinutes());
   var prefix = (fmt==="story")? "限時動態_" : (fmt==="row"? "對比圖_" : "案例組圖_");
   openExport(function(clean){ return buildCollage(ids, fmt, clean); }, prefix + stamp + ".jpg");
 };
@@ -2735,17 +3241,53 @@ function buildCollage(ids, fmt, clean){
   stampLogo(c);
   return c;
 }
-/* 單格繪製：含標記全解析渲染 → cover 依焦點置入 → 標題（位置／字級可設） */
-function drawCell(g, p, x, y, cw, ch, title, clean){
+/* 標準照模板的組圖畫布：依槽位擺放，空格留灰色底（開啟名稱時標出是哪一格） */
+function buildTemplateCollage(tid, clean){
+  var t = TEMPLATES[tid], opt = state.colOpt, slots = slotArr(tid);
+  var GAP = (opt.gap>=0 ? opt.gap : 20), u = t.u, pad = (GAP<8 ? 8 : GAP);
+  var c = document.createElement("canvas");
+  c.width = Math.round(t.w*u + pad*2); c.height = Math.round(t.h*u + pad*2);
+  var g = c.getContext("2d");
+  g.fillStyle = opt.bg || "#ffffff"; g.fillRect(0, 0, c.width, c.height);
+  var fit = tplFit(tid), showLabel = tplShowLabel(tid);
+  t.slots.forEach(function(sl, i){
+    var x = pad + sl.x*u + GAP/2, y = pad + sl.y*u + GAP/2, w = sl.w*u - GAP, h = sl.h*u - GAP;
+    var p = slots[i] ? photoById(slots[i]) : null;
+    if(p){
+      var title = (state.colTitle[p.id]||"").trim() || (showLabel ? slotText(sl) : "");
+      drawCell(g, p, x, y, w, h, title, clean, fit, t.cellBg);
+    }else{
+      g.fillStyle = "rgba(127,140,155,.18)"; g.fillRect(x, y, w, h);
+      if(showLabel){
+        g.fillStyle = "rgba(90,100,115,.75)"; g.textAlign = "center"; g.textBaseline = "middle";
+        g.font = "bold " + clamp(Math.round(w*0.07), 16, 40) + "px -apple-system,'PingFang TC','Microsoft JhengHei',sans-serif";
+        g.fillText(slotText(sl), x + w/2, y + h/2);
+      }
+    }
+  });
+  stampWatermark(c);
+  stampLogo(c);
+  return c;
+}
+/* 單格繪製：含標記全解析渲染 → 置入（cover 依焦點裁切／contain 完整顯示）→ 標題（位置／字級可設） */
+function drawCell(g, p, x, y, cw, ch, title, clean, fit, cellBg){
   if(!p) return;
   var W = bw(p.bmp), H = bh(p.bmp);
   var t = document.createElement("canvas"); t.width = W; t.height = H;
   drawAnnotated(t.getContext("2d"), p.bmp, clean ? [] : p.markers, 0, 0, W, H, -1, null);
-  var s = Math.max(cw/W, ch/H);
-  var sw = cw/s, sh = ch/s;
-  var f = colFocusOf(p.id);                 // 每格取景焦點
-  var sx = (W-sw)*f.fx, sy = (H-sh)*f.fy;
-  g.drawImage(t, sx, sy, sw, sh, x, y, cw, ch);
+  g.imageSmoothingQuality = "high";         // 大幅縮小時避免鋸齒（X 光細節）
+  if(fit === "contain"){
+    // 完整顯示：整張縮進格子、不裁切（X 光邊緣的骨高度不能被切掉）
+    g.fillStyle = cellBg || "rgba(127,140,155,.18)"; g.fillRect(x, y, cw, ch);
+    var s2 = Math.min(cw/W, ch/H), dw = W*s2, dh = H*s2;
+    g.drawImage(t, 0, 0, W, H, x + (cw-dw)/2, y + (ch-dh)/2, dw, dh);
+  }else{
+    var s = Math.max(cw/W, ch/H);
+    var sw = cw/s, sh = ch/s;
+    var f = colFocusOf(p.id);                 // 每格取景焦點
+    var sx = (W-sw)*f.fx, sy = (H-sh)*f.fy;
+    g.drawImage(t, sx, sy, sw, sh, x, y, cw, ch);
+  }
   var pos = state.colOpt.titlePos || "tl";
   if(title && pos!=="none"){
     var fs = clamp(Math.round(cw*0.042*(state.colOpt.titleScale||1)), 20, 66);
@@ -2834,8 +3376,9 @@ function loadPptx(){
   return pptxReady;
 }
 $("btnPptx").onclick = function(){
-  var ids = state.colSel.slice();
-  if(!ids.length) return;
+  var tid = curTplId();
+  var ids = tid ? [] : state.colSel.slice();
+  if(!tid && !ids.length) return;
   busy("產生投影片…");
   loadPptx().then(function(){
     var pptx = new PptxGenJS();
@@ -2848,6 +3391,16 @@ $("btnPptx").onclick = function(){
     s0.background = { color:"1D2733" };
     s0.addText(clinic || "案例報告", { x:0.5, y:2.7, w:12.33, h:1.2, fontSize:44, bold:true, color:"FFFFFF", align:"center" });
     s0.addText("案例報告 · "+ds, { x:0.5, y:4.0, w:12.33, h:0.6, fontSize:20, color:"9FB3C8", align:"center" });
+    if(tid){
+      // 標準照模板：整張組圖放在同一頁（投影片上就是一張完整的牙位排版）
+      var cvs = buildTemplateCollage(tid, false);
+      var sl0 = pptx.addSlide();
+      sl0.addText(TEMPLATES[tid].name, { x:0.5, y:0.22, w:12.33, h:0.6, fontSize:24, bold:true, color:"1D2733" });
+      var mW = 12.33, mH = 6.05, k = Math.min(mW/cvs.width, mH/cvs.height);
+      var iw = cvs.width*k, ih = cvs.height*k;
+      sl0.addImage({ data:cvs.toDataURL("image/jpeg", 0.92), x:(13.33-iw)/2, y:0.95+(mH-ih)/2, w:iw, h:ih });
+      if(clinic) sl0.addText(clinic, { x:9.83, y:7.06, w:3.0, h:0.35, fontSize:11, color:"8A97A5", align:"right" });
+    }
     // 每張照片一頁（依選取順序，含標註）
     ids.forEach(function(id, i){
       var p = photoById(id); if(!p) return;
@@ -2878,6 +3431,7 @@ window.addEventListener("resize", function(){
 });
 
 syncColOpt();
+syncFmtButtons();
 applyNewBadges();
 renderLib();
 restorePhotos();
@@ -3025,10 +3579,16 @@ $("restoreIn").onchange = function(e){
         var title = {}, focus = {};
         for(var k in (pr.title||{})) if(idMap[k]) title[idMap[k]] = pr.title[k];
         for(var k2 in (pr.focus||{})) if(idMap[k2]) focus[idMap[k2]] = pr.focus[k2];
+        var slots = null;                  // 標準照模板的格子位置（含空格），照片 id 也要換成新的
+        if(pr.slots){
+          slots = {};
+          for(var tk in pr.slots) slots[tk] = (pr.slots[tk]||[]).map(function(id){ return id ? (idMap[id] || null) : null; });
+        }
         projPut({
           id: "proj"+Date.now()+"_"+Math.random().toString(36).slice(2,7),
           name: (pr.name||"組圖專案")+"（還原）", ts: Date.now(),
           sel: sel, title: title, focus: focus,
+          slots: slots,
           format: pr.format || "std", opt: pr.opt || null
         });
       });
