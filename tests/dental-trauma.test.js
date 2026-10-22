@@ -44,6 +44,24 @@ async function authed(browser){
   return { ctx, p };
 }
 
+/* 保存液版面：在頁面裡量每一格的位置（交給 page.evaluate，函式本身不能用外部變數）。
+   保存液區塊收在 <details> 裡，先打開才量得到，量完還原。 */
+const mediaLayout = () => {
+  const d = document.querySelector('details:has(#storageRow)');
+  const was = d.open; d.open = true;
+  const row = document.getElementById('storageRow');
+  const bs = [...row.querySelectorAll('.media')].map(b => b.getBoundingClientRect());
+  const r = {
+    cols: getComputedStyle(row).gridTemplateColumns.split(' ').length,
+    tops: bs.slice(0, 4).map(b => Math.round(b.top)),
+    rankedBottom: Math.round(Math.max(...bs.slice(0, 4).map(b => b.bottom))),
+    waterTop: Math.round(bs[4].top), waterW: Math.round(bs[4].width),
+    rowW: Math.round(row.getBoundingClientRect().width)
+  };
+  d.open = was;
+  return r;
+};
+
 /* 每一段測試都從乾淨的第一題開始，且確定影像提示是關的 */
 async function reset(p){
   await p.evaluate(() => localStorage.setItem('dtg_mode','normal'));
@@ -115,6 +133,12 @@ async function reset(p){
       ns => ns.map(i => [i.getAttribute('src'), i.naturalWidth > 0]));
     ok('★ 五張保存液插圖全部載得到', media.length === 5 && media.every(m => m[1]),
       media.filter(m => !m[1]).map(m => m[0]).join() || '5/5');
+    const ml = await p.evaluate(mediaLayout);
+    ok('★ 手機版保存液維持 2 欄（1–4 名排成兩列）',
+      ml.cols === 2 && ml.tops[0] === ml.tops[1] && ml.tops[2] === ml.tops[3] && ml.tops[2] > ml.tops[0],
+      ml.cols + ' 欄');
+    ok('★ 手機版自來水在 1–4 名下方、橫跨整列',
+      ml.waterTop >= ml.rankedBottom && Math.abs(ml.waterW - ml.rowW) <= 1, ml.waterW + '／' + ml.rowW + 'px');
 
     const rows = await p.$$eval('#tblFirstAid tr', ns => ns.length);
     ok('現場急救速查表有表頭＋6 列', rows === 7, rows + ' 列');
@@ -137,8 +161,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v2.6', /v2\.6/.test(await p.title()) &&
-      /v2\.6/.test(await p.textContent('footer')));
+    ok('版本號是 v2.7', /v2\.7/.test(await p.title()) &&
+      /v2\.7/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -470,6 +494,9 @@ async function reset(p){
       steps.filter(x => !x[1]).map(x => x[0]).join() || '4/4');
     ok('四步驟有編號 1–4',
       (await p.$$eval('#faSteps .fa-step-n', ns => ns.map(n => n.textContent))).join('') === '1234');
+    const s2 = await p.textContent('#faSteps .fa-step:nth-child(2) small');
+    ok('★ 步驟 2 沖洗液照 IADT-2 列齊：牛奶、生理食鹽水、病人的唾液',
+      /牛奶/.test(s2) && /生理食鹽水/.test(s2) && /唾液/.test(s2), s2);
 
     await p.click('details:has(#apexFigs) summary');
     await p.waitForFunction(() =>
@@ -572,6 +599,13 @@ async function reset(p){
 
     ok('★ 寬螢幕停在決策樹時，診斷頁仍是隱藏的（grid 沒有蓋掉 [hidden]）',
       await wp.evaluate(() => getComputedStyle(document.getElementById('screenDx')).display) === 'none');
+
+    // 保存液：正式排名只有 4 名，桌面第一列剛好 4 張；先前 5 欄會在第一列尾巴留一格空白
+    const wl = await wp.evaluate(mediaLayout);
+    ok('★ 桌面保存液第一列正好 4 張（1–4 名同一列，不留第 5 格空白）',
+      wl.cols === 4 && wl.tops.every(t => t === wl.tops[0]), wl.cols + ' 欄');
+    ok('★ 桌面自來水仍在下一列、橫跨整列（最後備案）',
+      wl.waterTop >= wl.rankedBottom && Math.abs(wl.waterW - wl.rowW) <= 1, wl.waterW + '／' + wl.rowW + 'px');
 
     const openW = async q => {
       await wp.click('#btnBrowse');
@@ -1363,7 +1397,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v2\.6/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v2\.7/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
