@@ -188,6 +188,33 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   // #drop-zone 有自己的處理器,document 層那條若沒判斷 defaultPrevented 就會加兩次
   ok('同一個檔案不會被加入兩次', dup.length === 0, dup.join(',') || '無重複');
 
+  console.log('\n— 功能精簡:螢光／LUT／明視野 —');
+  // 臨床判斷(Dr.Tso):顯微鏡影像才用得到,牙科用不上,刪掉讓介面清爽。
+  // 做法是隱藏 UI 不是拔實作——實作與 render/匯出/存檔路徑交織,拔掉風險
+  // 遠大於收益,而且 index.html 是從快照產生的,動程式碼每次同步都要重做。
+  await page.evaluate(() => { const d = document.querySelector('#img-list details'); if (d) d.open = true; });
+  await page.waitForTimeout(500);
+  const shown = sel => page.evaluate(s => [...document.querySelectorAll(s)]
+    .filter(e => getComputedStyle(e).display !== 'none' && e.offsetParent !== null).length, sel);
+  const exists = sel => page.evaluate(s => document.querySelectorAll(s).length, sel);
+
+  for (const [sel, label] of [
+    ['button[onclick="autoDetectChannels()"]', '自動判定通道'],
+    ["button[onclick=\"applyQuickPreset('fluorescence')\"]", '螢光預設'],
+    ["button[onclick=\"applyQuickPreset('brightfield')\"]", '明視野預設'],
+    ['.f-lut', 'LUT 色表按鈕'],
+    ['button[data-splitch]', '通道拆成一列'],
+  ]) {
+    const n = await exists(sel), v = await shown(sel);
+    ok(`${label}已隱藏`, n > 0 && v === 0, `存在 ${n} 個,顯示 ${v} 個`);
+  }
+  // 只隱藏按鈕不夠:指令面板(⌘K)搜得到就還是執行得了
+  const removed = await page.evaluate(() => window.__dfTrim && window.__dfTrim.commandsRemoved);
+  ok('指令面板也移除了螢光相關指令', removed > 0, `${removed} 筆`);
+  // 精簡層絕不能弄壞核心功能
+  const stillWorks = await page.evaluate(() => { const c = renderExportCanvas(300); return c.width > 0 && c.height > 0; });
+  ok('精簡後匯出仍正常', stillWorks);
+
   console.log('\n— 上游快照必須維持原封不動 —');
   const snap = path.join(__dirname, '..', 'apps', 'dentfigure', 'upstream', 'figurelab', 'figure_lab.html');
   const snapSrc = fs.readFileSync(snap, 'utf8');
@@ -195,9 +222,10 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   ok('快照沒有被加上登入守衛', !snapSrc.includes('nckuh_endo_authed'));
   ok('快照標題仍是上游原文', snapSrc.includes('<title>FigureLab</title>'));
   ok('快照沒有被掛上行為修正層', !snapSrc.includes('fixes.js'));
+  ok('快照沒有被掛上功能精簡層', !snapSrc.includes('trim-features.js'));
   const appSrc = fs.readFileSync(path.join(__dirname,'..','apps','dentfigure','index.html'), 'utf8');
   const dl = appSrc.split('\n').length - snapSrc.split('\n').length;
-  ok('index.html 與快照只差掛載用的那幾行', dl >= 1 && dl <= 5, `多 ${dl} 行`);
+  ok('index.html 與快照只差掛載用的那幾行', dl >= 1 && dl <= 6, `多 ${dl} 行`);
 
   console.log('\n— 編碼(中文化最容易踩的坑)—');
   const i18nBuf = fs.readFileSync(path.join(__dirname,'..','apps','dentfigure','i18n-zh-TW.js'));
