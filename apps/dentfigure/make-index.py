@@ -51,11 +51,13 @@ def transform(src: str) -> str:
     assert src.count(sw_old) == 1, '找不到上游的 service worker 註冊'
     src = src.replace(sw_old, sw_new, 1)
 
-    # 4) 掛上行為修正層與中文化層。放在 app 的 script 之後,DOM 與所有函式
-    #    都已就緒;fixes.js 先載入,因為它要呼叫 app 的 addFiles()。
+    # 4) 掛上三個附加層。放在 app 的 script 之後,DOM 與所有函式都已就緒。
+    #    順序有意義:fixes 要呼叫 app 的 addFiles();trim 要在 i18n 之前跑,
+    #    這樣它比對 .sec-lbl 時看到的還是原文(它同時也收了中譯當備援)。
     assert src.count('</body>') == 1, '找不到唯一的 </body>'
     src = src.replace('</body>',
                       '<script src="fixes.js"></script>\n'
+                      '<script src="trim-features.js"></script>\n'
                       '<script src="i18n-zh-TW.js"></script>\n</body>', 1)
 
     return src
