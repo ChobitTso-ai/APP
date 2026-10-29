@@ -42,6 +42,18 @@
   .pick p{color:var(--muted);font-size:.9rem;line-height:1.7}
   .pick .go{margin-top:18px;color:#8fb0ff;font-size:.9rem;font-weight:600}
 
+  /* 開場下方的外部連結（會離開本站，故與選擇卡片區隔）*/
+  .extlink{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:20px;
+    padding:16px 20px;border:1px solid var(--line);border-radius:14px;
+    text-decoration:none;color:#eaf0ff;transition:.18s;
+    background:linear-gradient(160deg,rgba(20,34,70,.7),rgba(13,21,44,.8))}
+  .extlink:hover{border-color:#3f66e6;background:rgba(40,70,160,.25);transform:translateY(-2px)}
+  .ext-ic{font-size:1.7rem;line-height:1}
+  .ext-txt{display:flex;flex-direction:column;gap:3px}
+  .ext-txt b{font-size:1.02rem}
+  .ext-txt small{color:var(--muted);font-size:.84rem}
+  .ext-go{margin-left:auto;color:#8fb0ff;font-weight:600;font-size:.9rem;white-space:nowrap}
+
   /* 工作區 */
   .panel{background:linear-gradient(160deg,rgba(19,30,60,.72),rgba(12,20,42,.8));
     border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
@@ -142,6 +154,14 @@
         <div class="go">選擇並上傳 →</div>
       </div>
     </div>
+    <a class="extlink" href="https://script.google.com/macros/s/AKfycbyc4wnKwSaR6BaAgHitI5QufdhKjxxsiZL2brLdiwbCnvEdQqPoznZX5Z_uNQBS4bo/exec" target="_blank" rel="noopener">
+      <span class="ext-ic">🗂️</span>
+      <span class="ext-txt">
+        <b>牙髓病患資料管理網頁</b>
+        <small>查詢與管理病患資料 · 另開新分頁，需另外登入</small>
+      </span>
+      <span class="ext-go">前往 ↗</span>
+    </a>
   </section>
 
   <!-- 畫面二：工作區 -->
@@ -232,7 +252,7 @@
   </section>
 
   <div class="foot">
-    牙髓病科專科 PPT 製作器<span class="ver">v1.2</span><br>
+    牙髓病科專科 PPT 製作器<span class="ver">v1.3</span><br>
     範本版面與字型沿用中華民國牙髓病學會範本 · NCKUH ENDO
   </div>
 </div>
@@ -241,7 +261,7 @@
 <script src="vendor/fflate.min.js"></script>
 <script>
 /* =======================================================================
-   牙髓病科專科 PPT 製作器 v1.2
+   牙髓病科專科 PPT 製作器 v1.3
    作法：把學會範本 .pptx 當底稿，複製對應投影片、清除白線/箭頭/標註，
    把使用者照片依編號套進影像版面配置區。全程瀏覽器內處理。
    ======================================================================= */
