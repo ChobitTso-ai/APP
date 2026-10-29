@@ -35,7 +35,7 @@ const APPS = [
 
   // 電腦操作
         { name: 'PDF工具箱', desc: '合併、分割、遮蔽個資、旋轉、加解密、浮水印與圖片轉檔，全程本機處理。', icon: '🛠️', url: 'apps/pdf-toolbox/index.html', added: '2026-07-13', updated: '2026-10-21', group: 'desktop' },
-  { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24', updated: '2026-09-10', group: 'desktop' },
+  { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: '🦷', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24', updated: '2026-10-29', group: 'desktop' },
   { name: 'DentFigure 臨床組圖', desc: '把 X 光片與臨床照排成期刊等級的組圖，可標號、比例尺與遮蔽個資。', icon: '🖼️', url: 'apps/dentfigure/index.html', added: '2026-09-19', updated: '2026-09-19', group: 'desktop' },
   { ...wipSlot, group: 'desktop' },
 ];
