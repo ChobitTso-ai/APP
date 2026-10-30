@@ -188,6 +188,59 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   // #drop-zone 有自己的處理器,document 層那條若沒判斷 defaultPrevented 就會加兩次
   ok('同一個檔案不會被加入兩次', dup.length === 0, dup.join(',') || '無重複');
 
+  console.log('\n— 本機資料透明化(M1)—');
+  // 上游三層儲存預設都寫入病患影像,而且使用者看不到。實測過的情境:
+  // 醫師甲關掉分頁後 fl-autosave-v2 留下含影像的資料,醫師乙開同一網址會
+  // 看到「Recover unsaved session」,按下去就取回甲的病患影像。
+  // 這一層不禁止儲存(病例本來就不會一次做完),而是讓殘留不再隱形。
+  const stat = () => page.evaluate(() => {
+    const e = document.getElementById('df-ld-stat');
+    return e ? e.textContent.trim() : '(找不到面板)';
+  });
+  ok('存檔區出現「本機資料」面板', await page.evaluate(() => !!document.getElementById('df-local-data')));
+  ok('面板講明資料存在這台電腦', await page.evaluate(() => {
+    const e = document.getElementById('df-local-data');
+    return !!e && /這台電腦/.test(e.textContent) && /不會自動清除/.test(e.textContent);
+  }));
+
+  // 放一張圖等自動存檔寫入,面板要反映出來
+  await page.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 800; c.height = 600;
+    c.getContext('2d').fillRect(0, 0, 800, 600);
+    const s = c.toDataURL('image/png');
+    await new Promise(r => { const im = new Image(); im.onload = () => { _commitImage(im, s, 'm1.png'); r(); }; im.src = s; });
+    localStorage.setItem('fl-user-name', '張醫師');     // 個人資訊
+    localStorage.setItem('fl-gemini-key', 'AIzaFAKE');  // 憑證
+    localStorage.setItem('fl-theme', 'lab');            // 純偏好
+    render();
+  });
+  await page.waitForTimeout(3600);
+  await page.evaluate(() => window.__dfPrivacy.refresh());
+  await page.waitForTimeout(300);
+  const withData = await stat();
+  ok('面板顯示存了幾張影像', /影像/.test(withData), withData);
+
+  const sv = await page.evaluate(() => window.__dfPrivacy.survey());
+  ok('偵測到自動存檔含影像', sv.hasAutosave === true && sv.imgs > 0, `${sv.imgs} 張 / ${sv.bytes} bytes`);
+
+  await page.evaluate(async () => { await window.__dfPrivacy.clearLocal(); await window.__dfPrivacy.refresh(); });
+  await page.waitForTimeout(300);
+  ok('清除後面板顯示沒有資料', /沒有存放任何資料/.test(await stat()), await stat());
+
+  // 清除的判準是「資料 vs 偏好」,不是「全清」
+  const keys = await page.evaluate(() => ({
+    autosave: localStorage.getItem('fl-autosave-v2'),
+    name: localStorage.getItem('fl-user-name'),
+    key: localStorage.getItem('fl-gemini-key'),
+    theme: localStorage.getItem('fl-theme'),
+    auth: localStorage.getItem('nckuh_endo_authed'),
+  }));
+  ok('清除未存檔內容(含影像)', keys.autosave === null);
+  ok('清除使用者姓名(會寫進圖說)', keys.name === null);
+  ok('清除 API 金鑰', keys.key === null);
+  ok('保留佈景偏好', keys.theme === 'lab');
+  ok('保留登入狀態(清掉會把人踢出去)', keys.auth === '1');
+
   console.log('\n— 功能精簡:螢光／LUT／明視野 —');
   // 臨床判斷(Dr.Tso):顯微鏡影像才用得到,牙科用不上,刪掉讓介面清爽。
   // 做法是隱藏 UI 不是拔實作——實作與 render/匯出/存檔路徑交織,拔掉風險
@@ -223,9 +276,10 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   ok('快照標題仍是上游原文', snapSrc.includes('<title>FigureLab</title>'));
   ok('快照沒有被掛上行為修正層', !snapSrc.includes('fixes.js'));
   ok('快照沒有被掛上功能精簡層', !snapSrc.includes('trim-features.js'));
+  ok('快照沒有被掛上隱私層', !snapSrc.includes('privacy.js'));
   const appSrc = fs.readFileSync(path.join(__dirname,'..','apps','dentfigure','index.html'), 'utf8');
   const dl = appSrc.split('\n').length - snapSrc.split('\n').length;
-  ok('index.html 與快照只差掛載用的那幾行', dl >= 1 && dl <= 6, `多 ${dl} 行`);
+  ok('index.html 與快照只差掛載用的那幾行', dl >= 1 && dl <= 7, `多 ${dl} 行`);
 
   console.log('\n— 編碼(中文化最容易踩的坑)—');
   const i18nBuf = fs.readFileSync(path.join(__dirname,'..','apps','dentfigure','i18n-zh-TW.js'));
