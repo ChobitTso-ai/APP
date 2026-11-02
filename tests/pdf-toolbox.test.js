@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.11 端到端測試
+/* PDF工具箱 v2.12 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -578,7 +578,7 @@ function ok(n, c, d) {
     return a.includes('.heic') && a.includes('.heif');
   }));
   ok('HEIC 函式庫延遲載入（還沒遇到 HEIC 前不載）', await page.evaluate(() =>
-    typeof heic2any === 'undefined' && !document.querySelector('script[src*="heic2any"]')));
+    typeof HeicTo === 'undefined' && !document.querySelector('script[src*="heic"]')));
   await page.evaluate(() => { imgItems = []; renderImgGrid(); });
   await page.evaluate(async (b64) => {
     const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -600,6 +600,12 @@ function ok(n, c, d) {
   ok('type 空字串的 .HEIC 也認得、轉成 .jpg，順序不被後面的 JPG 插隊',
     heicNames === 'IMG_0001.jpg,after.jpg', heicNames);
   ok('轉完的檔案是 image/jpeg', await page.evaluate(() => imgItems[0].file.type === 'image/jpeg'));
+  /* 用的必須是 heic-to，不能是 heic2any：heic2any 的 libheif 停在 2023 年，
+     iOS 18 的 24MP 實拍檔（含 HDR gain map）會直接 ERR_LIBHEIF format not supported。
+     那種檔案做不出小的合成樣本（逐一拿掉 tmap／grpl／uri／mime 都還是失敗），所以在這裡把函式庫釘住。 */
+  ok('HEIC 解碼用 heic-to（新版 libheif），沒有載入舊的 heic2any', await page.evaluate(() =>
+    typeof HeicTo === 'function' && typeof heic2any === 'undefined'
+    && !!document.querySelector('script[src$="vendor/heic-to.js"]')));
   const heicStatus = await page.evaluate(() => document.getElementById('img2pdfStatusMessage').textContent);
   ok('壞掉的 HEIC 略過並點名告知，不會整批失敗',
     /bad\.heic/.test(heicStatus) && /已加入 2 張/.test(heicStatus), heicStatus);

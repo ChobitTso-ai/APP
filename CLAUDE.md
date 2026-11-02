@@ -231,13 +231,18 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   v2.10 公衛 3 個圖騰版也換成彩色〔取自 B 系列「輔助標誌」品牌包的「01 原色 Original」SVG：
   B0 單→`nckuph-sym`、B2-1 簡橫→`nckuph-sym-h`、B2-2 簡直→`nckuph-sym-v`；同為 #1e2b4c＋#75c5ad。
   Chromium 以長邊 2000 渲染再 trim、縮到長邊 500、PNG8 32 色〕，12 個內建 logo 至此全為彩色。
-  v2.11 圖片轉 PDF 支援 HEIC／HEIF〔iPhone 預設格式，多數瀏覽器畫不出來：用 heic2any
-  〔與案例標記工具同一份，複製到 `vendor/heic2any.min.js`，1.3MB，第一次遇到 HEIC 才 `loadHeic()`〕
-  轉成 JPEG 再加入，檔名改 .jpg。**Windows 上的 Chrome 選 .heic 時 `file.type` 是空字串**，
+  v2.11 圖片轉 PDF 支援 HEIC／HEIF〔iPhone 預設格式，多數瀏覽器畫不出來：用 heic-to 1.6.5
+  〔內含 libheif 1.23.5 WASM，`vendor/heic-to.js`（IIFE 版，全域 `HeicTo`）＋授權 `heic-to.LICENSE`（LGPL-3.0），
+  3.2MB，第一次遇到 HEIC 才 `loadHeic()`〕轉成 JPEG 再加入，檔名改 .jpg。
+  **不要用 heic2any**：v2.11 首版用它（案例標記工具那份），使用者 iOS 18 實拍的 24MP HEIC
+  〔含 HDR gain map `tmap`、`grpl`〕直接 `ERR_LIBHEIF format not supported`——它的 libheif 停在 2023 年。
+  **案例標記工具的 `loadHeic()` 也是 heic2any，同樣會壞**（不在本 App 範圍，未動）。
+  v2.12 就是把 heic2any 換成 heic-to 的修正。
+  這種檔做不出小的合成樣本（逐一拿掉 tmap／grpl／uri／mime 仍失敗），所以測試直接釘住「載入的是 heic-to」。**Windows 上的 Chrome 選 .heic 時 `file.type` 是空字串**，
   所以 `isHeic()` 同時看副檔名；`accept` 也要補 `.heic,.heif`，拖放原本的 `image/` 過濾也拿掉改由
   `addImagesNow()` 判斷。轉檔要時間，`addImages()` 用 `imgAdding` promise 串成佇列，
   連續加兩批不會插隊；壞檔逐張略過並點名，不整批失敗。測試用 820 bytes 的真 HEIC〔pillow-heif 產生，
-  base64 內嵌在測試裡〕驗到 PDF 輸出像素。端到端測試共 150 項。〕
+  base64 內嵌在測試裡〕驗到 PDF 輸出像素。端到端測試共 151 項。〕
   遮蔽「套用到多頁」經評估暫緩，使用者說先不用）。
 
 ## 併入新網頁工具的標準流程

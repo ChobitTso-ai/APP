@@ -1145,7 +1145,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.11 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.12 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -2046,7 +2046,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>PDF工具箱 v2.11</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.12</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -2306,9 +2306,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.11 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.11 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.11 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.12 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.12 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.12 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2649,8 +2649,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.11 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.11 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.12 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.12 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -3962,8 +3962,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.11 by Tso KY');
-            out.setProducer('PDF工具箱 v2.11 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.12 by Tso KY');
+            out.setProducer('PDF工具箱 v2.12 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -4122,15 +4122,17 @@
 
         /* HEIC／HEIF（iPhone 預設格式）大多數瀏覽器畫不出來，先轉成 JPEG。
            Windows 上的 Chrome 常把 .heic 的 type 給成空字串，所以副檔名也要看。
-           heic2any 約 1.3MB，第一次遇到 HEIC 才載入（與案例標記工具同一份）。 */
+           解碼用 heic-to 1.6.5（內含 libheif 1.23.5 的 WASM，約 3.2MB，第一次遇到 HEIC 才載入）。
+           **不要換回 heic2any**：它停在 2023 年的舊 libheif，新 iPhone（24MP、iOS 17/18）
+           拍的 HEIC 會直接回「ERR_LIBHEIF format not supported」（使用者實拍檔踩過）。 */
         let heicReady = null;
         function loadHeic() {
             if (heicReady) return heicReady;
-            heicReady = injectScript('vendor/heic2any.min.js').then(() => {
-                if (typeof heic2any === 'undefined') {
-                    throw new Error('heic2any 載入後找不到 heic2any');
+            heicReady = injectScript('vendor/heic-to.js').then(() => {
+                if (typeof HeicTo !== 'function') {
+                    throw new Error('heic-to 載入後找不到 HeicTo');
                 }
-                return heic2any;
+                return HeicTo;
             }).catch((err) => {
                 heicReady = null;
                 throw err;
@@ -4143,9 +4145,8 @@
         }
 
         async function heicToJpeg(f) {
-            const lib = await loadHeic();
-            const out = await lib({ blob: f, toType: 'image/jpeg', quality: 0.92 });
-            const blob = Array.isArray(out) ? out[0] : out;
+            const heicTo = await loadHeic();
+            const blob = await heicTo({ blob: f, type: 'image/jpeg', quality: 0.92 });
             const name = (f.name || 'image').replace(/\.hei[cf]$/i, '') + '.jpg';
             return new File([blob], name, { type: 'image/jpeg' });
         }
@@ -4308,8 +4309,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.11 by Tso KY');
-                out.setProducer('PDF工具箱 v2.11 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.12 by Tso KY');
+                out.setProducer('PDF工具箱 v2.12 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -5689,7 +5690,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.11 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.12 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
