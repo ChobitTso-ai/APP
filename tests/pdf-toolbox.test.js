@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.12 端到端測試
+/* PDF工具箱 v2.13 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -647,6 +647,154 @@ function ok(n, c, d) {
   ok('HEIC＋JPG → 2 頁 PDF', heicPdf.n === 2, `${heicPdf.n} 頁`);
   ok('PDF 第 1 頁就是那張 HEIC（左紅右藍）', isRed(heicPdf.L) && isBlue(heicPdf.R),
     `L=${heicPdf.L} R=${heicPdf.R}`);
+
+  console.log('— 圖片格式互轉（v2.13）—');
+  await page.click('.sub-tab[data-sub="imgconv"]');
+  ok('切到「圖片轉檔」子分頁，另外兩個面板隱藏', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('imgconvPane')).display !== 'none'
+    && getComputedStyle(document.getElementById('img2pdfPane')).display === 'none'
+    && getComputedStyle(document.getElementById('pdf2imgPane')).display === 'none'));
+  ok('選檔框接受 HEIC', await page.evaluate(() =>
+    document.getElementById('icFileInput').accept.includes('.heic')));
+
+  /* 測試素材：
+     logo.png  400×300，左半不透明綠、右半完全透明（驗 JPG 補白、PNG 保留透明）
+     logo.HEIC 320×240 左紅右藍（type 空字串；與 logo.png 同名，驗輸出檔名不互蓋）
+     gps.jpg   3000×1500，手動塞一段含「GPSTEST」的 EXIF APP1（驗中繼資料不外流、驗縮小）
+     bad.png   亂碼 */
+  const addIc = (heicB64) => page.evaluate(async (b64) => {
+    const mk = async (w, h, draw, mime) => {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      draw(c.getContext('2d'), w, h);
+      return new Uint8Array(await (await new Promise(r => c.toBlob(r, mime, 0.92))).arrayBuffer());
+    };
+    const png = await mk(400, 300, (g) => { g.fillStyle = '#00aa00'; g.fillRect(0, 0, 200, 300); }, 'image/png');
+    const jpg = await mk(3000, 1500, (g, w, h) => {
+      g.fillStyle = '#ffcc00'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#6600cc'; g.fillRect(w / 2, 0, w / 2, h);
+    }, 'image/jpeg');
+    // SOI 之後插一段 APP1 Exif：TIFF 標頭＋空 IFD，後面帶可辨識字串
+    const payload = new TextEncoder().encode('Exif\0\0MM\0*\0\0\0\x08\0\0\0\0\0\0GPSTEST-23.0N-120.2E');
+    const seg = new Uint8Array(4 + payload.length);
+    seg.set([0xFF, 0xE1, (payload.length + 2) >> 8, (payload.length + 2) & 255]);
+    seg.set(payload, 4);
+    const withExif = new Uint8Array(jpg.length + seg.length);
+    withExif.set(jpg.subarray(0, 2)); withExif.set(seg, 2); withExif.set(jpg.subarray(2), 2 + seg.length);
+    const heic = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const dt = new DataTransfer();
+    dt.items.add(new File([png], 'logo.png', { type: 'image/png' }));
+    dt.items.add(new File([heic], 'logo.HEIC', { type: '' }));
+    dt.items.add(new File([withExif], 'gps.jpg', { type: 'image/jpeg' }));
+    dt.items.add(new File([new Uint8Array([9, 9, 9, 9])], 'bad.png', { type: 'image/png' }));
+    const inp = document.getElementById('icFileInput');
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change'));
+    return new TextDecoder('latin1').decode(withExif).includes('GPSTEST');
+  }, heicB64);
+  ok('測試素材確實帶有 GPS 字串（前提）', await addIc(HEIC_B64));
+  await page.evaluate(() => icAdding);
+  const icCards = await page.evaluate(() => icItems.map(x => `${x.origFmt}:${x.w}x${x.h}`).join(','));
+  ok('加入 3 張、壞檔略過；卡片標出原始格式與尺寸',
+    icCards === 'PNG:400x300,HEIC:320x240,JPG:3000x1500', icCards);
+  ok('壞檔點名告知', /bad\.png/.test(await page.evaluate(() =>
+    document.getElementById('imgconvStatusMessage').textContent)));
+  ok('格式徽章畫在卡片上', await page.evaluate(() =>
+    [...document.querySelectorAll('#icGrid .img-fmt')].map(e => e.textContent).join(',') === 'PNG,HEIC,JPG'));
+
+  // 下載 → 在頁面裡解 zip（或單檔）→ 回報每個檔案的格式、尺寸、取樣像素
+  const runIc = async (fmt, maxSide, label) => {
+    await page.selectOption('#icFormat', fmt);
+    await page.selectOption('#icMaxSide', String(maxSide));
+    const [dl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 120000 }),
+      page.click('#imgconvButton'),
+    ]);
+    const p = path.join(OUT, `imgconv-${label}`);
+    await dl.saveAs(p);
+    return page.evaluate(async (arr) => {
+      const bytes = new Uint8Array(arr);
+      const isZip = bytes[0] === 0x50 && bytes[1] === 0x4B;
+      const entries = isZip ? (await loadFflate()).unzipSync(bytes) : { single: bytes };
+      const out = {};
+      for (const [name, b] of Object.entries(entries)) {
+        const head = String.fromCharCode(...b.subarray(0, 12));
+        const text = new TextDecoder('latin1').decode(b);
+        const img = new Image();
+        img.src = URL.createObjectURL(new Blob([b]));
+        await img.decode();
+        const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+        const at = (fx, fy) => [...g.getImageData(Math.floor(c.width * fx), Math.floor(c.height * fy), 1, 1).data];
+        out[name] = {
+          kind: head.startsWith('\xFF\xD8') ? 'jpeg' : head.startsWith('\x89PNG') ? 'png'
+              : (head.startsWith('RIFF') && head.slice(8, 12) === 'WEBP') ? 'webp' : '?',
+          w: c.width, h: c.height, L: at(0.25, 0.5), R: at(0.75, 0.5),
+          gps: text.includes('GPSTEST'), exif: text.includes('Exif'),
+        };
+      }
+      return out;
+    }, Array.from(fs.readFileSync(p)));
+  };
+  const nearRGBA = (p, rgb, tol = 40) => rgb.every((v, i) => Math.abs(p[i] - v) <= tol);
+
+  ok('JPG／WebP 有品質選項，PNG 沒有（無損）', await page.evaluate(async () => {
+    const lab = document.getElementById('icQualityLabel');
+    const sel = document.getElementById('icFormat');
+    sel.value = 'png'; sel.dispatchEvent(new Event('change'));
+    const pngHidden = getComputedStyle(lab).display === 'none';
+    sel.value = 'jpeg'; sel.dispatchEvent(new Event('change'));
+    return pngHidden && getComputedStyle(lab).display !== 'none';
+  }));
+
+  const asJpg = await runIc('jpeg', 0, 'jpg.zip');
+  const jpgNames = Object.keys(asJpg).sort().join(',');
+  ok('轉 JPG：3 張打包成 zip，同名的 logo 不互蓋（logo.jpg／logo_2.jpg）',
+    jpgNames === 'gps.jpg,logo.jpg,logo_2.jpg', jpgNames);
+  ok('轉出來的真的都是 JPEG', Object.values(asJpg).every(x => x.kind === 'jpeg'));
+  ok('PNG 轉 JPG：透明處補白、不變黑', nearRGBA(asJpg['logo.jpg'].L, [0, 170, 0, 255]) && nearRGBA(asJpg['logo.jpg'].R, [255, 255, 255, 255], 6),
+    `L=${asJpg['logo.jpg'].L} R=${asJpg['logo.jpg'].R}`);
+  ok('HEIC 轉 JPG：尺寸與顏色正確', asJpg['logo_2.jpg'].w === 320 && asJpg['logo_2.jpg'].h === 240
+    && isRed(asJpg['logo_2.jpg'].L) && isBlue(asJpg['logo_2.jpg'].R),
+    `${asJpg['logo_2.jpg'].w}×${asJpg['logo_2.jpg'].h} L=${asJpg['logo_2.jpg'].L} R=${asJpg['logo_2.jpg'].R}`);
+  ok('維持原尺寸時不縮放（3000×1500）', asJpg['gps.jpg'].w === 3000 && asJpg['gps.jpg'].h === 1500,
+    `${asJpg['gps.jpg'].w}×${asJpg['gps.jpg'].h}`);
+  ok('★ 原圖的 EXIF／GPS 不會跟著出去', !asJpg['gps.jpg'].gps && !asJpg['gps.jpg'].exif);
+
+  const asPng = await runIc('png', 1920, 'png.zip');
+  ok('轉 PNG：都是 PNG', Object.values(asPng).every(x => x.kind === 'png'),
+    Object.entries(asPng).map(([k, v]) => `${k}:${v.kind}`).join(','));
+  ok('PNG 保留透明（右半 alpha = 0）', asPng['logo.png'].R[3] === 0 && nearRGBA(asPng['logo.png'].L, [0, 170, 0, 255], 2),
+    `L=${asPng['logo.png'].L} R=${asPng['logo.png'].R}`);
+  ok('長邊上限 1920：3000×1500 → 1920×960，等比例', asPng['gps.png'].w === 1920 && asPng['gps.png'].h === 960,
+    `${asPng['gps.png'].w}×${asPng['gps.png'].h}`);
+  ok('只縮不放：320×240 的 HEIC 維持原尺寸', asPng['logo_2.png'].w === 320 && asPng['logo_2.png'].h === 240);
+  ok('縮小後顏色仍正確', nearRGBA(asPng['gps.png'].L, [255, 204, 0, 255]) && nearRGBA(asPng['gps.png'].R, [102, 0, 204, 255]),
+    `L=${asPng['gps.png'].L} R=${asPng['gps.png'].R}`);
+
+  if (await page.evaluate(() => !!document.querySelector('#icFormat option[value="webp"]'))) {
+    const asWebp = await runIc('webp', 0, 'webp.zip');
+    ok('轉 WebP：真的是 WebP（RIFF…WEBP），不是被瀏覽器偷換成 PNG',
+      Object.values(asWebp).every(x => x.kind === 'webp'),
+      Object.entries(asWebp).map(([k, v]) => `${k}:${v.kind}`).join(','));
+    ok('WebP 也保留透明', asWebp['logo.webp'].R[3] === 0, `R=${asWebp['logo.webp'].R}`);
+  } else {
+    ok('這個瀏覽器不能編 WebP，選項已移除', true);
+  }
+
+  // 移除到剩一張：單張直接下載，不包 zip
+  await page.evaluate(() => {
+    document.querySelectorAll('#icGrid .img-remove')[0].click();
+    document.querySelectorAll('#icGrid .img-remove')[0].click();
+  });
+  ok('移除卡片後只剩 1 張', await page.evaluate(() => icItems.length === 1 && icItems[0].name === 'gps.jpg'));
+  const single = await runIc('png', 1280, 'single');
+  ok('單張直接下載成圖片檔（不包 zip），尺寸 1280×640',
+    Object.keys(single).join() === 'single' && single.single.kind === 'png'
+    && single.single.w === 1280 && single.single.h === 640,
+    JSON.stringify({ k: single.single.kind, w: single.single.w, h: single.single.h }));
+  await page.evaluate(() => clearImgConv());
+  ok('全部清除後設定區收起來', await page.evaluate(() =>
+    icItems.length === 0 && getComputedStyle(document.getElementById('imgconvControls')).display === 'none'));
 
   console.log('— PDF 轉圖片 —');
   await page.click('.sub-tab[data-sub="pdf2img"]');

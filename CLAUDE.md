@@ -244,6 +244,14 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   案例標記工具的 `loadHeic()` 原本也是 heic2any，已在案例標記工具 v2.7 一併換掉。
   v2.12 就是把 heic2any 換成 heic-to 的修正。
   這種檔做不出小的合成樣本（逐一拿掉 tmap／grpl／uri／mime 仍失敗），所以測試直接釘住「載入的是 heic-to」。**Windows 上的 Chrome 選 .heic 時 `file.type` 是空字串**，
+  v2.13「轉換」分頁加第三個子分頁「🔁 圖片轉檔」〔每張各自轉成一個檔，跟「圖片轉 PDF」合成一份不同〕：
+  讀 JPG／PNG／WebP／GIF／BMP／HEIC，轉出 JPG／PNG／WebP，品質（PNG 無損故隱藏）與長邊上限〔只縮不放〕可選；
+  單張直接下載、多張用 fflate 打包 zip〔store〕，同名輸出加 `_2`（`uniqueOutName`）避免 zip 互蓋。
+  **WebP 編碼要先實測**（`canEncodeWebp()`）：Safari 舊版的 `toBlob('image/webp')` 會默默改給 PNG，
+  副檔名 .webp 內容卻是 PNG，不支援就把選項拿掉。轉 JPG 先鋪白底，否則透明處變黑。
+  HEIC 一加入就先轉成 0.95 JPEG 當中繼〔要能預覽、也不能把每張 24MP 點陣圖約 100MB 都留在記憶體〕。
+  經 canvas 重新編碼所以 EXIF／GPS 不外流——測試手動在 JPEG 塞一段含 GPS 字串的 APP1，驗輸出位元組裡找不到。
+  端到端測試共 174 項。
   所以 `isHeic()` 同時看副檔名；`accept` 也要補 `.heic,.heif`，拖放原本的 `image/` 過濾也拿掉改由
   `addImagesNow()` 判斷。轉檔要時間，`addImages()` 用 `imgAdding` promise 串成佇列，
   連續加兩批不會插隊；壞檔逐張略過並點名，不整批失敗。測試用 820 bytes 的真 HEIC〔pillow-heif 產生，
