@@ -12,8 +12,8 @@
   :root{
     --grn:#018C37; --grn-d:#016b2a; --orange:#E67714;
     --ink:#232b26; --muted:#6d7a71; --faint:#8c8578;
-    --paper:#faf8f4; --card:#ffffff;
-    --line:#e2ded4; --line2:#d6d2c8; --tint:#f3f1ea;
+    --paper:#f2efe7; --card:#fbf9f3;
+    --line:#ded9cd; --line2:#cfc9ba; --tint:#eae6db;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{
@@ -83,7 +83,7 @@
 
   /* ---- 上傳區 ---- */
   .drop{border:1px dashed var(--line2);border-radius:4px;padding:34px 20px;
-    text-align:center;cursor:pointer;transition:.16s;background:#fcfbf8}
+    text-align:center;cursor:pointer;transition:.16s;background:#fcfaf5}
   .drop:hover,.drop.over{border-color:var(--grn);background:#f4faf6}
   .drop .big{font-size:2rem;margin-bottom:8px}
   .drop .t{font-size:.98rem;margin-bottom:4px;font-weight:700}
@@ -322,7 +322,7 @@
   </section>
 
   <div class="foot">
-    牙髓病科專科 PPT 製作器<span class="ver">v1.5</span><br>
+    牙髓病科專科 PPT 製作器<span class="ver">v1.6</span><br>
     <a class="foot-soc" href="https://www.aeroc.org.tw/" target="_blank" rel="noopener">
       <img src="assets/aeroc-logo.png" alt="中華民國牙髓病學會"><span>中華民國牙髓病學會</span>
     </a><br>
@@ -334,7 +334,7 @@
 <script src="vendor/fflate.min.js"></script>
 <script>
 /* =======================================================================
-   牙髓病科專科 PPT 製作器 v1.5
+   牙髓病科專科 PPT 製作器 v1.6
    作法：把學會範本 .pptx 當底稿，複製對應投影片、清除白線/箭頭/標註，
    把使用者照片依編號套進影像版面配置區。全程瀏覽器內處理。
    ======================================================================= */
@@ -871,7 +871,10 @@ function renderReview(cases){
   var wrap=$('caseList');wrap.innerHTML='';
   cases.forEach(function(c){
     var box=document.createElement('div');box.className='case';
-    var cnt=0;STAGES.forEach(function(st){cnt+=c[st].length;});if(c.cmpLeft)cnt++;if(c.cmpRight)cnt++;
+    var cnt=0,pg=0;STAGES.forEach(function(st){cnt+=c[st].length;pg+=c[st].length;});
+    if(c.cmpLeft)cnt++;if(c.cmpRight)cnt++;
+    /* 90／91 合用同一張比較頁，所以頁數不是張數 +2（封面＋病例頁） */
+    if(c.cmpLeft||c.cmpRight)pg++;pg+=2;
     var rows='';
     STAGES.forEach(function(st){
       if(!c[st].length)return;
@@ -887,7 +890,7 @@ function renderReview(cases){
     var warn='';
     if(c.reserved.length)warn+='<div class="warn">⚠ 7x／8x 保留區（暫不製作）：'+c.reserved.map(esc).join('、')+'</div>';
     if(c.unknown.length)warn+='<div class="warn">⚠ 無法辨識編號（略過）：'+c.unknown.map(esc).join('、')+'</div>';
-    box.innerHTML='<div class="h"><span class="nm">📁 '+esc(c.name)+'</span><span class="cnt">'+cnt+' 張影像 → '+(cnt+2)+' 頁</span></div>'+
+    box.innerHTML='<div class="h"><span class="nm">📁 '+esc(c.name)+'</span><span class="cnt">'+cnt+' 張影像 → '+pg+' 頁</span></div>'+
       '<div class="body">'+rows+warn+'</div>';
     wrap.appendChild(box);
   });
