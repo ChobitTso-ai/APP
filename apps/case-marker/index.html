@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v2.6
+  案例標記工具 v2.7
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v2.6</title>
+<title>案例標記工具 v2.7</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -348,7 +348,7 @@
 <body>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.6</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.7</span></div>
   <nav>
     <button id="tabLib" class="on">照片庫</button>
     <button id="tabEdit">標記</button>
@@ -562,7 +562,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v2.6　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v2.7　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -814,7 +814,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v2.6
+   案例標記工具 v2.7
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -1119,13 +1119,19 @@ tabs.edit.onclick = function(){
 
 /* ───────── 載入照片（含 HEIC 轉檔） ───────── */
 var heicReady = null;
+/* HEIC 解碼用 heic-to（內含 libheif 1.23.5 WASM，約 3.2MB，第一次遇到 HEIC 才載入）。
+   不要換回 heic2any：它的 libheif 停在 2023 年，iOS 18 拍的 24MP HEIC（含 HDR gain map）
+   會直接 ERR_LIBHEIF format not supported（PDF工具箱 v2.12 用使用者實拍檔踩過）。 */
 function loadHeic(){
-  if(window.heic2any) return Promise.resolve();
+  if(typeof window.HeicTo === "function") return Promise.resolve();
   if(heicReady) return heicReady;
   heicReady = new Promise(function(res, rej){
     var sc = document.createElement("script");
-    sc.src = "vendor/heic2any.min.js";
-    sc.onload = function(){ res(); };
+    sc.src = "vendor/heic-to.js";
+    sc.onload = function(){
+      if(typeof window.HeicTo === "function") res();
+      else { heicReady=null; rej(new Error("heic lib")); }
+    };
     sc.onerror = function(){ heicReady=null; rej(new Error("heic lib")); };
     document.head.appendChild(sc);
   });
@@ -1152,9 +1158,9 @@ function addFiles(files){
     };
     if(isHeic(f)){
       loadHeic().then(function(){
-        return window.heic2any({ blob:f, toType:"image/jpeg", quality:0.92 });
+        return window.HeicTo({ blob:f, type:"image/jpeg", quality:0.92 });
       }).then(function(out){
-        proceed(Array.isArray(out) ? out[0] : out);
+        proceed(out);
       }).catch(function(){
         alert("無法轉換「"+f.name+"」，請先用相簿匯出成 JPG 再加入。");
         next();

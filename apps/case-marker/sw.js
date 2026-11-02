@@ -1,6 +1,6 @@
 /* 案例標記工具 Service Worker
    策略：network-first（線上永遠拿最新版，離線才回退快取），確保部署即時生效。 */
-var CACHE = "cm-v2_6";
+var CACHE = "cm-v2_7";
 var CORE = [
   "./",
   "./index.html",
@@ -8,7 +8,7 @@ var CORE = [
   "./icon-192.png",
   "./icon-512.png",
   "./apple-touch-icon.png",
-  "./vendor/heic2any.min.js",
+  "./vendor/heic-to.js",
   "./vendor/fflate.min.js",
   "./vendor/pptxgen.bundle.js"
 ];

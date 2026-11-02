@@ -570,9 +570,9 @@ function ok(n, c, d) {
   ok('3 張圖片 → 3 頁 PDF', imgPdfPages === 3, `${fs.statSync(imgPdfPath).size} bytes`);
 
   console.log('— HEIC 轉檔（v2.11）—');
-  /* 320×240、左半紅右半藍的真 HEIC（pillow-heif／libheif 產生，820 bytes）。
+  /* 320×240、左半紅右半藍的真 HEIC（pillow-heif／libheif 產生，820 bytes，tests/fixtures/sample.heic）。
      type 刻意給空字串：Windows 上的 Chrome 選 .heic 時就是這樣，只能靠副檔名認。 */
-  const HEIC_B64 = 'AAAAHGZ0eXBoZWljAAAAAG1pZjFoZWljbWlhZgAAAVZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAABegABAAAAAAAAAboAAAAjaWluZgAAAAAAAQAAABVpbmZlAgAAAAABAABodmMxAAAAAA5waXRtAAAAAAABAAAA1mlwcnAAAAC3aXBjbwAAAHhodmNDAQNwAAAAkAAAAAAAPPAA/P34+AAADwNgAAEAGEABDAH//wNwAAADAJAAAAMAAAMAPLoCQGEAAQArQgEBA3AAAAMAkAAAAwAAAwA8oAoIDxZbqSSmubgIaDAgAAADAyAAAAMAIWIAAQAHRAHBcrBiQAAAABNjb2xybmNseAABAA0ABoAAAAAUaXNwZQAAAAAAAAFAAAAA8AAAABBwaXhpAAAAAAMICAgAAAAXaXBtYQAAAAAAAAABAAEEgQIDBAAAAcJtZGF0AAABtigBrwYyHa9+kFr8/Tf4lgf//7KMeh/qrfqrxCY+7ydWrzbib7D2/0Oz33+b7d//5aIX7MF/z0AhnTaYAACDgBluBZzrAAAEI9gi88Hv6dfP1/ydYKte42sPf/a0Ki4qrU4Sni/3Y/Kze+N7f1i6TP9Zg1CAnzbBqWP6B/m8jNrowLaccQfzN5f3eq45pab88xW4JgDIhx1lb+o8y7ZA/icGy/TayUKezIpG1dL//5/I4AAAAwCpgAAAAwDOAAIKckzS8TPp18/X/KOiZb+Xpyz/vu0nQyq9OZ8K/8dgo9NhCMED2Hxf+OwUemwhBydV37YMuTIk7n5sj749fsPqUKGrAu1ib88xW4JgDIinTK39R5l2yB/E4Nl+m1koU9mRYsTtH//rJEgAAAMBUwAAAwACsAAAGaZ5QR34oT/rG++3XKZV09OWf992k6GVXpzPhX/jsFHpsIRhkAXSZ/rMGoQE+bYNSx/QP83kZtdKpwPOIP5m8v7vVcc0tN+eYrcEwBkRsBPd+bAUj+Q/x8x3/BdYyIB9Hx0LuHzKSriEjSozdcCbVNx/70AVSbg3s8HqAAADAAAFHA==';
+  const HEIC_B64 = fs.readFileSync(path.join(__dirname, 'fixtures', 'sample.heic')).toString('base64');
   ok('選檔框接受 .heic／.heif', await page.evaluate(() => {
     const a = document.getElementById('imgFileInput').accept;
     return a.includes('.heic') && a.includes('.heif');
