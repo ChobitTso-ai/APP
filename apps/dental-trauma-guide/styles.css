@@ -56,6 +56,17 @@ body{
 .small{font-size:.82rem}
 .center{text-align:center}
 
+/* ===== 院徽列（成大醫院＋口腔醫學部）=====
+   放在頂列「上方」、不黏頂，捲動就讓開。不放進頂列：手機頂列要塞返回、標題與
+   三顆按鈕，院徽放進去標題會被擠到只剩一個字（375px 有返回鍵時實測只剩 27px）。 */
+.brandbar{
+  display:flex; align-items:center; gap:6px;
+  padding:8px 12px 0; padding-top:calc(8px + env(safe-area-inset-top));
+  background:var(--surface);
+}
+.brandbar img{width:30px;height:30px;display:block;flex:none}
+.brandbar span{margin-left:4px;font-size:.78rem;font-weight:600;line-height:1.35;color:var(--text-2)}
+
 /* ===== 頂列 ===== */
 .topbar{
   position:sticky; top:0; z-index:20;
@@ -71,6 +82,7 @@ body{
 .topbar-title small{display:block;color:var(--muted);font-size:.72rem}
 /* 手機上頂列要塞下返回、標題與三顆按鈕，副標讓位 */
 @media(max-width:520px){ .topbar-title small{display:none} }
+
 .icon-btn{
   background:var(--surface);border:1px solid var(--line-2);color:var(--text);
   font-size:1.1rem;line-height:1;cursor:pointer;flex:none;

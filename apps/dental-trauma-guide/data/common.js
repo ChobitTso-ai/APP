@@ -14,6 +14,11 @@ const UI = {
      同方向走，名稱再一樣就容易被誤認成官方版（2026-09-30 Dr.Tso 決定）。 */
   appName:      { zh: '牙外傷處置指南',           en: 'NCKUH Dental Trauma Guide' },
   appTagline:   { zh: '依 IADT 2020 ＋ AAE 2026 指引', en: 'IADT 2020 + AAE 2026 guidelines' },
+  // 頁首院徽列：兩個院徽的替代文字、單位名稱
+  logoNckuh:    { zh: '國立成功大學醫學院附設醫院', en: 'National Cheng Kung University Hospital' },
+  logoStoma:    { zh: '成大醫院口腔醫學部',         en: 'Department of Stomatology, NCKUH' },
+  brandLine:    { zh: '國立成功大學醫學院附設醫院　口腔醫學部',
+                  en: 'NCKU Hospital · Department of Stomatology' },
 
   /* 右上角兩顆 */
   navHints:     { zh: '提示',                      en: 'Hints' },

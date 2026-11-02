@@ -105,6 +105,24 @@ async function reset(p){
     ok('★ 已移除三張模式卡片', (await p.$$('.mode-card')).length === 0);
 
     ok('第一題底下掛著參考資料', await p.isVisible('#refBlocks'));
+
+    // 院徽列：成大醫院院徽＋口腔醫學部徽，放在頂列上方
+    await p.waitForFunction(() => [...document.querySelectorAll('.brandbar img')].every(i => i.complete));
+    const brand = await p.evaluate(() => {
+      const imgs = [...document.querySelectorAll('.brandbar img')];
+      const bar = document.querySelector('.brandbar').getBoundingClientRect();
+      const top = document.querySelector('.topbar').getBoundingClientRect();
+      return { srcs: imgs.map(i => i.getAttribute('src').split('/').pop()), loaded: imgs.every(i => i.naturalWidth > 0),
+               alts: imgs.map(i => i.alt), text: document.getElementById('txtBrand').textContent,
+               above: bar.bottom <= top.top + 1, inTopbar: document.querySelectorAll('.topbar img').length };
+    });
+    ok('★ 院徽列有成大醫院院徽與口腔醫學部徽，兩張都載得到',
+      brand.srcs.join() === 'nckuh-seal.png,stomatology.png' && brand.loaded, brand.srcs.join(' '));
+    ok('院徽有替代文字、單位名稱寫全名',
+      brand.alts[0] === '國立成功大學醫學院附設醫院' && brand.alts[1] === '成大醫院口腔醫學部' &&
+      /國立成功大學醫學院附設醫院/.test(brand.text) && /口腔醫學部/.test(brand.text), brand.text);
+    ok('★ 院徽在頂列上方、不放進頂列（手機頂列放進去標題會被擠到只剩一個字）',
+      brand.above && brand.inTopbar === 0);
     const names = await p.$$eval('#storageRow .media b', ns => ns.map(n => n.textContent.trim()));
     ok('保存液依 IADT 偏好順序，牛奶排第一',
       names[0].startsWith('牛奶') && names[1].startsWith('HBSS') &&
@@ -183,6 +201,11 @@ async function reset(p){
       (await p.getAttribute('#btnBrowse', 'title')) === 'Browse by diagnosis');
     ok('英文的保存液第一項是 Milk',
       (await p.textContent('#storageRow .media b')).trim().startsWith('Milk'));
+    const brandEn = await p.evaluate(() => ({ t: document.getElementById('txtBrand').textContent,
+      a: document.getElementById('logoNckuh').alt, b: document.getElementById('logoStoma').alt }));
+    ok('★ 院徽列的單位名稱與兩個院徽的替代文字都切成英文',
+      /Stomatology/.test(brandEn.t) && /Cheng Kung University Hospital/.test(brandEn.a) && /Stomatology/.test(brandEn.b),
+      brandEn.t);
     ok('語言偏好存進 localStorage',
       (await p.evaluate(() => localStorage.getItem('dtg_lang'))) === 'en');
 
@@ -1153,6 +1176,14 @@ async function reset(p){
     await p.click('#browseList .dx-card >> nth=0');
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('開到恆牙內縮性脫位', (await p.textContent('#dxNameZh')) === '內縮性脫位');
+    // 院徽列不黏頂：捲下去後頂列仍黏在最上面，院徽列讓開
+    await p.evaluate(() => window.scrollTo(0, 800));
+    await p.waitForTimeout(150);
+    const stuck = await p.evaluate(() => ({ top: Math.round(document.querySelector('.topbar').getBoundingClientRect().top),
+      brand: Math.round(document.querySelector('.brandbar').getBoundingClientRect().bottom) }));
+    ok('★ 捲動後頂列仍黏在最上面、院徽列捲走（不多佔螢幕）', stuck.top === 0 && stuck.brand <= 0,
+      '頂列 ' + stuck.top + '／院徽列底 ' + stuck.brand);
+    await p.evaluate(() => window.scrollTo(0, 0));
 
     const clin = await p.textContent('#paneClinical');
     ok('★ 手術復位後固定 4 週（不是 2 週）',
