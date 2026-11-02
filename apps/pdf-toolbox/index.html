@@ -1069,6 +1069,17 @@
             border-radius: 4px;
         }
 
+        .img-card .img-result {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #11998e;
+            margin-top: 3px;
+        }
+
+        .img-card .img-result.warn {
+            color: #b26a00;
+        }
+
         .img-card .img-name {
             font-size: 0.72rem;
             color: #666;
@@ -1162,7 +1173,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.13 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.14 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1466,6 +1477,7 @@
                 <div class="sub-tab active" data-sub="img2pdf">🖼️ 圖片轉 PDF</div>
                 <div class="sub-tab" data-sub="pdf2img">📸 PDF 轉圖片</div>
                 <div class="sub-tab" data-sub="imgconv">🔁 圖片轉檔</div>
+                <div class="sub-tab" data-sub="imgzip">🗜️ 圖片壓縮</div>
             </div>
 
             <!-- 圖片轉 PDF -->
@@ -1693,6 +1705,85 @@
                         <div class="hint-text progress-note" id="imgconvProgressNote" hidden></div>
 
                     <div class="status-message" id="imgconvStatusMessage"></div>
+                </div>
+            </div>
+
+            <!-- 圖片壓縮 -->
+            <div id="imgzipPane" data-pane="imgzip" hidden>
+                <div class="info-box">
+                    <h4>💡 把圖片壓到指定大小以內</h4>
+                    <p>傳 LINE、Email 附件、上傳學會或醫院系統常有大小限制（例如每張 2MB），選好上限，每張都會壓到那以下。</p>
+                    <ul>
+                        <li>🎯 先降低畫質找「剛好壓得進去」的最高品質，畫質再低也壓不進去才縮小尺寸</li>
+                        <li>✨ 有透明背景的圖（例如 logo）會保留透明<span id="izWebpNote">，自動改存 WebP</span></li>
+                        <li>📱 iPhone 的 HEIC 照片也能直接丟進來</li>
+                        <li>🔒 壓縮時會重新編碼，照片的 EXIF／GPS 位置資訊不會跟著出去</li>
+                    </ul>
+                </div>
+
+                <div class="upload-area" id="izUploadArea">
+                    <div class="upload-icon">🗜️</div>
+                    <div class="upload-text">點擊選擇圖片或拖拽到此處</div>
+                    <div class="upload-hint">可一次選擇多張，每張各自壓縮</div>
+                    <button class="upload-button" onclick="document.getElementById('izFileInput').click()">
+                        🖼️ 選擇圖片（可多選）
+                    </button>
+                    <input type="file" id="izFileInput" class="file-input" multiple accept="image/*,.heic,.heif" />
+                </div>
+
+                <div class="img-grid" id="izGrid"></div>
+
+                <div id="imgzipControls" hidden>
+                    <div class="option-box">
+                        <h4>⚙️ 壓縮設定</h4>
+                        <div class="option-row">
+                            <label>
+                                每張不超過
+                                <select id="izTarget">
+                                    <option value="102400">100 KB</option>
+                                    <option value="204800">200 KB</option>
+                                    <option value="307200">300 KB</option>
+                                    <option value="512000" selected>500 KB</option>
+                                    <option value="1048576">1 MB</option>
+                                    <option value="2097152">2 MB</option>
+                                    <option value="5242880">5 MB</option>
+                                </select>
+                            </label>
+                            <label>
+                                尺寸
+                                <select id="izMaxSide">
+                                    <option value="0" selected>自動（必要時才縮）</option>
+                                    <option value="4096">長邊最多 4096</option>
+                                    <option value="2560">長邊最多 2560</option>
+                                    <option value="1920">長邊最多 1920（Full HD）</option>
+                                    <option value="1280">長邊最多 1280</option>
+                                </select>
+                            </label>
+                            <label>
+                                存成
+                                <select id="izFormat">
+                                    <option value="auto" selected>自動（照片 JPG、透明圖保留透明）</option>
+                                    <option value="jpeg">一律 JPG</option>
+                                    <option value="webp">一律 WebP</option>
+                                </select>
+                            </label>
+                        </div>
+                        <p class="hint-text">原本就比上限小的圖會盡量壓得比原檔小；壓不贏時（例如 HEIC 本來就比 JPG 省空間）卡片會標「原檔已低於上限」。上限訂得很小（例如 100 KB）時，大張照片會被縮小尺寸。</p>
+                        <div class="option-row" style="margin-top: 14px;">
+                            <button class="action-button remove-button" onclick="clearImgZip()">🗑️ 全部清除</button>
+                        </div>
+                    </div>
+
+                    <button class="merge-button" id="imgzipButton" onclick="compressImages()">
+                        🗜️ 開始壓縮
+                    </button>
+
+                    <div class="progress-bar" id="imgzipProgressBar">
+                        <div class="progress-fill" id="imgzipProgressFill"></div>
+                    </div>
+                        <div class="hint-text progress-note" id="imgzipProgressNote" hidden></div>
+
+                    <div class="status-message" id="imgzipStatusMessage"></div>
                 </div>
             </div>
         </div>
@@ -2140,7 +2231,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>PDF工具箱 v2.13</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.14</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -2400,9 +2491,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.13 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.13 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.13 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.14 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.14 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.14 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2743,8 +2834,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.13 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.13 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.14 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.14 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -4056,8 +4147,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.13 by Tso KY');
-            out.setProducer('PDF工具箱 v2.13 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.14 by Tso KY');
+            out.setProducer('PDF工具箱 v2.14 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -4403,8 +4494,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.13 by Tso KY');
-                out.setProducer('PDF工具箱 v2.13 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.14 by Tso KY');
+                out.setProducer('PDF工具箱 v2.14 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -4585,8 +4676,6 @@
            HEIC 一加入就先轉成品質 0.95 的 JPEG 當中繼檔：要能預覽、也不能把每張 24MP 的
            點陣圖（約 100MB）都留在記憶體裡；HEIC 本身就是有損格式，0.95 的再壓一次看不出差別。 */
 
-        let icItems = [];   // { id, file, name, origFmt, origSize, url, w, h }
-        let icIdSeq = 0;
 
         const IC_FORMATS = {
             jpeg: { mime: 'image/jpeg', ext: 'jpg', lossy: true },
@@ -4616,18 +4705,17 @@
             return ext ? ext.toUpperCase() : '圖片';
         }
 
-        function setupImgConvListeners() {
-            const uploadArea = document.getElementById('icUploadArea');
-            const fileInput = document.getElementById('icFileInput');
-
-            if (!canEncodeWebp()) {
-                document.querySelector('#icFormat option[value="webp"]').remove();
-                document.getElementById('icWebpNote').hidden = true;
-                document.querySelectorAll('.ic-webp-only').forEach(el => { el.hidden = true; });
-            }
+        /* 「圖片轉檔」與「圖片壓縮」共用的圖片清單：選檔／拖放、HEIC 解碼、卡片、移除與清除。
+           items 一律原地增刪（push／splice／length = 0），外面拿到的參照才會一直是最新的。
+           cfg.resultLine(item) 可回傳卡片最下面多一行的 HTML（例如壓縮結果）。 */
+        function makeImageList(cfg) {
+            const list = { items: [], adding: Promise.resolve(), seq: 0 };
+            const uploadArea = document.getElementById(cfg.uploadAreaId);
+            const fileInput = document.getElementById(cfg.inputId);
+            const grid = document.getElementById(cfg.gridId);
 
             fileInput.addEventListener('change', (e) => {
-                addImgConv(Array.from(e.target.files));
+                list.add(Array.from(e.target.files));
                 e.target.value = '';
             });
             uploadArea.addEventListener('dragover', (e) => {
@@ -4641,22 +4729,126 @@
             uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
                 uploadArea.classList.remove('dragover');
-                addImgConv(Array.from(e.dataTransfer.files));
+                list.add(Array.from(e.dataTransfer.files));
             });
             uploadArea.addEventListener('click', (e) => {
                 if (e.target.tagName !== 'BUTTON') fileInput.click();
             });
-
-            document.getElementById('icGrid').addEventListener('click', (e) => {
+            grid.addEventListener('click', (e) => {
                 const btn = e.target.closest('.img-remove');
                 if (!btn) return;
-                const id = Number(btn.dataset.id);
-                const item = icItems.find(x => x.id === id);
-                if (item) URL.revokeObjectURL(item.url);
-                icItems = icItems.filter(x => x.id !== id);
-                renderImgConvGrid();
+                const i = list.items.findIndex(x => x.id === Number(btn.dataset.id));
+                if (i < 0) return;
+                URL.revokeObjectURL(list.items[i].url);
+                list.items.splice(i, 1);
+                list.render();
             });
 
+            // 與「圖片轉 PDF」相同：HEIC 轉檔要時間，排隊處理以免後一批插隊
+            list.add = (files) => {
+                list.adding = list.adding.then(() => addNow(files));
+                return list.adding;
+            };
+
+            async function addNow(files) {
+                const imgs = files.filter(f => (f.type || '').startsWith('image/') || isHeic(f));
+                if (!imgs.length) {
+                    showStatus('請選擇圖片檔案', 'error', cfg.status);
+                    return;
+                }
+                const failed = [];
+                let added = 0;
+                for (let k = 0; k < imgs.length; k++) {
+                    const orig = imgs[k];
+                    let f = orig;
+                    if (isHeic(orig)) {
+                        showStatus(`HEIC 解碼中…（${k + 1}/${imgs.length}）`, 'info', cfg.status);
+                        try {
+                            f = await heicToJpeg(orig, 0.95);
+                        } catch (err) {
+                            console.error(`HEIC 解碼失敗 ${orig.name}:`, err);
+                            failed.push(orig.name);
+                            continue;
+                        }
+                    }
+                    const url = URL.createObjectURL(f);
+                    let img;
+                    try {
+                        img = await loadImageElement(url);
+                        if (!img.naturalWidth || !img.naturalHeight) throw new Error('沒有尺寸');
+                    } catch (err) {
+                        URL.revokeObjectURL(url);
+                        failed.push(orig.name);
+                        continue;
+                    }
+                    list.items.push({
+                        id: ++list.seq,
+                        file: f,
+                        name: orig.name,
+                        origFmt: imageFormatLabel(orig),
+                        origSize: orig.size,
+                        url,
+                        w: img.naturalWidth,
+                        h: img.naturalHeight,
+                        result: null,
+                    });
+                    added++;
+                    list.render();
+                }
+                list.render();
+                if (failed.length) {
+                    showStatus(`已加入 ${added} 張；${failed.length} 張無法讀取（${failed.join('、')}），這個瀏覽器可能不支援該格式`,
+                        'error', cfg.status);
+                } else {
+                    showStatus(`已加入 ${added} 張圖片`, 'success', cfg.status);
+                }
+            }
+
+            list.render = () => {
+                grid.innerHTML = '';
+                list.items.forEach((item) => {
+                    const card = document.createElement('div');
+                    card.className = 'img-card';
+                    card.dataset.id = String(item.id);
+                    const extra = cfg.resultLine ? cfg.resultLine(item) : '';
+                    card.innerHTML = `
+                        <span class="img-fmt">${escapeHtmlText(item.origFmt)}</span>
+                        <button class="img-remove" data-id="${item.id}" title="移除">✕</button>
+                        <img src="${item.url}" alt="" draggable="false" style="cursor: default;">
+                        <div class="img-name">${escapeHtmlText(item.name)}</div>
+                        <div class="img-meta">${item.w}×${item.h} · ${formatFileSize(item.origSize)}</div>
+                        ${extra}
+                    `;
+                    grid.appendChild(card);
+                });
+                document.getElementById(cfg.controlsId).hidden = (list.items.length === 0);
+            };
+
+            list.clear = () => {
+                list.items.forEach(x => URL.revokeObjectURL(x.url));
+                list.items.length = 0;
+                list.render();
+                showStatus('已清除', 'success', cfg.status);
+            };
+
+            return list;
+        }
+
+        let icList = null;   // 圖片轉檔的清單（makeImageList）
+
+        function setupImgConvListeners() {
+            if (!canEncodeWebp()) {
+                document.querySelector('#icFormat option[value="webp"]').remove();
+                document.getElementById('icWebpNote').hidden = true;
+                document.querySelectorAll('.ic-webp-only').forEach(el => { el.hidden = true; });
+            }
+            icList = makeImageList({
+                status: 'imgconv',
+                uploadAreaId: 'icUploadArea',
+                inputId: 'icFileInput',
+                gridId: 'icGrid',
+                controlsId: 'imgconvControls',
+            });
             document.getElementById('icFormat').addEventListener('change', updateImgConvControls);
             updateImgConvControls();
         }
@@ -4667,91 +4859,8 @@
             document.getElementById('icQualityLabel').hidden = !fmt.lossy;
         }
 
-        let icAdding = Promise.resolve();
-        function addImgConv(files) {
-            // 與「圖片轉 PDF」相同：HEIC 轉檔要時間，排隊處理以免後一批插隊
-            icAdding = icAdding.then(() => addImgConvNow(files));
-            return icAdding;
-        }
-
-        async function addImgConvNow(files) {
-            const imgs = files.filter(f => (f.type || '').startsWith('image/') || isHeic(f));
-            if (!imgs.length) {
-                showStatus('請選擇圖片檔案', 'error', 'imgconv');
-                return;
-            }
-            const failed = [];
-            let added = 0;
-            for (let k = 0; k < imgs.length; k++) {
-                const orig = imgs[k];
-                let f = orig;
-                if (isHeic(orig)) {
-                    showStatus(`HEIC 解碼中…（${k + 1}/${imgs.length}）`, 'info', 'imgconv');
-                    try {
-                        f = await heicToJpeg(orig, 0.95);
-                    } catch (err) {
-                        console.error(`HEIC 解碼失敗 ${orig.name}:`, err);
-                        failed.push(orig.name);
-                        continue;
-                    }
-                }
-                const url = URL.createObjectURL(f);
-                let img;
-                try {
-                    img = await loadImageElement(url);
-                    if (!img.naturalWidth || !img.naturalHeight) throw new Error('沒有尺寸');
-                } catch (err) {
-                    URL.revokeObjectURL(url);
-                    failed.push(orig.name);
-                    continue;
-                }
-                icItems.push({
-                    id: ++icIdSeq,
-                    file: f,
-                    name: orig.name,
-                    origFmt: imageFormatLabel(orig),
-                    origSize: orig.size,
-                    url,
-                    w: img.naturalWidth,
-                    h: img.naturalHeight,
-                });
-                added++;
-                renderImgConvGrid();
-            }
-            renderImgConvGrid();
-            if (failed.length) {
-                showStatus(`已加入 ${added} 張；${failed.length} 張無法讀取（${failed.join('、')}），這個瀏覽器可能不支援該格式`,
-                    'error', 'imgconv');
-            } else {
-                showStatus(`已加入 ${added} 張圖片`, 'success', 'imgconv');
-            }
-        }
-
-        function renderImgConvGrid() {
-            const grid = document.getElementById('icGrid');
-            grid.innerHTML = '';
-            icItems.forEach((item) => {
-                const card = document.createElement('div');
-                card.className = 'img-card';
-                card.dataset.id = String(item.id);
-                card.innerHTML = `
-                    <span class="img-fmt">${escapeHtmlText(item.origFmt)}</span>
-                    <button class="img-remove" data-id="${item.id}" title="移除">✕</button>
-                    <img src="${item.url}" alt="" draggable="false" style="cursor: default;">
-                    <div class="img-name">${escapeHtmlText(item.name)}</div>
-                    <div class="img-meta">${item.w}×${item.h} · ${formatFileSize(item.origSize)}</div>
-                `;
-                grid.appendChild(card);
-            });
-            document.getElementById('imgconvControls').hidden = (icItems.length === 0);
-        }
-
-        function clearImgConv() {
-            icItems.forEach(x => URL.revokeObjectURL(x.url));
-            icItems = [];
-            renderImgConvGrid();
-            showStatus('已清除', 'success', 'imgconv');
-        }
+        function addImgConv(files) { return icList.add(files); }
+        function clearImgConv() { icList.clear(); }
 
         /* 輸出檔名：原檔名換副檔名；同名（例如 a.png 與 a.heic 都要轉成 a.jpg）就加 _2、_3，
            不然打包進 zip 會互相蓋掉。 */
@@ -4764,7 +4873,7 @@
         }
 
         async function convertImages() {
-            if (!icItems.length) return;
+            if (!icList.items.length) return;
 
             const btn = document.getElementById('imgconvButton');
             btn.disabled = true;
@@ -4783,9 +4892,9 @@
                 const failed = [];
                 let inBytes = 0, outBytes = 0;
 
-                for (let i = 0; i < icItems.length; i++) {
-                    const item = icItems[i];
-                    btn.textContent = `處理中... (${i + 1}/${icItems.length})`;
+                for (let i = 0; i < icList.items.length; i++) {
+                    const item = icList.items[i];
+                    btn.textContent = `處理中... (${i + 1}/${icList.items.length})`;
                     let canvas = null;
                     try {
                         const img = await loadImageElement(item.url);
@@ -4816,10 +4925,10 @@
                         if (canvas) { canvas.width = canvas.height = 1; }
                     }
 
-                    updateProgress(((i + 1) / icItems.length) * 90, 'imgconv');
-                    if (icItems.length >= 5) {
+                    updateProgress(((i + 1) / icList.items.length) * 90, 'imgconv');
+                    if (icList.items.length >= 5) {
                         setProgressNote('imgconv',
-                            `第 ${i + 1} / ${icItems.length} 張（${Math.round(((i + 1) / icItems.length) * 100)}%）· 已產生 ${formatFileSize(outBytes)}`);
+                            `第 ${i + 1} / ${icList.items.length} 張（${Math.round(((i + 1) / icList.items.length) * 100)}%）· 已產生 ${formatFileSize(outBytes)}`);
                     }
                 }
 
@@ -4858,6 +4967,207 @@
                 hideProgress('imgconv');
                 btn.disabled = false;
                 btn.textContent = '🔁 開始轉檔';
+            }
+        }
+
+        // ==================== 圖片壓縮 ====================
+        /* 目標是「每張不超過 N KB」。做法：
+           ① 有損格式先二分搜尋品質，找「壓得進去的最高品質」（品質 0.92 以上檔案暴增、畫質卻看不出差別，所以封頂）；
+           ② 品質壓到 0.4 還是太大，才依「檔案大小約與像素數成正比」估一個縮小比例，重畫再找一次；
+           ③ PNG 是無損格式沒有品質可調，只能縮尺寸（所以有透明的圖預設改存 WebP，能降品質又保留透明）。
+           原本就比上限小的檔，只有壓得比原檔更小才算數，不然越「壓縮」越大很荒謬。 */
+
+        const IZ_Q_MAX = 0.92;
+        const IZ_Q_MIN = 0.4;
+        let izList = null;
+
+        function setupImgZipListeners() {
+            if (!canEncodeWebp()) {
+                document.querySelector('#izFormat option[value="webp"]').remove();
+                document.getElementById('izWebpNote').hidden = true;
+            }
+            izList = makeImageList({
+                status: 'imgzip',
+                uploadAreaId: 'izUploadArea',
+                inputId: 'izFileInput',
+                gridId: 'izGrid',
+                controlsId: 'imgzipControls',
+                resultLine: (item) => {
+                    const r = item.result;
+                    if (!r) return '';
+                    if (r.error) return `<div class="img-result warn">⚠ ${escapeHtmlText(r.error)}</div>`;
+                    const pct = Math.round((1 - r.size / item.origSize) * 100);
+                    const dims = (r.w !== item.w || r.h !== item.h) ? ` · ${r.w}×${r.h}` : '';
+                    const note = r.note ? ` · ${escapeHtmlText(r.note)}` : '';
+                    return `<div class="img-result${pct < 0 ? ' warn' : ''}">→ ${formatFileSize(r.size)}（${pct >= 0 ? '−' : '+'}${Math.abs(pct)}%）${dims}${note}</div>`;
+                },
+            });
+        }
+
+        function addImgZip(files) { return izList.add(files); }
+        function clearImgZip() { izList.clear(); }
+
+        // 只看縮圖：透明區域縮小後 alpha 一定 < 255，不必逐一掃 2400 萬個像素
+        function imageHasAlpha(img) {
+            const c = document.createElement('canvas');
+            c.width = Math.min(256, img.naturalWidth);
+            c.height = Math.min(256, img.naturalHeight);
+            const g = c.getContext('2d');
+            g.drawImage(img, 0, 0, c.width, c.height);
+            const d = g.getImageData(0, 0, c.width, c.height).data;
+            for (let i = 3; i < d.length; i += 4) if (d[i] < 255) return true;
+            return false;
+        }
+
+        function drawScaled(img, w, h, mime) {
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            const g = c.getContext('2d');
+            if (mime === 'image/jpeg') {
+                g.fillStyle = '#ffffff';   // JPG 沒有透明度，不鋪底會變黑
+                g.fillRect(0, 0, w, h);
+            }
+            g.imageSmoothingQuality = 'high';
+            g.drawImage(img, 0, 0, w, h);
+            return c;
+        }
+
+        /* 在 limit 以內找最高品質。回傳 { bytes, q }；壓不進去回 { fail:true, minSize }。 */
+        async function bestUnder(canvas, mime, limit) {
+            if (mime === 'image/png') {
+                const b = await canvasToBytes(canvas, mime);
+                return b.length <= limit ? { bytes: b, q: 1 } : { fail: true, minSize: b.length };
+            }
+            const top = await canvasToBytes(canvas, mime, IZ_Q_MAX);
+            if (top.length <= limit) return { bytes: top, q: IZ_Q_MAX };
+            const bottom = await canvasToBytes(canvas, mime, IZ_Q_MIN);
+            if (bottom.length > limit) return { fail: true, minSize: bottom.length };
+            let lo = IZ_Q_MIN, hi = IZ_Q_MAX, best = { bytes: bottom, q: IZ_Q_MIN };
+            for (let i = 0; i < 6; i++) {
+                const mid = (lo + hi) / 2;
+                const b = await canvasToBytes(canvas, mime, mid);
+                if (b.length <= limit) { best = { bytes: b, q: mid }; lo = mid; } else { hi = mid; }
+            }
+            return best;
+        }
+
+        async function compressOne(item, { target, maxSide, fmtKey, webpOK }) {
+            const img = await loadImageElement(item.url);
+            const W0 = img.naturalWidth, H0 = img.naturalHeight;
+
+            let mime;
+            if (fmtKey === 'jpeg') mime = 'image/jpeg';
+            else if (fmtKey === 'webp') mime = 'image/webp';
+            else mime = imageHasAlpha(img) ? (webpOK ? 'image/webp' : 'image/png') : 'image/jpeg';
+            const ext = { 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/png': 'png' }[mime];
+
+            let scale = (maxSide > 0 && Math.max(W0, H0) > maxSide) ? maxSide / Math.max(W0, H0) : 1;
+            const alreadySmall = item.origSize <= target && scale === 1;
+
+            for (let round = 0; round < 10; round++) {
+                const w = Math.max(1, Math.round(W0 * scale));
+                const h = Math.max(1, Math.round(H0 * scale));
+                let canvas = drawScaled(img, w, h, mime);
+                try {
+                    if (alreadySmall && round === 0) {
+                        // 原檔已經夠小：只接受比原檔更小的結果
+                        const r = await bestUnder(canvas, mime, item.origSize);
+                        if (!r.fail) return { bytes: r.bytes, q: r.q, w, h, mime, ext };
+                        // 壓不贏原檔（多半是本來就壓得很好的小圖）：用一般品質重新編碼、只為了去掉 EXIF
+                        const plain = await bestUnder(canvas, mime, target);
+                        if (!plain.fail) return { bytes: plain.bytes, q: plain.q, w, h, mime, ext, note: '原檔已低於上限' };
+                    }
+                    const r = await bestUnder(canvas, mime, target);
+                    if (!r.fail) return { bytes: r.bytes, q: r.q, w, h, mime, ext };
+                    // 檔案大小大致與像素數成正比，所以邊長乘上 √(目標/目前)，再打九五折留餘裕
+                    scale *= Math.max(0.3, Math.min(0.9, Math.sqrt(target / r.minSize) * 0.95));
+                    if (W0 * scale < 32 || H0 * scale < 32) break;
+                } finally {
+                    canvas.width = canvas.height = 1;
+                    canvas = null;
+                }
+            }
+            throw new Error('上限太小，壓不下去');
+        }
+
+        async function compressImages() {
+            if (!izList || !izList.items.length) return;
+
+            const btn = document.getElementById('imgzipButton');
+            btn.disabled = true;
+            btn.textContent = '壓縮中...';
+
+            try {
+                showProgress('imgzip');
+                const opts = {
+                    target: Number(document.getElementById('izTarget').value),
+                    maxSide: Number(document.getElementById('izMaxSide').value),
+                    fmtKey: document.getElementById('izFormat').value,
+                    webpOK: canEncodeWebp(),
+                };
+                const items = izList.items;
+                const files = {};
+                const used = new Set();
+                const failed = [];
+                let inBytes = 0, outBytes = 0, lastMime = 'image/jpeg';
+
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    btn.textContent = `壓縮中... (${i + 1}/${items.length})`;
+                    try {
+                        const r = await compressOne(item, opts);
+                        const base = item.name.replace(/\.[^.]+$/, '') || 'image';
+                        files[uniqueOutName(base, r.ext, used)] = r.bytes;
+                        item.result = { size: r.bytes.length, w: r.w, h: r.h, q: r.q, mime: r.mime, note: r.note || null };
+                        inBytes += item.origSize;
+                        outBytes += r.bytes.length;
+                        lastMime = r.mime;
+                    } catch (err) {
+                        console.error(`圖片 ${item.name} 壓縮失敗:`, err);
+                        item.result = { error: err.message || '壓縮失敗' };
+                        failed.push(item.name);
+                    }
+                    izList.render();
+                    updateProgress(((i + 1) / items.length) * 90, 'imgzip');
+                    if (items.length >= 3) {
+                        setProgressNote('imgzip',
+                            `第 ${i + 1} / ${items.length} 張（${Math.round(((i + 1) / items.length) * 100)}%）· ${formatFileSize(inBytes)} → ${formatFileSize(outBytes)}`);
+                    }
+                }
+
+                const names = Object.keys(files);
+                if (!names.length) {
+                    showStatus('沒有任何圖片壓縮成功，試試把上限調大一點', 'error', 'imgzip');
+                    return;
+                }
+                if (names.length === 1) {
+                    downloadBytes(files[names[0]], names[0], lastMime);
+                } else {
+                    btn.textContent = '打包中...';
+                    const lib = await loadFflate();
+                    const zipped = lib.zipSync(files, { level: 0 });
+                    downloadBytes(zipped, 'images_compressed.zip', 'application/zip');
+                }
+                updateProgress(100, 'imgzip');
+
+                const pct = inBytes ? Math.round((1 - outBytes / inBytes) * 100) : 0;
+                const summary = `${formatFileSize(inBytes)} → ${formatFileSize(outBytes)}（${pct >= 0 ? '省下' : '增加'} ${Math.abs(pct)}%）`;
+                if (failed.length) {
+                    showStatus(`已壓縮 ${names.length} 張，${summary}；${failed.length} 張失敗（${failed.join('、')}），試試把上限調大`,
+                        'error', 'imgzip');
+                } else {
+                    showStatus(names.length === 1
+                        ? `壓縮完成，已開始下載：${summary}`
+                        : `壓縮完成，${names.length} 張已打包成 zip 下載：${summary}`, 'success', 'imgzip');
+                }
+            } catch (error) {
+                console.error('圖片壓縮錯誤:', error);
+                showStatus('壓縮時發生錯誤：' + error.message, 'error', 'imgzip');
+            } finally {
+                hideProgress('imgzip');
+                btn.disabled = false;
+                btn.textContent = '🗜️ 開始壓縮';
             }
         }
 
@@ -6067,7 +6377,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.13 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.14 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
@@ -6089,6 +6399,7 @@
             setupImg2PdfListeners();
             setupPdf2ImgListeners();
             setupImgConvListeners();
+            setupImgZipListeners();
             setupUnlockListeners();
             setupEncryptListeners();
             setupWatermarkListeners();

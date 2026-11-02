@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.13 端到端測試
+/* PDF工具箱 v2.14 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -692,8 +692,8 @@ function ok(n, c, d) {
     return new TextDecoder('latin1').decode(withExif).includes('GPSTEST');
   }, heicB64);
   ok('測試素材確實帶有 GPS 字串（前提）', await addIc(HEIC_B64));
-  await page.evaluate(() => icAdding);
-  const icCards = await page.evaluate(() => icItems.map(x => `${x.origFmt}:${x.w}x${x.h}`).join(','));
+  await page.evaluate(() => icList.adding);
+  const icCards = await page.evaluate(() => icList.items.map(x => `${x.origFmt}:${x.w}x${x.h}`).join(','));
   ok('加入 3 張、壞檔略過；卡片標出原始格式與尺寸',
     icCards === 'PNG:400x300,HEIC:320x240,JPG:3000x1500', icCards);
   ok('壞檔點名告知', /bad\.png/.test(await page.evaluate(() =>
@@ -701,17 +701,8 @@ function ok(n, c, d) {
   ok('格式徽章畫在卡片上', await page.evaluate(() =>
     [...document.querySelectorAll('#icGrid .img-fmt')].map(e => e.textContent).join(',') === 'PNG,HEIC,JPG'));
 
-  // 下載 → 在頁面裡解 zip（或單檔）→ 回報每個檔案的格式、尺寸、取樣像素
-  const runIc = async (fmt, maxSide, label) => {
-    await page.selectOption('#icFormat', fmt);
-    await page.selectOption('#icMaxSide', String(maxSide));
-    const [dl] = await Promise.all([
-      page.waitForEvent('download', { timeout: 120000 }),
-      page.click('#imgconvButton'),
-    ]);
-    const p = path.join(OUT, `imgconv-${label}`);
-    await dl.saveAs(p);
-    return page.evaluate(async (arr) => {
+  // 下載檔 → 在頁面裡解 zip（或單檔）→ 回報每個檔案的格式、尺寸、大小、取樣像素
+  const inspectOut = (p) => page.evaluate(async (arr) => {
       const bytes = new Uint8Array(arr);
       const isZip = bytes[0] === 0x50 && bytes[1] === 0x4B;
       const entries = isZip ? (await loadFflate()).unzipSync(bytes) : { single: bytes };
@@ -729,11 +720,22 @@ function ok(n, c, d) {
           kind: head.startsWith('\xFF\xD8') ? 'jpeg' : head.startsWith('\x89PNG') ? 'png'
               : (head.startsWith('RIFF') && head.slice(8, 12) === 'WEBP') ? 'webp' : '?',
           w: c.width, h: c.height, L: at(0.25, 0.5), R: at(0.75, 0.5),
-          gps: text.includes('GPSTEST'), exif: text.includes('Exif'),
+          gps: text.includes('GPSTEST'), exif: text.includes('Exif'), size: b.length,
         };
       }
       return out;
-    }, Array.from(fs.readFileSync(p)));
+  }, Array.from(fs.readFileSync(p)));
+  // 選格式與尺寸 → 按轉檔 → 檢查下載檔
+  const runIc = async (fmt, maxSide, label) => {
+    await page.selectOption('#icFormat', fmt);
+    await page.selectOption('#icMaxSide', String(maxSide));
+    const [dl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 120000 }),
+      page.click('#imgconvButton'),
+    ]);
+    const p = path.join(OUT, `imgconv-${label}`);
+    await dl.saveAs(p);
+    return inspectOut(p);
   };
   const nearRGBA = (p, rgb, tol = 40) => rgb.every((v, i) => Math.abs(p[i] - v) <= tol);
 
@@ -786,7 +788,7 @@ function ok(n, c, d) {
     document.querySelectorAll('#icGrid .img-remove')[0].click();
     document.querySelectorAll('#icGrid .img-remove')[0].click();
   });
-  ok('移除卡片後只剩 1 張', await page.evaluate(() => icItems.length === 1 && icItems[0].name === 'gps.jpg'));
+  ok('移除卡片後只剩 1 張', await page.evaluate(() => icList.items.length === 1 && icList.items[0].name === 'gps.jpg'));
   const single = await runIc('png', 1280, 'single');
   ok('單張直接下載成圖片檔（不包 zip），尺寸 1280×640',
     Object.keys(single).join() === 'single' && single.single.kind === 'png'
@@ -794,7 +796,122 @@ function ok(n, c, d) {
     JSON.stringify({ k: single.single.kind, w: single.single.w, h: single.single.h }));
   await page.evaluate(() => clearImgConv());
   ok('全部清除後設定區收起來', await page.evaluate(() =>
-    icItems.length === 0 && getComputedStyle(document.getElementById('imgconvControls')).display === 'none'));
+    icList.items.length === 0 && getComputedStyle(document.getElementById('imgconvControls')).display === 'none'));
+
+  console.log('— 圖片壓縮（v2.14）—');
+  await page.click('.sub-tab[data-sub="imgzip"]');
+  ok('切到「圖片壓縮」子分頁，其他面板隱藏', await page.evaluate(() =>
+    getComputedStyle(document.getElementById('imgzipPane')).display !== 'none'
+    && getComputedStyle(document.getElementById('imgconvPane')).display === 'none'));
+  ok('選檔框接受 HEIC', await page.evaluate(() =>
+    document.getElementById('izFileInput').accept.includes('.heic')));
+
+  /* 測試素材（全部在頁面裡畫，帶雜訊才有真實照片的檔案大小）：
+     smooth.png 3000×2000 漸層＋輕微雜訊、不透明 → 自動存 JPG；只降品質就壓得進 500 KB，尺寸不該變
+     noise.jpg  2400×1600 強烈雜訊 → 品質壓到底也太大，必須縮尺寸（驗等比例）
+     logo.png   1600×1200 左半雜訊色塊、右半完全透明 → 自動存 WebP 並保留透明
+     tiny.jpg   300×200 已經很小，另外塞含 GPS 字串的 EXIF → 不能變大、EXIF 要拿掉
+     logo.HEIC  320×240 左紅右藍 */
+  await page.evaluate(async (b64) => {
+    const mk = async (w, h, draw, mime, q) => {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      draw(c.getContext('2d'), w, h);
+      return new Uint8Array(await (await new Promise(r => c.toBlob(r, mime, q))).arrayBuffer());
+    };
+    let seed = 7;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const noisy = (amp) => (g, w, h) => {
+      const id = g.createImageData(w, h); const d = id.data;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4, n = (rnd() - 0.5) * amp;
+        d[i] = 60 + 140 * x / w + n; d[i + 1] = 90 + 100 * y / h + n; d[i + 2] = 180 - 80 * x / w + n; d[i + 3] = 255;
+      }
+      g.putImageData(id, 0, 0);
+    };
+    const smooth = await mk(3000, 2000, noisy(6), 'image/png');
+    const noise = await mk(2400, 1600, noisy(255), 'image/jpeg', 0.95);
+    const logo = await mk(1600, 1200, (g, w, h) => {
+      const id = g.createImageData(w, h); const d = id.data;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w / 2; x++) {
+        const i = (y * w + x) * 4; d[i] = 20 + rnd() * 60; d[i + 1] = 150 + rnd() * 60; d[i + 2] = 40; d[i + 3] = 255;
+      }
+      g.putImageData(id, 0, 0);
+    }, 'image/png');
+    const tiny = await mk(300, 200, noisy(20), 'image/jpeg', 0.6);
+    const payload = new TextEncoder().encode('Exif\0\0MM\0*\0\0\0\x08\0\0\0\0\0\0GPSTEST-23.0N-120.2E');
+    const seg = new Uint8Array(4 + payload.length);
+    seg.set([0xFF, 0xE1, (payload.length + 2) >> 8, (payload.length + 2) & 255]); seg.set(payload, 4);
+    const tinyExif = new Uint8Array(tiny.length + seg.length);
+    tinyExif.set(tiny.subarray(0, 2)); tinyExif.set(seg, 2); tinyExif.set(tiny.subarray(2), 2 + seg.length);
+    const heic = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    await addImgZip([
+      new File([smooth], 'smooth.png', { type: 'image/png' }),
+      new File([noise], 'noise.jpg', { type: 'image/jpeg' }),
+      new File([logo], 'logo.png', { type: 'image/png' }),
+      new File([tinyExif], 'tiny.jpg', { type: 'image/jpeg' }),
+      new File([heic], 'logo.HEIC', { type: '' }),
+    ]);
+  }, HEIC_B64);
+  const izIn = await page.evaluate(() => Object.fromEntries(izList.items.map(x => [x.name, x.origSize])));
+  ok('加入 5 張', Object.keys(izIn).length === 5, Object.entries(izIn).map(([k, v]) => `${k}=${Math.round(v / 1024)}KB`).join(' '));
+  ok('前提：大圖確實超過 500 KB、tiny 低於上限',
+    izIn['smooth.png'] > 512000 && izIn['noise.jpg'] > 512000 && izIn['logo.png'] > 512000 && izIn['tiny.jpg'] < 512000);
+
+  const runIz = async (target, fmt, label) => {
+    await page.selectOption('#izTarget', String(target));
+    await page.selectOption('#izFormat', fmt);
+    const [dl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 180000 }),
+      page.click('#imgzipButton'),
+    ]);
+    const p = path.join(OUT, `imgzip-${label}`);
+    await dl.saveAs(p);
+    return inspectOut(p);
+  };
+  const z = await runIz(512000, 'auto', '500k.zip');
+  const zNames = Object.keys(z).sort().join(',');
+  ok('打包 5 張，名稱照原檔（logo.png→logo.webp、logo.HEIC→logo.jpg 不互蓋）',
+    zNames === 'logo.jpg,logo.webp,noise.jpg,smooth.jpg,tiny.jpg', zNames);
+  ok('★ 每一張都在 500 KB 以內', Object.values(z).every(x => x.size <= 512000),
+    Object.entries(z).map(([k, v]) => `${k}=${Math.round(v.size / 1024)}KB`).join(' '));
+  ok('不透明的 PNG 自動存成 JPG', z['smooth.jpg'].kind === 'jpeg');
+  ok('只降品質就壓得進去時不縮尺寸（3000×2000）', z['smooth.jpg'].w === 3000 && z['smooth.jpg'].h === 2000,
+    `${z['smooth.jpg'].w}×${z['smooth.jpg'].h}`);
+  ok('品質壓到底還太大才縮尺寸，而且等比例', z['noise.jpg'].w < 2400
+    && Math.abs(z['noise.jpg'].w / z['noise.jpg'].h - 1.5) < 0.01, `${z['noise.jpg'].w}×${z['noise.jpg'].h}`);
+  ok('縮了也不會縮過頭（至少用掉上限的一半）', z['noise.jpg'].size > 256000, `${Math.round(z['noise.jpg'].size / 1024)}KB`);
+  ok('透明的 PNG 自動存 WebP 並保留透明', z['logo.webp'].kind === 'webp' && z['logo.webp'].R[3] === 0,
+    `${z['logo.webp'].kind} R=${z['logo.webp'].R}`);
+  ok('原本就夠小的圖不會越壓越大', z['tiny.jpg'].size <= izIn['tiny.jpg'],
+    `${izIn['tiny.jpg']} → ${z['tiny.jpg'].size} bytes`);
+  /* HEIC 本來就比 JPG 省空間，原檔已低於上限時轉成 JPG 一定比較大——這時要明講，不能默默變大 */
+  ok('壓不贏原檔時（HEIC→JPG）卡片明講「原檔已低於上限」', await page.evaluate(() =>
+    /原檔已低於上限/.test(document.querySelectorAll('#izGrid .img-result')[4].textContent)));
+  ok('★ 原圖 EXIF／GPS 不會跟著出去', !z['tiny.jpg'].gps && !z['tiny.jpg'].exif);
+  ok('HEIC 壓縮後顏色正確', isRed(z['logo.jpg'].L) && isBlue(z['logo.jpg'].R), `L=${z['logo.jpg'].L} R=${z['logo.jpg'].R}`);
+  const izCards = await page.evaluate(() => [...document.querySelectorAll('#izGrid .img-result')].map(e => e.textContent));
+  ok('每張卡片顯示壓縮結果（大小與省下百分比）', izCards.length === 5 && izCards.every(t => /→ .+（[−+]\d+%）/.test(t)),
+    izCards.join(' | '));
+  ok('縮了尺寸的那張卡片標出新尺寸', /\d+×\d+/.test(izCards[1]), izCards[1]);
+
+  const z100 = await runIz(102400, 'jpeg', '100k.zip');
+  ok('上限 100 KB、一律 JPG：每張都在 100 KB 以內且都是 JPEG',
+    Object.values(z100).every(x => x.size <= 102400 && x.kind === 'jpeg'),
+    Object.entries(z100).map(([k, v]) => `${k}=${Math.round(v.size / 1024)}KB/${v.kind}`).join(' '));
+  // 一律 JPG 時 logo.png 先轉成 logo.jpg，logo.HEIC 才排到 logo_2.jpg
+  ok('透明圖改存 JPG 時透明處補白', nearRGBA(z100['logo.jpg'].R, [255, 255, 255, 255], 6), `R=${z100['logo.jpg'].R}`);
+
+  await page.evaluate(() => {
+    const keep = izList.items.findIndex(x => x.name === 'smooth.png');
+    izList.items.splice(0, izList.items.length, izList.items[keep]);
+    izList.render();
+  });
+  const z1 = await runIz(1048576, 'auto', 'single');
+  ok('單張直接下載（不包 zip），1 MB 以內', Object.keys(z1).join() === 'single'
+    && z1.single.kind === 'jpeg' && z1.single.size <= 1048576, `${Math.round(z1.single.size / 1024)}KB`);
+  await page.evaluate(() => clearImgZip());
+  ok('全部清除後設定區收起來', await page.evaluate(() =>
+    izList.items.length === 0 && getComputedStyle(document.getElementById('imgzipControls')).display === 'none'));
 
   console.log('— PDF 轉圖片 —');
   await page.click('.sub-tab[data-sub="pdf2img"]');
