@@ -170,6 +170,10 @@ function applyUiText(){
   $('btnLang').setAttribute('aria-label', L(UI.langToggle));
   $('btnBrowse').title = L(UI.browseTitle);
   $('txtDisclaimer').textContent = L(UI.disclaimer);
+  // 院徽列：替代文字與單位名稱也跟著換語言
+  $('logoNckuh').alt = L(UI.logoNckuh);
+  $('logoStoma').alt = L(UI.logoStoma);
+  $('txtBrand').textContent = L(UI.brandLine);
   $('txtReviewedThru').textContent = L(UI.reviewedThru);
   $('txtRefTitle').textContent = L(UI.refTitle);
 

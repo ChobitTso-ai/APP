@@ -14,6 +14,11 @@ const UI = {
      同方向走，名稱再一樣就容易被誤認成官方版（2026-09-30 Dr.Tso 決定）。 */
   appName:      { zh: '牙外傷處置指南',           en: 'NCKUH Dental Trauma Guide' },
   appTagline:   { zh: '依 IADT 2020 ＋ AAE 2026 指引', en: 'IADT 2020 + AAE 2026 guidelines' },
+  // 頁首院徽列：兩個院徽的替代文字、單位名稱
+  logoNckuh:    { zh: '國立成功大學醫學院附設醫院', en: 'National Cheng Kung University Hospital' },
+  logoStoma:    { zh: '成大醫院口腔醫學部',         en: 'Department of Stomatology, NCKUH' },
+  brandLine:    { zh: '國立成功大學醫學院附設醫院　口腔醫學部',
+                  en: 'NCKU Hospital · Department of Stomatology' },
 
   /* 右上角兩顆 */
   navHints:     { zh: '提示',                      en: 'Hints' },
@@ -128,8 +133,8 @@ const FIRST_AID_STEPS = [
             en:'**Do not touch the root** — the periodontal ligament cells on its surface decide the outcome.' } },
   { img:'care/step2-rinse.svg',
     title:{ zh:'髒了就沖一下', en:'Rinse if dirty' },
-    text: { zh:'用牛奶或生理食鹽水沖掉污染；**不要刷、不要擦、不要泡消毒水**。',
-            en:'Rinse off contamination with milk or saline; **do not scrub, wipe or soak in disinfectant**.' } },
+    text: { zh:'用牛奶、生理食鹽水或病人的唾液輕輕沖掉污染；**不要刷、不要擦、不要泡消毒水**。',
+            en:'Gently rinse off contamination with milk, saline, or the patient\'s saliva; **do not scrub, wipe, or soak in disinfectant**.' } },
   { img:'care/step3-replant-or-milk.svg',
     title:{ zh:'放回去，或泡牛奶', en:'Replant, or put it in milk' },
     text: { zh:'能安全放回齒槽窩就立刻放回去；不行就泡在**牛奶**裡帶著走。',

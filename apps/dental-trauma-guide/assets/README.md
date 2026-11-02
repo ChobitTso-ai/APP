@@ -26,6 +26,12 @@ PWA 的 PNG 圖示由 `icon-master.svg` 轉出，先前的 🚑 emoji 過渡圖�
 | 其他圖片 | `misc/` | 上面三類以外的補充圖 |
 | 參考文件 | **不要上傳** | 留在本機，理由見下 |
 
+`brand/` 不是 CODEX 的插圖，是頁首院徽列用的官方標誌（2026-11-02 加入）：
+`nckuh-seal.png`（成大醫院院徽）、`stomatology.png`（口腔醫學部徽，
+DEPARTMENT OF STOMATOLOGY, N.C.K.U.H.）。直接沿用 PDF 工具箱
+`apps/pdf-toolbox/assets/logos/` 那兩份已去背、減色的官方檔，**不要重畫、不要交給 CODEX 改**；
+要換新版標誌，兩邊一起換。
+
 檔名要與規格書**完全一致**（小寫、連字號），App 是照檔名去找圖的，
 拼錯不會報錯，只會顯示佔位框。
 

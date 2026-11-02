@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" version="1.1"><!-- © 2026 Tso KY - All Rights Reserved
 Protected against reverse engineering and unauthorized modification
-插圖版本 v4.4 --><title>牙齒浸於牛奶杯</title><desc>v4.4。完整牙齒浸於牛奶杯液面下，杯採剖視。杯旁放直立牛奶紙盒，沿用保存液插圖的屋頂摺口、藍色帶與乳滴圖案，以無文字圖形辨識牛奶。沒有手指、傾倒或流水。</desc>
-<g data-object="milk-carton" transform="matrix(.85 0 0 .85 -40 21)">
+插圖版本 v4.5 --><title>用牛奶輕柔沖洗髒污</title><desc>v4.5（2026-10-05，Claude 依 Dr.Tso 指示以系列既有元件重組）。手指只捏牙冠，牙根放進牛奶碗短暫輕晃沖洗；藍色雙向弧形箭頭與液面漣漪表示輕晃，不是浸泡保存。牛奶盒沿用 v4.4，用來辨識牛奶。沒有水龍頭、刷洗或消毒水。</desc><g data-object="milk-carton" transform="matrix(.62 0 0 .62 -34 93)">
 <path d="M65 75L143 75L174 57L174 197L143 218L65 218Z" fill="#F4F7FA" stroke="#64748B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M143 75L174 57L174 197L143 218Z" fill="#C9D4E2" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M65 75L89 43L153 43L143 75Z" fill="#F4F7FA" stroke="#64748B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -13,13 +12,7 @@ Protected against reverse engineering and unauthorized modification
 <circle cx="105" cy="126" r="29" fill="#4DA3FF"/>
 <path d="M105 105C101 113 93 120 93 129C93 144 117 144 117 129C117 120 109 113 105 105Z" fill="#F4F7FA"/>
 <path d="M85 58L130 58M153 88L164 82" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</g><g data-scene="milk-immersion" transform="matrix(.90 0 0 .90 53 6)"><g data-object="milk-cup-back">
-<path d="M52 65L63 210Q120 235 177 210L188 65Z" fill="#F4F7FA" stroke="#475569" stroke-width="3" stroke-linejoin="round"/>
-<ellipse cx="120" cy="65" rx="68" ry="12" fill="#F4F7FA" stroke="#475569" stroke-width="3"/>
-<path d="M56 83Q120 104 184 83L177 210Q120 233 63 210Z" fill="#E9C98C" opacity="0.10"/>
-</g>
-<g transform="matrix(.27 0 0 .27 69 74)">
-<g data-object="submerged-outline"><path d="M124 73L208 58Q221 67 222 94L217 162Q212 199 205 214C216 271 213 329 202 382C195 423 185 458 179 476Q176 482 172 475C157 440 145 391 135 340C127 295 122 253 125 213Q114 184 112 150L112 92Q113 79 124 73Z" fill="none" stroke="#64748B" stroke-width="6" stroke-linejoin="round"/><path d="M133 223C119 209 107 176 102 143L100 93Q101 70 112 61L210 44Q226 49 231 72L228 124Q226 177 209 218Q172 231 133 223Z" fill="none" stroke="#64748B" stroke-width="6" stroke-linejoin="round"/></g><g xmlns="http://www.w3.org/2000/svg" data-tooth="1"><g data-part="dentin" data-surface="side-thickness">
+</g><g data-object="milk-bowl-back"><path d="M92 128C94 190 120 221 162 221C204 221 230 190 232 128Z" fill="#F4F7FA" stroke="#475569" stroke-width="3" stroke-linejoin="round"/><ellipse cx="162" cy="128" rx="70" ry="11" fill="#C9D4E2" opacity=".45"/><path d="M98 141C100 188 124 214 162 214C200 214 224 188 226 141Z" fill="#F4F7FA"/><ellipse cx="162" cy="141" rx="64" ry="8" fill="#F4F7FA" stroke="#C9D4E2" stroke-width="1.5"/></g><g data-object="tooth-in-fingers" transform="matrix(0.38 0 0 -0.38 93.5 226.3)"><g data-tooth="1" transform="matrix(.94 0 0 -.94 10.8 537.6)"><g data-part="dentin" data-surface="side-thickness">
 <path d="M208 70L230 58Q247 68 247 96L241 167Q239 200 222 217C224 276 220 343 208 397Q194 453 181 478L173 468C188 418 199 365 202 315L205 213Z" fill="#E9C98C" stroke="#C9A360" stroke-width="1.16" stroke-linejoin="round" />
 <path d="M229 73C238 193 218 363 181 476L183 475C221 368 240 204 240 80Z" fill="#87755C" opacity="0.147" /></g>
 <g data-part="dentin" data-surface="cut-face">
@@ -37,10 +30,4 @@ Protected against reverse engineering and unauthorized modification
 <path d="M108 99C109 135 116 174 128 196" fill="none" stroke="#F4F7FA" stroke-width="2.2" opacity=".32" stroke-linecap="round" />
 <path d="M134 220L140 209M199 204L209 215" fill="none" stroke="#C9D4E2" stroke-width="3" opacity=".5" stroke-linecap="round" />
 <path d="M230 53C249 88 237 173 222 211L204 210C215 181 225 141 224 84Z" fill="#C9D4E2" opacity="0.138" /></g>
-</g>
-</g>
-<g data-object="milk-cup-front">
-<path d="M56 83Q120 104 184 83L177 210Q120 233 63 210Z" fill="#F4F7FA" opacity="0.12"/>
-<path d="M52 65L63 210Q120 235 177 210L188 65M52 65Q120 89 188 65" fill="none" stroke="#475569" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
-<path d="M66 103L73 193M179 98L171 195" fill="none" stroke="#C9D4E2" stroke-width="2" stroke-linecap="round"/>
-</g><g data-part="arrow"/><g data-part="lesion"/></g></svg>
+</g><g data-object="fingertips"><path d="M44 518L54 490Q65 460 106 450L123 454Q138 462 132 475L106 490L80 529Z" fill="#E9C98C" stroke="#C9A360" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(123 465) scale(1.3) translate(-123 -465)" /><path d="M321 492L278 489Q253 490 239 476Q230 464 240 455Q249 446 261 453L281 462L324 468Z" fill="#E9C98C" stroke="#C9A360" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(245 465) scale(1.3) translate(-245 -465)" /><path d="M114 455Q130 454 130 465Q127 474 116 477L107 468Z" fill="#F4F7FA" stroke="#C9A360" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" transform="translate(123 465) scale(1.3) translate(-123 -465)" /><path d="M241 456Q250 450 258 458L262 469Q250 474 243 466Z" fill="#F4F7FA" stroke="#C9A360" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" transform="translate(245 465) scale(1.3) translate(-245 -465)" /></g></g><g data-object="milk-front"><path d="M98 141Q162 157 226 141C224 188 200 214 162 214C124 214 100 188 98 141Z" fill="#F4F7FA" opacity=".6"/><path d="M98 141Q162 157 226 141" fill="none" stroke="#C9D4E2" stroke-width="2"/></g><g data-object="milk-bowl-front"><path d="M92 128C94 190 120 221 162 221C204 221 230 190 232 128M92 128Q162 151 232 128" fill="none" stroke="#475569" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g><g data-object="ripples" fill="none" stroke="#4DA3FF" stroke-width="3" stroke-linecap="round"><path d="M124 144Q132 149 142 149"/><path d="M180 149Q191 149 199 144"/></g><g data-part="lesion"/><g data-part="arrow"><path d="M110 106Q162 136 214 106" fill="none" stroke="#4DA3FF" stroke-width="7" stroke-linecap="round"/><path d="M116.6 118.4L110.0 106.0L124.0 105.5M200.0 105.5L214.0 106.0L207.4 118.4" fill="none" stroke="#4DA3FF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg>

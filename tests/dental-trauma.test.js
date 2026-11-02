@@ -44,6 +44,24 @@ async function authed(browser){
   return { ctx, p };
 }
 
+/* 保存液版面：在頁面裡量每一格的位置（交給 page.evaluate，函式本身不能用外部變數）。
+   保存液區塊收在 <details> 裡，先打開才量得到，量完還原。 */
+const mediaLayout = () => {
+  const d = document.querySelector('details:has(#storageRow)');
+  const was = d.open; d.open = true;
+  const row = document.getElementById('storageRow');
+  const bs = [...row.querySelectorAll('.media')].map(b => b.getBoundingClientRect());
+  const r = {
+    cols: getComputedStyle(row).gridTemplateColumns.split(' ').length,
+    tops: bs.slice(0, 4).map(b => Math.round(b.top)),
+    rankedBottom: Math.round(Math.max(...bs.slice(0, 4).map(b => b.bottom))),
+    waterTop: Math.round(bs[4].top), waterW: Math.round(bs[4].width),
+    rowW: Math.round(row.getBoundingClientRect().width)
+  };
+  d.open = was;
+  return r;
+};
+
 /* 每一段測試都從乾淨的第一題開始，且確定影像提示是關的 */
 async function reset(p){
   await p.evaluate(() => localStorage.setItem('dtg_mode','normal'));
@@ -87,6 +105,24 @@ async function reset(p){
     ok('★ 已移除三張模式卡片', (await p.$$('.mode-card')).length === 0);
 
     ok('第一題底下掛著參考資料', await p.isVisible('#refBlocks'));
+
+    // 院徽列：成大醫院院徽＋口腔醫學部徽，放在頂列上方
+    await p.waitForFunction(() => [...document.querySelectorAll('.brandbar img')].every(i => i.complete));
+    const brand = await p.evaluate(() => {
+      const imgs = [...document.querySelectorAll('.brandbar img')];
+      const bar = document.querySelector('.brandbar').getBoundingClientRect();
+      const top = document.querySelector('.topbar').getBoundingClientRect();
+      return { srcs: imgs.map(i => i.getAttribute('src').split('/').pop()), loaded: imgs.every(i => i.naturalWidth > 0),
+               alts: imgs.map(i => i.alt), text: document.getElementById('txtBrand').textContent,
+               above: bar.bottom <= top.top + 1, inTopbar: document.querySelectorAll('.topbar img').length };
+    });
+    ok('★ 院徽列有成大醫院院徽與口腔醫學部徽，兩張都載得到',
+      brand.srcs.join() === 'nckuh-seal.png,stomatology.png' && brand.loaded, brand.srcs.join(' '));
+    ok('院徽有替代文字、單位名稱寫全名',
+      brand.alts[0] === '國立成功大學醫學院附設醫院' && brand.alts[1] === '成大醫院口腔醫學部' &&
+      /國立成功大學醫學院附設醫院/.test(brand.text) && /口腔醫學部/.test(brand.text), brand.text);
+    ok('★ 院徽在頂列上方、不放進頂列（手機頂列放進去標題會被擠到只剩一個字）',
+      brand.above && brand.inTopbar === 0);
     const names = await p.$$eval('#storageRow .media b', ns => ns.map(n => n.textContent.trim()));
     ok('保存液依 IADT 偏好順序，牛奶排第一',
       names[0].startsWith('牛奶') && names[1].startsWith('HBSS') &&
@@ -115,6 +151,12 @@ async function reset(p){
       ns => ns.map(i => [i.getAttribute('src'), i.naturalWidth > 0]));
     ok('★ 五張保存液插圖全部載得到', media.length === 5 && media.every(m => m[1]),
       media.filter(m => !m[1]).map(m => m[0]).join() || '5/5');
+    const ml = await p.evaluate(mediaLayout);
+    ok('★ 手機版保存液維持 2 欄（1–4 名排成兩列）',
+      ml.cols === 2 && ml.tops[0] === ml.tops[1] && ml.tops[2] === ml.tops[3] && ml.tops[2] > ml.tops[0],
+      ml.cols + ' 欄');
+    ok('★ 手機版自來水在 1–4 名下方、橫跨整列',
+      ml.waterTop >= ml.rankedBottom && Math.abs(ml.waterW - ml.rowW) <= 1, ml.waterW + '／' + ml.rowW + 'px');
 
     const rows = await p.$$eval('#tblFirstAid tr', ns => ns.length);
     ok('現場急救速查表有表頭＋6 列', rows === 7, rows + ' 列');
@@ -137,8 +179,8 @@ async function reset(p){
       /分享/.test(steps[1]) && /加入主畫面/.test(steps[2]), steps.length + ' 步');
     ok('說明有提到 iPhone 與 Android 的差別',
       /Safari/.test(steps[0]) && /Chrome/.test(steps[0]));
-    ok('版本號是 v2.6', /v2\.6/.test(await p.title()) &&
-      /v2\.6/.test(await p.textContent('footer')));
+    ok('版本號是 v2.7', /v2\.7/.test(await p.title()) &&
+      /v2\.7/.test(await p.textContent('footer')));
   }
 
   /* ── 3. 中英文切換 ── */
@@ -159,6 +201,11 @@ async function reset(p){
       (await p.getAttribute('#btnBrowse', 'title')) === 'Browse by diagnosis');
     ok('英文的保存液第一項是 Milk',
       (await p.textContent('#storageRow .media b')).trim().startsWith('Milk'));
+    const brandEn = await p.evaluate(() => ({ t: document.getElementById('txtBrand').textContent,
+      a: document.getElementById('logoNckuh').alt, b: document.getElementById('logoStoma').alt }));
+    ok('★ 院徽列的單位名稱與兩個院徽的替代文字都切成英文',
+      /Stomatology/.test(brandEn.t) && /Cheng Kung University Hospital/.test(brandEn.a) && /Stomatology/.test(brandEn.b),
+      brandEn.t);
     ok('語言偏好存進 localStorage',
       (await p.evaluate(() => localStorage.getItem('dtg_lang'))) === 'en');
 
@@ -470,6 +517,9 @@ async function reset(p){
       steps.filter(x => !x[1]).map(x => x[0]).join() || '4/4');
     ok('四步驟有編號 1–4',
       (await p.$$eval('#faSteps .fa-step-n', ns => ns.map(n => n.textContent))).join('') === '1234');
+    const s2 = await p.textContent('#faSteps .fa-step:nth-child(2) small');
+    ok('★ 步驟 2 沖洗液照 IADT-2 列齊：牛奶、生理食鹽水、病人的唾液',
+      /牛奶/.test(s2) && /生理食鹽水/.test(s2) && /唾液/.test(s2), s2);
 
     await p.click('details:has(#apexFigs) summary');
     await p.waitForFunction(() =>
@@ -572,6 +622,13 @@ async function reset(p){
 
     ok('★ 寬螢幕停在決策樹時，診斷頁仍是隱藏的（grid 沒有蓋掉 [hidden]）',
       await wp.evaluate(() => getComputedStyle(document.getElementById('screenDx')).display) === 'none');
+
+    // 保存液：正式排名只有 4 名，桌面第一列剛好 4 張；先前 5 欄會在第一列尾巴留一格空白
+    const wl = await wp.evaluate(mediaLayout);
+    ok('★ 桌面保存液第一列正好 4 張（1–4 名同一列，不留第 5 格空白）',
+      wl.cols === 4 && wl.tops.every(t => t === wl.tops[0]), wl.cols + ' 欄');
+    ok('★ 桌面自來水仍在下一列、橫跨整列（最後備案）',
+      wl.waterTop >= wl.rankedBottom && Math.abs(wl.waterW - wl.rowW) <= 1, wl.waterW + '／' + wl.rowW + 'px');
 
     const openW = async q => {
       await wp.click('#btnBrowse');
@@ -1119,6 +1176,14 @@ async function reset(p){
     await p.click('#browseList .dx-card >> nth=0');
     await p.waitForSelector('#screenDx:not([hidden])');
     ok('開到恆牙內縮性脫位', (await p.textContent('#dxNameZh')) === '內縮性脫位');
+    // 院徽列不黏頂：捲下去後頂列仍黏在最上面，院徽列讓開
+    await p.evaluate(() => window.scrollTo(0, 800));
+    await p.waitForTimeout(150);
+    const stuck = await p.evaluate(() => ({ top: Math.round(document.querySelector('.topbar').getBoundingClientRect().top),
+      brand: Math.round(document.querySelector('.brandbar').getBoundingClientRect().bottom) }));
+    ok('★ 捲動後頂列仍黏在最上面、院徽列捲走（不多佔螢幕）', stuck.top === 0 && stuck.brand <= 0,
+      '頂列 ' + stuck.top + '／院徽列底 ' + stuck.brand);
+    await p.evaluate(() => window.scrollTo(0, 0));
 
     const clin = await p.textContent('#paneClinical');
     ok('★ 手術復位後固定 4 週（不是 2 週）',
@@ -1363,7 +1428,7 @@ async function reset(p){
       const np = await opened;
       await np.waitForLoadState('domcontentloaded');
       ok('點卡片開到工具頁', /dental-trauma-guide/.test(np.url()), np.url().split('/').slice(-2).join('/'));
-      ok("新分頁標題正確", /牙外傷處置指南 v2\.6/.test(await np.title()), await np.title());
+      ok("新分頁標題正確", /牙外傷處置指南 v2\.7/.test(await np.title()), await np.title());
       await np.close();
     }
     await home.close();
