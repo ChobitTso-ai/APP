@@ -239,11 +239,16 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   v2.11 圖片轉 PDF 支援 HEIC／HEIF〔iPhone 預設格式，多數瀏覽器畫不出來：用 heic-to 1.6.5
   〔內含 libheif 1.23.5 WASM，`vendor/heic-to.js`（IIFE 版，全域 `HeicTo`）＋授權 `heic-to.LICENSE`（LGPL-3.0），
   3.2MB，第一次遇到 HEIC 才 `loadHeic()`〕轉成 JPEG 再加入，檔名改 .jpg。
-  **不要用 heic2any**：v2.11 首版用它（案例標記工具那份），使用者 iOS 18 實拍的 24MP HEIC
-  〔含 HDR gain map `tmap`、`grpl`〕直接 `ERR_LIBHEIF format not supported`——它的 libheif 停在 2023 年。
-  案例標記工具的 `loadHeic()` 原本也是 heic2any，已在案例標記工具 v2.7 一併換掉。
-  v2.12 就是把 heic2any 換成 heic-to 的修正。
-  這種檔做不出小的合成樣本（逐一拿掉 tmap／grpl／uri／mime 仍失敗），所以測試直接釘住「載入的是 heic-to」。**Windows 上的 Chrome 選 .heic 時 `file.type` 是空字串**，
+  **Windows 上的 Chrome 選 .heic 時 `file.type` 是空字串**，所以 `isHeic()` 同時看副檔名；
+  `accept` 也要補 `.heic,.heif`，拖放原本的 `image/` 過濾也拿掉改由 `addImagesNow()` 判斷。
+  轉檔要時間，`addImages()` 用 `imgAdding` promise 串成佇列，連續加兩批不會插隊；
+  壞檔逐張略過並點名，不整批失敗。測試用 820 bytes 的真 HEIC〔pillow-heif 產生，
+  放在 `tests/fixtures/sample.heic`，與案例標記工具的測試共用〕驗到 PDF 輸出像素。〕
+  v2.12 把 heic2any 換成 heic-to〔**不要用 heic2any**：v2.11 首版用它（案例標記工具那份），
+  使用者 iOS 18 實拍的 24MP HEIC〔含 HDR gain map `tmap`、`grpl`〕直接
+  `ERR_LIBHEIF format not supported`——它的 libheif 停在 2023 年。
+  這種檔做不出小的合成樣本（逐一拿掉 tmap／grpl／uri／mime 仍失敗），所以測試直接釘住「載入的是 heic-to」。
+  案例標記工具的 `loadHeic()` 原本也是 heic2any，已在案例標記工具 v2.7 一併換掉。〕
   v2.13「轉換」分頁加第三個子分頁「🔁 圖片轉檔」〔每張各自轉成一個檔，跟「圖片轉 PDF」合成一份不同〕：
   讀 JPG／PNG／WebP／GIF／BMP／HEIC，轉出 JPG／PNG／WebP，品質（PNG 無損故隱藏）與長邊上限〔只縮不放〕可選；
   單張直接下載、多張用 fflate 打包 zip〔store〕，同名輸出加 `_2`（`uniqueOutName`）避免 zip 互蓋。
@@ -252,10 +257,6 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   HEIC 一加入就先轉成 0.95 JPEG 當中繼〔要能預覽、也不能把每張 24MP 點陣圖約 100MB 都留在記憶體〕。
   經 canvas 重新編碼所以 EXIF／GPS 不外流——測試手動在 JPEG 塞一段含 GPS 字串的 APP1，驗輸出位元組裡找不到。
   端到端測試共 174 項。
-  所以 `isHeic()` 同時看副檔名；`accept` 也要補 `.heic,.heif`，拖放原本的 `image/` 過濾也拿掉改由
-  `addImagesNow()` 判斷。轉檔要時間，`addImages()` 用 `imgAdding` promise 串成佇列，
-  連續加兩批不會插隊；壞檔逐張略過並點名，不整批失敗。測試用 820 bytes 的真 HEIC〔pillow-heif 產生，
-  base64 內嵌在測試裡〕驗到 PDF 輸出像素。端到端測試共 151 項。〕
   遮蔽「套用到多頁」經評估暫緩，使用者說先不用）。
 
 ## 併入新網頁工具的標準流程
