@@ -121,6 +121,11 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   真實準確度看畫面上的累計「保留比例」〔每次確認時記：建議幾格、使用者保留幾格〕。
   **如果使用者回報「同一病人也都放不進去」，先看訊息裡「沒放的最高只有 N%」再調 `SUG_MIN`**。
   冷啟動：第一組沒有範例可學，要手動排一次〕。
+  v2.7 HEIC 匯入改用 heic-to〔原本的 heic2any 停在 2023 年的 libheif，iOS 18 的 24MP 實拍 HEIC
+  會 `ERR_LIBHEIF format not supported`；與 PDF工具箱 v2.12 同一份 `vendor/heic-to.js`（全域 `HeicTo`，
+  回傳單一 Blob 不是陣列）＋`heic-to.LICENSE`。**`sw.js` 的 CORE 預先快取清單是寫死檔名的**，
+  換 vendor 檔一定要同步改（`addAll` 有一個 404 就整批失敗、而且被 catch 吞掉，離線就整個不能用），
+  並把 `CACHE` 版本號往上調。測試 `tests/case-marker-heic.test.js` 有驗清單裡每個檔都存在〕。
   **多人即時協作需要後端、
   病患照片會離開裝置，屬不同風險層級，未做；要做需先確認主機、資料落點與資安審查。**
   透視校正經評估暫緩
@@ -236,7 +241,7 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   3.2MB，第一次遇到 HEIC 才 `loadHeic()`〕轉成 JPEG 再加入，檔名改 .jpg。
   **不要用 heic2any**：v2.11 首版用它（案例標記工具那份），使用者 iOS 18 實拍的 24MP HEIC
   〔含 HDR gain map `tmap`、`grpl`〕直接 `ERR_LIBHEIF format not supported`——它的 libheif 停在 2023 年。
-  **案例標記工具的 `loadHeic()` 也是 heic2any，同樣會壞**（不在本 App 範圍，未動）。
+  案例標記工具的 `loadHeic()` 原本也是 heic2any，已在案例標記工具 v2.7 一併換掉。
   v2.12 就是把 heic2any 換成 heic-to 的修正。
   這種檔做不出小的合成樣本（逐一拿掉 tmap／grpl／uri／mime 仍失敗），所以測試直接釘住「載入的是 heic-to」。**Windows 上的 Chrome 選 .heic 時 `file.type` 是空字串**，
   所以 `isHeic()` 同時看副檔名；`accept` 也要補 `.heic,.heif`，拖放原本的 `image/` 過濾也拿掉改由
