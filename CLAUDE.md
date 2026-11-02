@@ -231,6 +231,13 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   v2.10 公衛 3 個圖騰版也換成彩色〔取自 B 系列「輔助標誌」品牌包的「01 原色 Original」SVG：
   B0 單→`nckuph-sym`、B2-1 簡橫→`nckuph-sym-h`、B2-2 簡直→`nckuph-sym-v`；同為 #1e2b4c＋#75c5ad。
   Chromium 以長邊 2000 渲染再 trim、縮到長邊 500、PNG8 32 色〕，12 個內建 logo 至此全為彩色。
+  v2.11 圖片轉 PDF 支援 HEIC／HEIF〔iPhone 預設格式，多數瀏覽器畫不出來：用 heic2any
+  〔與案例標記工具同一份，複製到 `vendor/heic2any.min.js`，1.3MB，第一次遇到 HEIC 才 `loadHeic()`〕
+  轉成 JPEG 再加入，檔名改 .jpg。**Windows 上的 Chrome 選 .heic 時 `file.type` 是空字串**，
+  所以 `isHeic()` 同時看副檔名；`accept` 也要補 `.heic,.heif`，拖放原本的 `image/` 過濾也拿掉改由
+  `addImagesNow()` 判斷。轉檔要時間，`addImages()` 用 `imgAdding` promise 串成佇列，
+  連續加兩批不會插隊；壞檔逐張略過並點名，不整批失敗。測試用 820 bytes 的真 HEIC〔pillow-heif 產生，
+  base64 內嵌在測試裡〕驗到 PDF 輸出像素。端到端測試共 150 項。〕
   遮蔽「套用到多頁」經評估暫緩，使用者說先不用）。
 
 ## 併入新網頁工具的標準流程

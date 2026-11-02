@@ -1,4 +1,4 @@
-/* PDF工具箱 v2.10 端到端測試
+/* PDF工具箱 v2.11 端到端測試
    重點是遮蔽：驗證被遮的內容是「真的從檔案裡消失」，而不是蓋一塊黑色上去。
    其餘涵蓋頁面縮圖、旋轉／自動轉正、刪除、依範圍選取、擷取、頁碼、
    圖片轉 PDF、PDF 轉圖片。 */
@@ -568,6 +568,79 @@ function ok(n, c, d) {
     return doc.numPages;
   }, imgPdfBytes);
   ok('3 張圖片 → 3 頁 PDF', imgPdfPages === 3, `${fs.statSync(imgPdfPath).size} bytes`);
+
+  console.log('— HEIC 轉檔（v2.11）—');
+  /* 320×240、左半紅右半藍的真 HEIC（pillow-heif／libheif 產生，820 bytes）。
+     type 刻意給空字串：Windows 上的 Chrome 選 .heic 時就是這樣，只能靠副檔名認。 */
+  const HEIC_B64 = 'AAAAHGZ0eXBoZWljAAAAAG1pZjFoZWljbWlhZgAAAVZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAABegABAAAAAAAAAboAAAAjaWluZgAAAAAAAQAAABVpbmZlAgAAAAABAABodmMxAAAAAA5waXRtAAAAAAABAAAA1mlwcnAAAAC3aXBjbwAAAHhodmNDAQNwAAAAkAAAAAAAPPAA/P34+AAADwNgAAEAGEABDAH//wNwAAADAJAAAAMAAAMAPLoCQGEAAQArQgEBA3AAAAMAkAAAAwAAAwA8oAoIDxZbqSSmubgIaDAgAAADAyAAAAMAIWIAAQAHRAHBcrBiQAAAABNjb2xybmNseAABAA0ABoAAAAAUaXNwZQAAAAAAAAFAAAAA8AAAABBwaXhpAAAAAAMICAgAAAAXaXBtYQAAAAAAAAABAAEEgQIDBAAAAcJtZGF0AAABtigBrwYyHa9+kFr8/Tf4lgf//7KMeh/qrfqrxCY+7ydWrzbib7D2/0Oz33+b7d//5aIX7MF/z0AhnTaYAACDgBluBZzrAAAEI9gi88Hv6dfP1/ydYKte42sPf/a0Ki4qrU4Sni/3Y/Kze+N7f1i6TP9Zg1CAnzbBqWP6B/m8jNrowLaccQfzN5f3eq45pab88xW4JgDIhx1lb+o8y7ZA/icGy/TayUKezIpG1dL//5/I4AAAAwCpgAAAAwDOAAIKckzS8TPp18/X/KOiZb+Xpyz/vu0nQyq9OZ8K/8dgo9NhCMED2Hxf+OwUemwhBydV37YMuTIk7n5sj749fsPqUKGrAu1ib88xW4JgDIinTK39R5l2yB/E4Nl+m1koU9mRYsTtH//rJEgAAAMBUwAAAwACsAAAGaZ5QR34oT/rG++3XKZV09OWf992k6GVXpzPhX/jsFHpsIRhkAXSZ/rMGoQE+bYNSx/QP83kZtdKpwPOIP5m8v7vVcc0tN+eYrcEwBkRsBPd+bAUj+Q/x8x3/BdYyIB9Hx0LuHzKSriEjSozdcCbVNx/70AVSbg3s8HqAAADAAAFHA==';
+  ok('選檔框接受 .heic／.heif', await page.evaluate(() => {
+    const a = document.getElementById('imgFileInput').accept;
+    return a.includes('.heic') && a.includes('.heif');
+  }));
+  ok('HEIC 函式庫延遲載入（還沒遇到 HEIC 前不載）', await page.evaluate(() =>
+    typeof heic2any === 'undefined' && !document.querySelector('script[src*="heic2any"]')));
+  await page.evaluate(() => { imgItems = []; renderImgGrid(); });
+  await page.evaluate(async (b64) => {
+    const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const c = document.createElement('canvas');
+    c.width = 200; c.height = 100;
+    c.getContext('2d').fillStyle = '#0a0';
+    c.getContext('2d').fillRect(0, 0, 200, 100);
+    const jpg = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+    const dt = new DataTransfer();
+    dt.items.add(new File([bin], 'IMG_0001.HEIC', { type: '' }));
+    dt.items.add(new File([new Uint8Array([1, 2, 3, 4, 5])], 'bad.heic', { type: 'image/heic' }));
+    dt.items.add(new File([jpg], 'after.jpg', { type: 'image/jpeg' }));
+    const inp = document.getElementById('imgFileInput');
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change'));
+  }, HEIC_B64);
+  await page.evaluate(() => imgAdding);
+  const heicNames = await page.evaluate(() => imgItems.map(x => x.name).join(','));
+  ok('type 空字串的 .HEIC 也認得、轉成 .jpg，順序不被後面的 JPG 插隊',
+    heicNames === 'IMG_0001.jpg,after.jpg', heicNames);
+  ok('轉完的檔案是 image/jpeg', await page.evaluate(() => imgItems[0].file.type === 'image/jpeg'));
+  const heicStatus = await page.evaluate(() => document.getElementById('img2pdfStatusMessage').textContent);
+  ok('壞掉的 HEIC 略過並點名告知，不會整批失敗',
+    /bad\.heic/.test(heicStatus) && /已加入 2 張/.test(heicStatus), heicStatus);
+  const heicPx = await page.evaluate(async () => {
+    const img = new Image();
+    img.src = imgItems[0].url;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    return { w: c.width, h: c.height,
+      L: [...g.getImageData(60, 120, 1, 1).data.slice(0, 3)],
+      R: [...g.getImageData(260, 120, 1, 1).data.slice(0, 3)] };
+  });
+  const isRed = p => p[0] > 170 && p[1] < 90 && p[2] < 90;
+  const isBlue = p => p[2] > 170 && p[0] < 90 && p[1] < 120;
+  ok('HEIC 解碼尺寸正確 320×240', heicPx.w === 320 && heicPx.h === 240, `${heicPx.w}×${heicPx.h}`);
+  ok('HEIC 解碼顏色正確（左紅右藍）', isRed(heicPx.L) && isBlue(heicPx.R),
+    `L=${heicPx.L} R=${heicPx.R}`);
+  const [dlHeic] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.click('#img2pdfButton'),
+  ]);
+  const heicPdfPath = path.join(OUT, 'heic.pdf');
+  await dlHeic.saveAs(heicPdfPath);
+  const heicPdf = await page.evaluate(async (arr) => {
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(arr) }).promise;
+    const pg = await doc.getPage(1);
+    const vp = pg.getViewport({ scale: 1 });
+    const c = document.createElement('canvas');
+    c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    const g = c.getContext('2d');
+    return { n: doc.numPages,
+      L: [...g.getImageData(Math.round(c.width * 0.2), Math.round(c.height / 2), 1, 1).data.slice(0, 3)],
+      R: [...g.getImageData(Math.round(c.width * 0.8), Math.round(c.height / 2), 1, 1).data.slice(0, 3)] };
+  }, Array.from(fs.readFileSync(heicPdfPath)));
+  ok('HEIC＋JPG → 2 頁 PDF', heicPdf.n === 2, `${heicPdf.n} 頁`);
+  ok('PDF 第 1 頁就是那張 HEIC（左紅右藍）', isRed(heicPdf.L) && isBlue(heicPdf.R),
+    `L=${heicPdf.L} R=${heicPdf.R}`);
 
   console.log('— PDF 轉圖片 —');
   await page.click('.sub-tab[data-sub="pdf2img"]');

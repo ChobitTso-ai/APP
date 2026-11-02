@@ -342,6 +342,12 @@
             border: 1px solid #f5c6cb;
         }
 
+        .status-info {
+            background: #e7f1ff;
+            color: #0b4a8b;
+            border: 1px solid #b6d4fe;
+        }
+
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -1139,7 +1145,7 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ PDF工具箱</h1>
-            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.10 - 本地處理，保護隱私</p>
+            <p>合併、分割、遮蔽、旋轉、轉換、密碼與寄出前整理 v2.11 - 本地處理，保護隱私</p>
             <p style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;">© Tso KY - All Rights Reserved | Protected against reverse engineering</p>
         </div>
 
@@ -1451,6 +1457,7 @@
                     <p>可以接在「案例標記工具」後面用：標記完的照片匯出後，在這裡直接組成一份 PDF 病例報告。</p>
                     <ul>
                         <li>✅ 支援 JPG／PNG／WebP／GIF／BMP，可一次選多張並拖曳排序</li>
+                        <li>📱 iPhone 的 HEIC／HEIF 照片也能直接丟進來，會自動轉檔</li>
                         <li>🔒 轉檔時會重新編碼，自動移除照片的 EXIF／GPS 位置資訊</li>
                     </ul>
                 </div>
@@ -1462,7 +1469,7 @@
                     <button class="upload-button" onclick="document.getElementById('imgFileInput').click()">
                         🖼️ 選擇圖片（可多選）
                     </button>
-                    <input type="file" id="imgFileInput" class="file-input" multiple accept="image/*" />
+                    <input type="file" id="imgFileInput" class="file-input" multiple accept="image/*,.heic,.heif" />
                 </div>
 
                 <div class="img-grid" id="imgGrid"></div>
@@ -2039,7 +2046,7 @@
         </div>
 
         <div class="footer">
-            <p><strong>PDF工具箱 v2.10</strong> - 專業級PDF處理工具</p>
+            <p><strong>PDF工具箱 v2.11</strong> - 專業級PDF處理工具</p>
             <p>© 2025 Tso KY - All Rights Reserved</p>
             <p style="font-size: 0.8rem; margin-top: 10px;">Protected against reverse engineering and unauthorized modification</p>
             <p style="font-size: 0.8rem; color: #999;">所有PDF處理均在本機執行，不會上傳至任何伺服器</p>
@@ -2299,9 +2306,9 @@
                     try {
                         mergedPdf.setTitle(`合併文件 - ${new Date().toLocaleDateString()}`);
                         mergedPdf.setAuthor('Tso KY');
-                        mergedPdf.setSubject('PDF工具箱 v2.10 合併文件');
-                        mergedPdf.setCreator('PDF工具箱 v2.10 by Tso KY');
-                        mergedPdf.setProducer('PDF工具箱 v2.10 - Tso KY - All Rights Reserved');
+                        mergedPdf.setSubject('PDF工具箱 v2.11 合併文件');
+                        mergedPdf.setCreator('PDF工具箱 v2.11 by Tso KY');
+                        mergedPdf.setProducer('PDF工具箱 v2.11 - Tso KY - All Rights Reserved');
                         mergedPdf.setKeywords(['合併', 'PDF工具箱', 'Tso KY']);
                         mergedPdf.setCreationDate(new Date());
                         mergedPdf.setModificationDate(new Date());
@@ -2642,8 +2649,8 @@
                         newPdf.setTitle(`${baseFileName} - Part ${i + 1}`);
                         newPdf.setAuthor('Tso KY');
                         newPdf.setSubject(`分割自: ${baseFileName}`);
-                        newPdf.setCreator('PDF工具箱 v2.10 by Tso KY');
-                        newPdf.setProducer('PDF工具箱 v2.10 - Tso KY - All Rights Reserved');
+                        newPdf.setCreator('PDF工具箱 v2.11 by Tso KY');
+                        newPdf.setProducer('PDF工具箱 v2.11 - Tso KY - All Rights Reserved');
                         newPdf.setKeywords(['分割', 'PDF工具箱', 'Tso KY']);
                         newPdf.setCreationDate(new Date());
 
@@ -3955,8 +3962,8 @@
 
             out.setTitle(editorFile.name.replace(/\.pdf$/i, ''));
             out.setAuthor('Tso KY');
-            out.setCreator('PDF工具箱 v2.10 by Tso KY');
-            out.setProducer('PDF工具箱 v2.10 - Tso KY - All Rights Reserved');
+            out.setCreator('PDF工具箱 v2.11 by Tso KY');
+            out.setProducer('PDF工具箱 v2.11 - Tso KY - All Rights Reserved');
             out.setCreationDate(new Date());
             out.setModificationDate(new Date());
 
@@ -4039,7 +4046,7 @@
             uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
                 uploadArea.classList.remove('dragover');
-                addImages(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
+                addImages(Array.from(e.dataTransfer.files));
             });
             uploadArea.addEventListener('click', (e) => {
                 if (e.target.tagName !== 'BUTTON') fileInput.click();
@@ -4113,22 +4120,81 @@
             });
         }
 
+        /* HEIC／HEIF（iPhone 預設格式）大多數瀏覽器畫不出來，先轉成 JPEG。
+           Windows 上的 Chrome 常把 .heic 的 type 給成空字串，所以副檔名也要看。
+           heic2any 約 1.3MB，第一次遇到 HEIC 才載入（與案例標記工具同一份）。 */
+        let heicReady = null;
+        function loadHeic() {
+            if (heicReady) return heicReady;
+            heicReady = injectScript('vendor/heic2any.min.js').then(() => {
+                if (typeof heic2any === 'undefined') {
+                    throw new Error('heic2any 載入後找不到 heic2any');
+                }
+                return heic2any;
+            }).catch((err) => {
+                heicReady = null;
+                throw err;
+            });
+            return heicReady;
+        }
+
+        function isHeic(f) {
+            return /\.hei[cf]$/i.test(f.name || '') || /hei[cf]/i.test(f.type || '');
+        }
+
+        async function heicToJpeg(f) {
+            const lib = await loadHeic();
+            const out = await lib({ blob: f, toType: 'image/jpeg', quality: 0.92 });
+            const blob = Array.isArray(out) ? out[0] : out;
+            const name = (f.name || 'image').replace(/\.hei[cf]$/i, '') + '.jpg';
+            return new File([blob], name, { type: 'image/jpeg' });
+        }
+
+        let imgAdding = Promise.resolve();
         function addImages(files) {
-            const imgs = files.filter(f => f.type.startsWith('image/'));
+            // 排隊處理：HEIC 轉檔要時間，連續加兩批時順序不能被後一批插隊
+            imgAdding = imgAdding.then(() => addImagesNow(files));
+            return imgAdding;
+        }
+
+        async function addImagesNow(files) {
+            const imgs = files.filter(f => f.type.startsWith('image/') || isHeic(f));
             if (!imgs.length) {
                 showStatus('請選擇圖片檔案', 'error', 'img2pdf');
                 return;
             }
-            imgs.forEach(f => {
+            const heicCount = imgs.filter(isHeic).length;
+            const failed = [];
+            let added = 0;
+            for (let k = 0; k < imgs.length; k++) {
+                let f = imgs[k];
+                if (isHeic(f)) {
+                    showStatus(`HEIC 轉檔中…（${k + 1}/${imgs.length}）`, 'info', 'img2pdf');
+                    try {
+                        f = await heicToJpeg(f);
+                    } catch (err) {
+                        console.error(`HEIC 轉檔失敗 ${f.name}:`, err);
+                        failed.push(f.name);
+                        continue;
+                    }
+                }
                 imgItems.push({
                     id: ++imgIdSeq,
                     file: f,
                     name: f.name,
                     url: URL.createObjectURL(f),
                 });
-            });
+                added++;
+                renderImgGrid();
+            }
             renderImgGrid();
-            showStatus(`已加入 ${imgs.length} 張圖片`, 'success', 'img2pdf');
+            if (failed.length) {
+                showStatus(`已加入 ${added} 張；${failed.length} 張 HEIC 無法轉換（${failed.join('、')}），請先用相簿匯出成 JPG 再加入`,
+                    'error', 'img2pdf');
+            } else {
+                showStatus(`已加入 ${added} 張圖片` + (heicCount ? `（其中 ${heicCount} 張 HEIC 已轉成 JPG）` : ''),
+                    'success', 'img2pdf');
+            }
         }
 
         function renderImgGrid() {
@@ -4242,8 +4308,8 @@
 
                 out.setTitle(document.getElementById('imgOutName').value || 'images');
                 out.setAuthor('Tso KY');
-                out.setCreator('PDF工具箱 v2.10 by Tso KY');
-                out.setProducer('PDF工具箱 v2.10 - Tso KY - All Rights Reserved');
+                out.setCreator('PDF工具箱 v2.11 by Tso KY');
+                out.setProducer('PDF工具箱 v2.11 - Tso KY - All Rights Reserved');
                 out.setCreationDate(new Date());
 
                 const pdfBytes = await out.save();
@@ -5623,7 +5689,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 版權聲明
-            console.log('%c PDF工具箱 v2.10 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
+            console.log('%c PDF工具箱 v2.11 ', 'background: #4facfe; color: white; font-size: 16px; padding: 10px;');
             console.log('%c © Tso KY - All Rights Reserved ', 'color: #666; font-size: 12px;');
             console.log('%c Protected against reverse engineering and unauthorized modification ', 'color: #999; font-size: 10px;');
             console.log('─────────────────────────────────────────────────────');
