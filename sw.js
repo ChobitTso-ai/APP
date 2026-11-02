@@ -1,14 +1,14 @@
 /* App 中心 Service Worker —— 首頁殼層快取（network-first）
    注意：apps/ 底下交給各 App 自己的 SW 處理，這裡一律略過不接管。 */
 
-const CACHE = 'app-center-v1';
+const CACHE = 'app-center-v2';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.webmanifest',
-  './assets/logo-white.png',
+  './assets/logo-mask.png',
   './assets/favicon.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
