@@ -63,7 +63,7 @@ apps/<代號>/          各個 App（每個一資料夾）
   case-marker/        案例標記工具（照片標記、裁切、組圖匯出）
   pdf-toolbox/        PDF工具箱（合併、分割、遮蔽個資、旋轉、頁面編輯、
                       PDF 加解密、浮水印、清除中繼資料與圖片轉檔，
-                      圖片格式互轉；圖片可直接用 iPhone 的 HEIC）
+                      圖片格式互轉與壓縮；圖片可直接用 iPhone 的 HEIC）
   endo-ppt-generator/ 牙髓病科專科 PPT 製作器（照片 ZIP 依學會範本套版產 PPT）
   live-poll/          即時投票（主持端建題開房，觀眾掃 QR 用手機作答）
   dentfigure/         DentFigure 臨床組圖（X 光片與臨床照排成期刊組圖，
