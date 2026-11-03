@@ -134,6 +134,11 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   真實準確度看畫面上的累計「保留比例」〔每次確認時記：建議幾格、使用者保留幾格〕。
   **如果使用者回報「同一病人也都放不進去」，先看訊息裡「沒放的最高只有 N%」再調 `SUG_MIN`**。
   冷啟動：第一組沒有範例可學，要手動排一次〕。
+  v2.7 HEIC 匯入改用 heic-to〔原本的 heic2any 停在 2023 年的 libheif，iOS 18 的 24MP 實拍 HEIC
+  會 `ERR_LIBHEIF format not supported`；與 PDF工具箱 v2.12 同一份 `vendor/heic-to.js`（全域 `HeicTo`，
+  回傳單一 Blob 不是陣列）＋`heic-to.LICENSE`。**`sw.js` 的 CORE 預先快取清單是寫死檔名的**，
+  換 vendor 檔一定要同步改（`addAll` 有一個 404 就整批失敗、而且被 catch 吞掉，離線就整個不能用），
+  並把 `CACHE` 版本號往上調。測試 `tests/case-marker-heic.test.js` 有驗清單裡每個檔都存在〕。
   **多人即時協作需要後端、
   病患照片會離開裝置，屬不同風險層級，未做；要做需先確認主機、資料落點與資安審查。**
   透視校正經評估暫緩
@@ -244,6 +249,35 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   v2.10 公衛 3 個圖騰版也換成彩色〔取自 B 系列「輔助標誌」品牌包的「01 原色 Original」SVG：
   B0 單→`nckuph-sym`、B2-1 簡橫→`nckuph-sym-h`、B2-2 簡直→`nckuph-sym-v`；同為 #1e2b4c＋#75c5ad。
   Chromium 以長邊 2000 渲染再 trim、縮到長邊 500、PNG8 32 色〕，12 個內建 logo 至此全為彩色。
+  v2.11 圖片轉 PDF 支援 HEIC／HEIF〔iPhone 預設格式，多數瀏覽器畫不出來：用 heic-to 1.6.5
+  〔內含 libheif 1.23.5 WASM，`vendor/heic-to.js`（IIFE 版，全域 `HeicTo`）＋授權 `heic-to.LICENSE`（LGPL-3.0），
+  3.2MB，第一次遇到 HEIC 才 `loadHeic()`〕轉成 JPEG 再加入，檔名改 .jpg。
+  **Windows 上的 Chrome 選 .heic 時 `file.type` 是空字串**，所以 `isHeic()` 同時看副檔名；
+  `accept` 也要補 `.heic,.heif`，拖放原本的 `image/` 過濾也拿掉改由 `addImagesNow()` 判斷。
+  轉檔要時間，`addImages()` 用 `imgAdding` promise 串成佇列，連續加兩批不會插隊；
+  壞檔逐張略過並點名，不整批失敗。測試用 820 bytes 的真 HEIC〔pillow-heif 產生，
+  放在 `tests/fixtures/sample.heic`，與案例標記工具的測試共用〕驗到 PDF 輸出像素。〕
+  v2.12 把 heic2any 換成 heic-to〔**不要用 heic2any**：v2.11 首版用它（案例標記工具那份），
+  使用者 iOS 18 實拍的 24MP HEIC〔含 HDR gain map `tmap`、`grpl`〕直接
+  `ERR_LIBHEIF format not supported`——它的 libheif 停在 2023 年。
+  這種檔做不出小的合成樣本（逐一拿掉 tmap／grpl／uri／mime 仍失敗），所以測試直接釘住「載入的是 heic-to」。
+  案例標記工具的 `loadHeic()` 原本也是 heic2any，已在案例標記工具 v2.7 一併換掉。〕
+  v2.13「轉換」分頁加第三個子分頁「🔁 圖片轉檔」〔每張各自轉成一個檔，跟「圖片轉 PDF」合成一份不同〕：
+  讀 JPG／PNG／WebP／GIF／BMP／HEIC，轉出 JPG／PNG／WebP，品質（PNG 無損故隱藏）與長邊上限〔只縮不放〕可選；
+  單張直接下載、多張用 fflate 打包 zip〔store〕，同名輸出加 `_2`（`uniqueOutName`）避免 zip 互蓋。
+  **WebP 編碼要先實測**（`canEncodeWebp()`）：Safari 舊版的 `toBlob('image/webp')` 會默默改給 PNG，
+  副檔名 .webp 內容卻是 PNG，不支援就把選項拿掉。轉 JPG 先鋪白底，否則透明處變黑。
+  HEIC 一加入就先轉成 0.95 JPEG 當中繼〔要能預覽、也不能把每張 24MP 點陣圖約 100MB 都留在記憶體〕。
+  經 canvas 重新編碼所以 EXIF／GPS 不外流——測試手動在 JPEG 塞一段含 GPS 字串的 APP1，驗輸出位元組裡找不到。
+  端到端測試共 174 項。
+  v2.14「轉換」分頁加第四個子分頁「🗜️ 圖片壓縮」〔每張壓到「不超過 N KB」：100KB～5MB〕。
+  清單處理（選檔／拖放／HEIC／卡片／移除）抽成 `makeImageList(cfg)` 與「圖片轉檔」共用
+  〔`icList`／`izList`，`items` 一律原地增刪，外部參照才不會失效；`cfg.resultLine` 讓壓縮卡片多一行結果〕。
+  演算法 `compressOne()`：有損格式先二分搜尋品質〔`bestUnder()`，0.4～0.92，0.92 以上檔案暴增畫質卻看不出差〕，
+  品質壓到底還太大才縮尺寸〔邊長 ×√(目標/目前)×0.95，檔案大小約與像素數成正比〕，最多 10 輪。
+  「自動」格式：不透明→JPG、有透明→WebP（保留透明又能降品質；不支援 WebP 才退 PNG，PNG 只能靠縮尺寸）。
+  原本就低於上限的圖只接受比原檔更小的結果；壓不贏（HEIC 本來就比 JPG 省空間）照樣重新編碼去 EXIF，
+  但卡片明講「原檔已低於上限」——不能默默變大。端到端測試共 195 項。
   遮蔽「套用到多頁」經評估暫緩，使用者說先不用）。
 
 ## 併入新網頁工具的標準流程

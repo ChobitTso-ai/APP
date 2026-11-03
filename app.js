@@ -37,13 +37,13 @@ const FAVHINT_OFF_KEY = 'nckuh_endo_favhint_off'; // 「怎麼用我的最愛」
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
   // 手機也能用
-  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: 'camera', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-10-17', group: 'mobile', pwa: true },
+  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: 'camera', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-11-02', group: 'mobile', pwa: true },
   { name: '即時投票', desc: '事先設定好題目，現場掃 QR 用手機作答，即時看結果。', icon: 'poll', url: 'apps/live-poll/index.html', added: '2026-08-16', updated: '2026-08-18', group: 'mobile' },
   { name: '牙外傷處置指南', desc: '依 IADT 2020 ＋ AAE 2026 查診斷與處置，中英切換、自動算回診日。', icon: 'aid', url: 'apps/dental-trauma-guide/index.html', added: '2026-09-23', updated: '2026-11-02', group: 'mobile', pwa: true },
   { ...wipSlot, group: 'mobile' },
 
   // 電腦操作
-  { name: 'PDF工具箱', desc: '合併、分割、遮蔽個資、旋轉、加解密、浮水印與圖片轉檔，全程本機處理。', icon: 'pdf', url: 'apps/pdf-toolbox/index.html', added: '2026-07-13', updated: '2026-10-21', group: 'desktop' },
+  { name: 'PDF工具箱', desc: '合併、分割、遮蔽個資、旋轉、加解密、浮水印與圖片轉檔，全程本機處理。', icon: 'pdf', url: 'apps/pdf-toolbox/index.html', added: '2026-07-13', updated: '2026-11-02', group: 'desktop' },
   { name: '牙髓病科專科 PPT 製作器', desc: '上傳照片 ZIP，依學會範本自動套版產出結訓／口試 PPT。', icon: 'slides', url: 'apps/endo-ppt-generator/index.html', added: '2026-07-24', updated: '2026-11-02', group: 'desktop' },
   { name: 'DentFigure 臨床組圖', desc: '把 X 光片與臨床照排成期刊等級的組圖，可標號、比例尺與遮蔽個資。', icon: 'figure', url: 'apps/dentfigure/index.html', added: '2026-09-19', updated: '2026-09-19', group: 'desktop' },
   { ...wipSlot, group: 'desktop' },
