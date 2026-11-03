@@ -23,6 +23,20 @@
   --hot-eyebrow: #FFB17A;
   --star: #E8A400;
   --danger: #D33A4B;
+  --stat-bg: #2F5BEA;         /* 造訪格 */
+  --stat-ink: #FFFFFF;
+  --stat-num: #FFFFFF;
+  --open-bg: #11161D;         /* 磚塊右下的開啟圓鈕 */
+  --open-ink: #FFFFFF;
+  --hits-hot: #C2540F;
+  /* 每個 App 一個色系：前景（圖示線條）／淺底（圖示底色）；--ic-on 是實心底上的圖示色 */
+  --teal: #0E8A7E;   --teal-soft: #DDF3F0;
+  --violet: #6D4BD8; --violet-soft: #ECE7FC;
+  --coral: #D4473A;  --coral-soft: #FDE8E5;
+  --blue: #2F5BEA;   --blue-soft: #E6ECFD;
+  --amber: #B06500;  --amber-soft: #FCEFD9;
+  --green: #2E8A3E;  --green-soft: #E3F3E5;
+  --ic-on: #FFFFFF;
   --shadow: 0 1px 2px rgba(17, 22, 29, .06), 0 8px 24px rgba(17, 22, 29, .06);
   --r: 22px;
   --font: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
@@ -42,12 +56,25 @@
     --accent-soft: #1D2747;
     --new: #5BD3A2;
     --new-soft: #133126;
-    --hot-bg: #E9EDF2;
-    --hot-ink: #11161D;
-    --hot-muted: #4C5664;
-    --hot-eyebrow: #C25A12;
+    --hot-bg: #1C2436;          /* 深色模式的主角格：比磚塊亮一階的深藍灰，不反白 */
+    --hot-ink: #F1F4F8;
+    --hot-muted: #A3AEBF;
+    --hot-eyebrow: #FFB17A;
     --star: #FFC53D;
     --danger: #FF7A88;
+    --stat-bg: #1D2747;
+    --stat-ink: #C9D4F5;
+    --stat-num: #A9BCFF;
+    --open-bg: #2A3243;
+    --open-ink: #E9EDF2;
+    --hits-hot: #FFA05A;
+    --teal: #4FD1C1;   --teal-soft: #13312F;
+    --violet: #AE9BFF; --violet-soft: #251F42;
+    --coral: #FF8F80;  --coral-soft: #3A1E1C;
+    --blue: #93ABFF;   --blue-soft: #1D2747;
+    --amber: #F5B451;  --amber-soft: #382912;
+    --green: #74D38E;  --green-soft: #17311D;
+    --ic-on: #0E1217;
     --shadow: none;
     color-scheme: dark;
   }
@@ -282,9 +309,24 @@ svg.ic {
   width: 46px; height: 46px; flex: none;
   border-radius: 14px;
   display: grid; place-items: center;
-  background: var(--accent-soft); color: var(--accent);
+  background: var(--ic-soft); color: var(--ic);
   font-size: 24px; line-height: 1;      /* emoji 圖示時用 */
 }
+.app-icon svg.ic { width: 26px; height: 26px; }
+/* 圖示裡要「蓋住後面線條」的實心區塊用 --ic-bg（＝圖示底色） */
+.app-icon { --ic-bg: var(--ic-soft); }
+.feature .app-icon { --ic-bg: var(--ic); }
+/* 色系：依 icon 代號；沒對到的（emoji、新代號）用主色 */
+[data-ic] { --ic: var(--accent); --ic-soft: var(--accent-soft); }
+.app-icon { --ic: var(--accent); --ic-soft: var(--accent-soft); }
+.tile[data-ic] .app-icon, .fav-chip[data-ic] .app-icon { --ic: inherit; --ic-soft: inherit; }
+[data-ic="camera"] { --ic: var(--teal);   --ic-soft: var(--teal-soft); }
+[data-ic="poll"]   { --ic: var(--violet); --ic-soft: var(--violet-soft); }
+[data-ic="aid"]    { --ic: var(--coral);  --ic-soft: var(--coral-soft); }
+[data-ic="pdf"]    { --ic: var(--blue);   --ic-soft: var(--blue-soft); }
+[data-ic="slides"] { --ic: var(--amber);  --ic-soft: var(--amber-soft); }
+[data-ic="figure"] { --ic: var(--green);  --ic-soft: var(--green-soft); }
+[data-ic="tooth"]  { --ic: var(--teal);   --ic-soft: var(--teal-soft); }
 .app-name { font-size: 18px; font-weight: 700; line-height: 1.35; }
 .app-desc {
   color: var(--muted); font-size: 14px; flex: 1;
@@ -302,7 +344,7 @@ svg.ic {
 
 /* 瀏覽次數（最多人用的加 🔥） */
 .app-hits { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.app-hits.hot { color: #C2540F; }
+.app-hits.hot { color: var(--hits-hot); }
 
 /* 圓形小按鈕：最愛、分享、開啟 */
 .ibtn {
@@ -316,7 +358,7 @@ svg.ic {
 .ibtn svg.ic { width: 17px; height: 17px; }
 .ibtn:hover { background: var(--accent-soft); color: var(--accent); }
 .tile-foot .share { margin-left: auto; }
-.app-btn.open { background: var(--ink); color: var(--tile); }
+.app-btn.open { background: var(--open-bg); color: var(--open-ink); }
 .app-btn.open:hover { background: var(--accent); color: var(--accent-ink); }
 .fav { background: transparent; color: var(--muted); }
 .fav[aria-pressed="true"] { color: var(--star); }
@@ -336,9 +378,14 @@ svg.ic {
 .tile:not(.feature) .badge-new, .tile:not(.feature) .badge-updated { display: table; margin: 5px 0 0; }
 
 /* 主角格：最多人用的 App，2×2 */
-.tile.feature { grid-column: span 2; grid-row: span 2; background: var(--hot-bg); color: var(--hot-ink); padding: 28px; gap: 12px; }
-.feature .app-icon { width: 64px; height: 64px; border-radius: 20px; background: rgba(127, 140, 160, .18); color: var(--hot-ink); font-size: 32px; }
-.feature .app-icon svg.ic { width: 32px; height: 32px; }
+.tile.feature {
+  grid-column: span 2; grid-row: span 2;
+  /* 右上角一圈該 App 色系的淡光，主角格才有自己的個性 */
+  background: radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--ic) 24%, transparent), transparent 70%), var(--hot-bg);
+  color: var(--hot-ink); padding: 28px; gap: 12px;
+}
+.feature .app-icon { width: 64px; height: 64px; border-radius: 20px; background: var(--ic); color: var(--ic-on); font-size: 32px; }
+.feature .app-icon svg.ic { width: 34px; height: 34px; }
 .feature .eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: .14em; color: var(--hot-eyebrow); }
 .feature .app-name { font-size: 32px; font-weight: 900; line-height: 1.25; }
 .feature .app-desc { color: var(--hot-muted); font-size: 16px; max-width: 38ch; text-wrap: pretty; flex: 0 1 auto; -webkit-line-clamp: 4; }
@@ -355,14 +402,14 @@ svg.ic {
   border: 0; border-radius: 999px; padding: 11px 22px;
   font-size: 15px; font-weight: 700; cursor: pointer;
 }
-.feature .app-btn.open { background: var(--hot-ink); color: var(--hot-bg); }
-.feature .app-btn.open:hover { filter: brightness(.92); background: var(--hot-ink); color: var(--hot-bg); }
+.feature .app-btn.open { background: var(--ic); color: var(--ic-on); }
+.feature .app-btn.open:hover { filter: brightness(1.08); background: var(--ic); color: var(--ic-on); }
 .feature .app-btn.share { background: rgba(127, 140, 160, .2); color: var(--hot-ink); margin-left: 0; }
 
 /* 造訪數格 */
-.tile.stat { background: var(--accent); color: var(--accent-ink); }
+.tile.stat { background: var(--stat-bg); color: var(--stat-ink); }
 .stat .k, .stat .s { font-size: 13.5px; opacity: .85; }
-.stat .v { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -.02em; margin-top: auto; font-variant-numeric: tabular-nums; }
+.stat .v { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -.02em; margin-top: auto; font-variant-numeric: tabular-nums; color: var(--stat-num); }
 
 /* 建置中（合併成一格） */
 .tile.wip {
