@@ -56,9 +56,10 @@ python3 -m http.server 8000
 ## 檔案結構
 
 ```
-index.html            登入畫面 + App 入口
-styles.css            深色玻璃擬態樣式
-app.js                登入驗證、App 清單與卡片、搜尋、分享
+index.html            登入畫面 + App 入口 + 線條圖示 + 加入主畫面教學
+styles.css            Bento 儀表板樣式（淺色，跟著系統切深色）
+app.js                登入驗證、App 清單與磚塊、篩選搜尋、我的最愛、分享、
+                      加入主畫面、使用統計
 apps/<代號>/          各個 App（每個一資料夾）
   case-marker/        案例標記工具（照片標記、裁切、組圖匯出）
   pdf-toolbox/        PDF工具箱（合併、分割、遮蔽個資、旋轉、頁面編輯、
@@ -81,7 +82,7 @@ sw.js                 Service Worker（首頁殼層離線快取）
 docs/ADDING_APPS.md   App 上架規則
 docs/STATS_SETUP.md   使用統計後端設定步驟
 docs/VOTING_SETUP.md  即時投票後端設定步驟（Google 試算表 + Apps Script）
-tests/                案例標記工具端到端測試（`./tests/run.sh`）
+tests/                端到端測試（`./tests/run.sh`；首頁在 home-badges、home-bento）
 .github/workflows/    pages.yml 合併 main 後自動部署 GitHub Pages
                       dentfigure-upstream.yml 跑 DentFigure 釘選的上游測試
                       （以 paths 限定，只在 apps/dentfigure/ 變動時觸發）

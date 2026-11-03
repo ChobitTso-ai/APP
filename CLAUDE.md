@@ -9,14 +9,14 @@ App 入口網站，正式站台部署在 **https://chobittso-ai.github.io/APP/**
 ## 架構速覽
 
 ```
-index.html      登入畫面 + App 入口（帳號 NCKUH / 密碼 ENDO，前端簡易驗證）
-styles.css      深色玻璃擬態樣式
-app.js          APPS 清單（卡片）、登入、搜尋、分享
-assets/         LOGO（TS 標誌）、favicon、PWA 圖示
+index.html      登入畫面 + App 入口（帳號 NCKUH / 密碼 ENDO，前端簡易驗證）＋線條圖示 sprite＋加入主畫面教學框
+styles.css      Bento 儀表板樣式（淺色；prefers-color-scheme 自動深色，顏色全用 token）
+app.js          APPS 清單（磚塊）、登入、篩選搜尋、我的最愛、分享、加入主畫面、統計
+assets/         LOGO（TS 標誌；首頁用 logo-mask.png 當 CSS 遮罩）、favicon、PWA 圖示
 manifest.webmanifest / sw.js   首頁 PWA（可加入主畫面、離線開得起來）
 apps/<slug>/    各個 App，一個資料夾一個 App，入口一律 index.html
   vendor/       該 App 用到的第三方函式庫（本地檔案，不用 CDN）
-tests/          端到端測試（`./tests/run.sh` 一次跑完；首頁徽章在 home-badges）
+tests/          端到端測試（`./tests/run.sh` 一次跑完；首頁徽章在 home-badges、版面／最愛／加入主畫面在 home-bento）
 docs/ADDING_APPS.md           App 上架規則（檢查清單版）
 docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/stats-backend.gs
 .github/workflows/pages.yml   合併到 main 自動部署 GitHub Pages
@@ -24,7 +24,9 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
 
 - 首頁卡片由 `app.js` 最上方的 `APPS` 陣列產生。佔位卡片是 `{ ...wipSlot }`
   （🚧 施工中）；真正的 App 卡片格式：
-  `{ name:'工具名', desc:'一句話說明', icon:'📷', url:'apps/<slug>/index.html', added:'YYYY-MM-DD', updated:'YYYY-MM-DD' }`
+  `{ name:'工具名', desc:'一句話說明', icon:'camera', url:'apps/<slug>/index.html', added:'YYYY-MM-DD', updated:'YYYY-MM-DD' }`
+  （`icon` 填 `index.html` 裡 `<symbol id="i-代號">` 的代號＝線條圖示；填 emoji 也照樣顯示。
+  App 自己是 PWA 就加 `pwa:true`，卡片標「可加入主畫面」、教學框會列出它）
   （**App 不一定要住在 `apps/` 底下**：`url` 可以是完整外部網址，此時必須另外
   加 `slug:'代號'`——`slugOf()` 先看 `slug` 欄位、沒有才從路徑推導；漏填會讓
   瀏覽次數不計、🆕 判斷不到。外部 App 需與本站同 origin 才共用得到登入狀態。
@@ -32,10 +34,21 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   （`added` 是**首次**上架日，最新的自動掛 🆕〔60 天內〕，**改版時不要動它**；
   `updated` 是最後改版日，改版時填今天，自動掛 🔄〔14 天內〕，🆕 優先於 🔄；
   瀏覽次數最高的自動掛 🔥）
-- **卡片分兩區**（`GROUPS`）：`group:'mobile'` 是「📱 手機也能用」——在手機上
-  順手好用的工具（PWA 一定放這區，非 PWA 但主要用手機操作的也放，例如即時投票；
-  區塊說明寫「有些還能加入主畫面」故不需全為 PWA）；`group:'desktop'` 是
-  「💻 電腦操作」（預設）。每區用施工中佔位補滿 4 張，桌機剛好一排。
+- **首頁是 Bento 儀表板**（2026-11 改版，使用者從五個方向中選定）：瀏覽次數最高的 App
+  自動放大成 2×2 主角格（統計回來前用 localStorage `nckuh_endo_hot` 記住的，再沒有就用最新上架），
+  旁邊一格是造訪人次，施工中佔位合併成一格「N 個工具建置中」並用 `--f4`／`--f2`
+  拉寬補滿最後一排（`fillLastRow()`；四欄時主角格吃掉右邊兩欄前兩排的 4 格要先扣掉）。
+  `group`（`GROUPS`）不再分兩排，改成磚塊上的標籤＋上方篩選「全部／手機／電腦／我的最愛」；
+  `group:'mobile'` 是手機上順手好用的（PWA 一定放這），`'desktop'` 是電腦操作（預設）。
+  篩選或搜尋時改成整齊排列（沒有主角格）。
+- **我的最愛**：localStorage `nckuh_endo_favs`（App 代號陣列，依加入順序），只存在該瀏覽器；
+  「全部」最上面一排快速開啟，下架的代號自動略過、壞掉的 JSON 當空的。
+- **加入主畫面**：頂欄按鈕＋手機提示列（關掉存 `nckuh_endo_a2hs_tip_off`）→ 教學框，
+  依裝置預選 iPhone／Android／電腦步驟。Android 與電腦 Chrome 有 `beforeinstallprompt`
+  就給「一鍵加入」；iPhone 沒有 API 只能教步驟。LINE／FB／IG 內建瀏覽器不能加，會提醒改用
+  瀏覽器開（LINE 用網址參數 `openExternalBrowser=1` 直接跳出去）。已經從桌面圖示開
+  （standalone）就全部隱藏。**iPhone 的桌面 App 跟 Safari 不共用 localStorage**，
+  所以第一次從桌面開要再登入、我的最愛也是分開的——教學框有寫。
 - **登入狀態存 `localStorage`（key：`nckuh_endo_authed`，值 `'1'`）——
   不能改用 `sessionStorage`：首頁以 `noopener` 新分頁開 App，
   `sessionStorage` 帶不過去，會把登入過的人誤擋。**
@@ -288,7 +301,8 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
      `tests/README.md`。
    - 新 App 另外寫腳本：登入 → 點卡片 → 確認新分頁開到工具頁、標題正確，
      再對工具本身做基本操作測試並截圖。
-     （Chromium 執行檔在 `/opt/pw-browsers/chromium-*/chrome-linux/chrome`，
+     （Chromium 執行檔在 `/opt/pw-browsers/chromium-*/chrome-linux64/chrome`
+     〔舊容器是 `chrome-linux/chrome`，`tests/env.js` 兩種都找〕，
      不要跑 `playwright install`。）
    - 順帶驗證登入保護：未登入直開工具頁網址，應被導回登入頁。
 6. **提交**：在指定的 `claude/...` 工作分支 commit → push → 開 draft PR →
@@ -306,7 +320,7 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   registry 抓（在允許清單內）——`npm pack <套件>@<版本>` 後從 tgz 解出
   `package/dist/*.min.js`（UMD 版，與 CDN 檔內容相同）放進 vendor/。
 - **Playwright 點首頁卡片**要用 `card.click({ force:true })`（卡片有覆蓋層
-  攔截 pointer events）；`window.open` 帶 `noopener`，等新分頁要監聽
+  攔截 pointer events；Bento 版的磚塊中心是名稱／說明，不會點到 ☆ 或分享鈕）；`window.open` 帶 `noopener`，等新分頁要監聽
   context 的 `page` 事件而不是 `popup`。
 - **pkill 會殺到自己**：Bash 指令字串若含被 pkill 比對的關鍵字，整個 shell
   會被殺（exit 144）。pkill 要單獨執行、且比對字串不要出現在同一條指令。

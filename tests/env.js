@@ -15,6 +15,7 @@ function chromePath(){
   try{ dirs = fs.readdirSync(root).filter(d => /^chromium(-\d+)?$/.test(d)).sort().reverse(); }catch(e){}
   const rel = [
     "chrome-linux/chrome",
+    "chrome-linux64/chrome",        // 新版 playwright 的 Linux 目錄名
     "chrome-mac/Chromium.app/Contents/MacOS/Chromium",
     "chrome-win/chrome.exe"
   ];
