@@ -25,7 +25,12 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
 - 首頁卡片由 `app.js` 最上方的 `APPS` 陣列產生。佔位卡片是 `{ ...wipSlot }`
   （🚧 施工中）；真正的 App 卡片格式：
   `{ name:'工具名', desc:'一句話說明', icon:'camera', url:'apps/<slug>/index.html', added:'YYYY-MM-DD', updated:'YYYY-MM-DD' }`
-  （`icon` 填 `index.html` 裡 `<symbol id="i-代號">` 的代號＝線條圖示；填 emoji 也照樣顯示。
+  （`icon` 填 `index.html` 裡 `<symbol id="i-代號">` 的代號＝雙色調線條圖示〔線條＋`fill-opacity=".2"` 淡色填塊〕；
+  填 emoji 也照樣顯示。**每個代號一個色系**：磚塊帶 `data-ic="代號"`，`styles.css` 的
+  `[data-ic="camera"]{--ic:var(--teal)…}` 對應顏色〔camera 青、poll 紫、aid 珊瑚紅、pdf 藍、slides 琥珀、figure 綠〕，
+  沒對到的用主色；新圖示要在那裡補一行。圖示裡要蓋住後方線條的實心區塊用 `style="fill:var(--ic-bg)"`。
+  深色模式的主角格／造訪格／開啟圓鈕都是深色 token——**不要再反白**，使用者回報過整片亮白很刺眼、看不到其他卡片，
+  `home-bento` 有量亮度擋著。
   App 自己是 PWA 就加 `pwa:true`，卡片標「可加入主畫面」、教學框會列出它）
   （**App 不一定要住在 `apps/` 底下**：`url` 可以是完整外部網址，此時必須另外
   加 `slug:'代號'`——`slugOf()` 先看 `slug` 欄位、沒有才從路徑推導；漏填會讓

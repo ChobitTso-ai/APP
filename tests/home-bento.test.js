@@ -241,6 +241,31 @@ const holes = p => p.evaluate(() => {
     await ctx.close();
   }
 
+  /* ───────── 五、深色模式與圖示色系 ───────── */
+  {
+    console.log('— 深色模式：主角格不能整片反白（使用者回報過刺眼）—');
+    const { ctx, page } = await newCtx(browser, { opts: { viewport: { width: 1280, height: 900 }, colorScheme: 'dark' } });
+    const lum = await page.evaluate(() => {
+      // 量背景色的相對亮度（主角格是漸層＋底色，取最後一層底色）
+      const L = (el) => {
+        const m = getComputedStyle(el).backgroundColor.match(/[\d.]+/g).map(Number);
+        const f = (c) => { c /= 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; };
+        return .2126 * f(m[0]) + .7152 * f(m[1]) + .0722 * f(m[2]);
+      };
+      return { feat: L(document.querySelector('.tile.feature')), stat: L(document.querySelector('.tile.stat')),
+               open: L(document.querySelector('.tile:not(.feature) .app-btn.open')), body: L(document.body) };
+    });
+    ok('主角格是深色', lum.feat < 0.08, lum.feat.toFixed(3));
+    ok('造訪格是深色', lum.stat < 0.08, lum.stat.toFixed(3));
+    ok('開啟圓鈕不是亮白', lum.open < 0.1, lum.open.toFixed(3));
+    ok('頁面底色是深色', lum.body < 0.02, lum.body.toFixed(3));
+    const ics = await page.$$eval('.tile.app-card:not(.wip)', ts => ts.map(t => t.dataset.ic));
+    ok('每張磚塊都帶色系代號', ics.length === 6 && ics.every(Boolean), ics.join(','));
+    const colors = await page.$$eval('.tile.app-card:not(.wip):not(.feature) .app-icon', es => es.map(e => getComputedStyle(e).color));
+    ok('各 App 圖示顏色不同', new Set(colors).size === colors.length, colors.length + ' 種');
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`);
   process.exit(fail ? 1 : 0);

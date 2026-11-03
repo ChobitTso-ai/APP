@@ -144,6 +144,10 @@ const groupOf = (app) => app.group || 'desktop';
 const groupById = (id) => GROUPS.find((g) => g.id === id) || GROUPS[GROUPS.length - 1];
 
 /* 圖示：線條圖示代號 → <svg>；其他（emoji）照原樣顯示 */
+function iconKey(icon) {
+  const key = String(icon || '');
+  return /^[a-z][a-z0-9-]*$/.test(key) ? key : 'emoji';
+}
 function iconHtml(icon) {
   const key = String(icon || '');
   if (/^[a-z][a-z0-9-]*$/.test(key) && document.getElementById('i-' + key)) {
@@ -274,6 +278,7 @@ function fillLastRow(tile, small, bento) {
 function makeCard(app, { feature = false } = {}) {
   const card = document.createElement('article');
   card.className = 'tile app-card' + (feature ? ' feature' : '');
+  card.dataset.ic = iconKey(app.icon); // 每個 App 一個色系（styles.css 的 [data-ic]）
   card.tabIndex = 0;
   card.setAttribute('aria-label', app.name);
   const slug = slugOf(app);
@@ -390,6 +395,7 @@ function renderFavStrip(favs) {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'fav-chip';
+      b.dataset.ic = iconKey(app.icon);
       b.innerHTML = `<span class="app-icon">${iconHtml(app.icon)}</span>${escapeHtml(app.name)}`;
       b.addEventListener('click', () => openApp(app));
       row.appendChild(b);

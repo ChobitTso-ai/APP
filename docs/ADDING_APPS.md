@@ -65,7 +65,8 @@ apps/
 - `icon`：首頁的**線條圖示代號**，對應 `index.html` 最上面 `<symbol id="i-代號">`。
   現有：`camera` `poll` `aid` `pdf` `slides` `figure` `tooth` `star` `link`…
   沒有合適的就**填一個 emoji 也可以**（照樣顯示，只是風格不一致）；
-  想要新圖示，請首頁對話在 `index.html` 補一個 24×24、線寬 1.7 的 `<symbol>`。
+  想要新圖示，請首頁對話在 `index.html` 補一個 24×24、線寬 1.7 的雙色調 `<symbol>`，
+  並在 `styles.css` 的 `[data-ic]` 色系表補一行（沒補就用主色藍）。
 - `pwa: true`：App 自己有 `manifest.webmanifest` + `sw.js`、能單獨「加入主畫面」時加上。
   卡片會標「可加入主畫面」，首頁的加入主畫面教學也會列出它。
 - `url`：住在這個 repo 的 App 用相對路徑 `apps/<代號>/index.html`。
