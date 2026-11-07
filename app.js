@@ -37,7 +37,7 @@ const FAVHINT_OFF_KEY = 'nckuh_endo_favhint_off'; // 「怎麼用我的最愛」
 const wipSlot = { name: '施工中', desc: '保留欄位，App 建置完成後開放。', icon: '🚧', url: '#', wip: true };
 const APPS = [
   // 手機也能用
-  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: 'camera', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-11-02', group: 'mobile', pwa: true },
+  { name: '案例標記工具', desc: '照片標記、裁切旋轉與案例組圖，一鍵匯出分享。', icon: 'camera', url: 'apps/case-marker/index.html', added: '2026-07-12', updated: '2026-11-07', group: 'mobile', pwa: true },
   { name: '即時投票', desc: '事先設定好題目，現場掃 QR 用手機作答，即時看結果。', icon: 'poll', url: 'apps/live-poll/index.html', added: '2026-08-16', updated: '2026-08-18', group: 'mobile' },
   { name: '牙外傷處置指南', desc: '依 IADT 2020 ＋ AAE 2026 查診斷與處置，中英切換、自動算回診日。', icon: 'aid', url: 'apps/dental-trauma-guide/index.html', added: '2026-09-23', updated: '2026-11-02', group: 'mobile', pwa: true },
   { name: '縮網址', desc: '把長網址變短、產生 QR code，看每個連結被點了幾次。', icon: 'qr', url: 'apps/short-link/index.html', added: '2026-11-07', group: 'mobile' },

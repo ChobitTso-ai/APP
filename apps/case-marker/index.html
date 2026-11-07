@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  案例標記工具 v2.7
+  案例標記工具 v2.8
   Tso KY - All Rights Reserved
   Protected against reverse engineering and unauthorized modification
 -->
@@ -17,7 +17,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>案例標記工具 v2.7</title>
+<title>案例標記工具 v2.8</title>
 <style>
   :root{
     --accent:#1273cc; --accent-dark:#0d5aa3;
@@ -157,6 +157,8 @@
     max-width:calc(100% - 20px); overflow-x:auto;
   }
   .float-bar.on{display:flex;}
+  .float-bar{gap:6px;}
+  .float-bar .btn{flex:0 0 auto; white-space:nowrap; padding:8px 9px; min-height:40px; gap:4px;}
   .zoom-tag{
     position:absolute; right:10px; top:10px; background:rgba(20,23,28,.6); color:#fff;
     font-size:12px; border-radius:14px; padding:4px 10px; display:none; pointer-events:none;
@@ -343,16 +345,146 @@
     flex-shrink:0; text-align:center; font-size:10.5px; color:#93a1af;
     padding:3px 8px calc(3px + env(safe-area-inset-bottom)); background:var(--bg);
   }
+
+  /* ═════ v2.8 版面 ═════
+     手機（< 900px）＝A：照片庫／組圖用底部導覽列；標記畫面上方只留返回／標題／復原／匯出，
+       工具收成 5 個類別（底部分類列），點類別才展開該類工具——原本 11 個工具要橫向滑、匯出藏在畫面外。
+     寬螢幕（≥ 900px）＝E：左側導覽軌＋工具欄（全部展開）＋右側屬性面板＋底部縮圖列。
+     兩者共用同一份 DOM，只靠 CSS 切換；工具按鈕的 ID／class 都沒變。 */
+  .ic{width:22px; height:22px; flex:none; display:block; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .ic.sm{width:16px; height:16px;}
+  /* 導覽：照片庫／標記／組圖（手機＝底部導覽列、寬螢幕＝左側導覽軌，都是圖示＋文字＋膠囊指示） */
+  nav{background:none; padding:0; margin:0; border-radius:0;}
+  nav button{
+    display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:0;
+    color:var(--ink-2); font-size:11.5px; font-weight:600; padding:0; min-height:0; border-radius:0;
+  }
+  nav button .np{width:58px; height:30px; border-radius:15px; display:grid; place-items:center;}
+  nav button.on{background:none; color:var(--accent-dark);}
+  nav button.on .np{background:#d6e7fb;}
+  /* 上方列 */
+  .ed-bar{display:flex; align-items:center; gap:4px; padding:0 10px 0 6px; height:56px; flex-shrink:0; background:var(--card); border-bottom:1px solid var(--line);}
+  .ed-bar .ib{width:44px; height:44px; min-height:0; padding:0; border:0; background:none; border-radius:50%; justify-content:center; color:var(--ink);}
+  .ed-bar .ib:disabled{opacity:.35;}
+  .ed-bar .tt{flex:1; min-width:0; line-height:1.2; padding-left:4px;}
+  .ed-bar .tt b{display:block; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ed-bar .tt small{display:block; font-size:11.5px; color:var(--ink-2);}
+  .ed-bar .go{min-height:38px; padding:0 20px; border-radius:19px; margin-left:4px;}
+  /* 照片計數膠囊（疊在畫布左上；右上是縮放提示） */
+  .pager{position:absolute; left:10px; top:10px; z-index:3; display:flex; align-items:center; background:rgba(20,23,28,.72); color:#fff; border-radius:18px; padding:2px;}
+  .pager button{width:34px; height:30px; border:0; background:none; color:#fff; display:grid; place-items:center; border-radius:15px; cursor:pointer;}
+  .pager .ic{width:18px; height:18px;}
+  .pager span{font-size:12.5px; font-weight:700; padding:0 4px; min-width:44px; text-align:center;}
+  /* 工具：垂直圖示磚（圖示＋文字） */
+  .toolbar{overflow:visible; padding:0; gap:0; background:var(--card); border-top:1px solid var(--line);}
+  .tg{display:none; flex:1 1 100%; min-width:0;}
+  .tg.on{display:flex;}
+  .toolbar .btn.tb{
+    flex:0 0 20%; min-width:0; flex-direction:column; align-items:center; justify-content:flex-start; gap:5px;
+    padding:0; border:0; background:none; min-height:0; border-radius:0; color:#3a4656; font-size:11.5px; font-weight:600; white-space:nowrap;
+  }
+  .toolbar .btn.tb.on{background:none; color:#3a4656;}
+  .toolbar .tb .ti{width:46px; height:46px; border-radius:14px; background:#f1f4f9; display:grid; place-items:center;}
+  .toolbar .tb.on .ti{background:var(--ink); color:#fff;}
+  .toolbar .tb .dot{width:20px; height:20px;}
+  .toolbar .tb:disabled{opacity:.45;}
+  .toolbar .tb.is-new::after{top:-2px; right:calc(50% - 32px);}
+  .tg-hint{flex:1; align-self:center; font-size:12px; line-height:1.5; color:var(--ink-2); padding:0 12px;}
+  /* 手機：底部分類列 */
+  .dock{display:flex; background:var(--card); border-top:1px solid var(--line); padding:6px 4px calc(8px + env(safe-area-inset-bottom)); flex-shrink:0;}
+  .dock .dk{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; border:0; background:none; font-size:11.5px; font-weight:600; color:var(--ink-2); padding:0; cursor:pointer; min-height:44px;}
+  .dock .dk .p{width:60px; height:30px; border-radius:15px; display:grid; place-items:center; position:relative;}
+  .dock .dk.on{color:var(--accent-dark);}
+  .dock .dk.on .p{background:#d6e7fb;}
+  .dock .dk.has-new .p::after{content:""; position:absolute; top:-1px; right:8px; width:9px; height:9px; border-radius:50%; background:#e53935; border:1.5px solid #fff;}
+  .film, .insp{display:none;}
+  .only-narrow{display:inline-flex;}
+  body[data-view="edit"] .canvas-wrap{margin:0; border-radius:0;}
+
+  @media (max-width:899px){
+    header{padding:calc(8px + env(safe-area-inset-top)) 14px 8px 14px;}
+    nav{position:fixed; left:0; right:0; bottom:0; z-index:60; display:flex; background:var(--card); border-top:1px solid var(--line); padding:8px 4px calc(8px + env(safe-area-inset-bottom));}
+    nav button{flex:1;}
+    body[data-view="edit"] header{display:none;}
+    body[data-view="edit"] footer{display:none;}
+    body:not([data-view="edit"]) footer{margin-bottom:calc(72px + env(safe-area-inset-bottom));}   /* 導覽列約 66px 高，多留一點 */
+    .ed-bar{height:calc(56px + env(safe-area-inset-top)); padding-top:env(safe-area-inset-top);}
+    .toolbar{padding:10px 0 8px;}
+  }
+  @media (max-width:899px) and (max-height:520px){        /* 橫放的手機：壓縮，把高度留給照片 */
+    .ed-bar{height:calc(44px + env(safe-area-inset-top));}
+    .toolbar{padding:4px 0;}
+    .toolbar .tb .ti{width:36px; height:36px;}
+    .toolbar .tb .tl, .dock .dk .dl{display:none;}
+    .dock{padding-top:2px; padding-bottom:calc(2px + env(safe-area-inset-bottom));}
+    .dock .dk{min-height:36px;}
+  }
+  @media (min-width:900px){
+    body{display:grid; grid-template-columns:84px minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto;}
+    header{grid-column:1; grid-row:1 / span 2; flex-direction:column; flex-wrap:nowrap; align-items:center; justify-content:flex-start; gap:6px;
+           padding:calc(14px + env(safe-area-inset-top)) 0 14px; border-bottom:0; border-right:1px solid var(--line);}
+    .brand{flex-direction:column; align-items:center; gap:4px; margin-bottom:10px;}
+    .brand h1{font-size:0; width:40px; height:40px; border-radius:12px; background:var(--accent); position:relative; overflow:hidden;}
+    .brand h1::before{content:"案"; font-size:18px; font-weight:800; color:#fff; position:absolute; inset:0; display:grid; place-items:center;}
+    .ver{font-size:10px; padding:1px 6px;}
+    nav{display:flex; flex-direction:column; gap:6px;}
+    nav button{width:76px;}
+    main{grid-column:2; grid-row:1;}
+    footer{grid-column:2; grid-row:2;}
+    .only-narrow, .dock{display:none !important;}
+    #vEdit.on{
+      display:grid; grid-template-columns:72px minmax(0,1fr) 290px; grid-template-rows:56px minmax(0,1fr) 108px;
+      grid-template-areas:"tools bar insp" "tools cv insp" "tools film insp";
+    }
+    .ed-bar{grid-area:bar; padding:0 16px; gap:6px;}
+    .ed-bar .tt b{font-size:15px;}
+    .canvas-wrap{grid-area:cv;}
+    body[data-view="edit"] .canvas-wrap{margin:12px; border-radius:8px;}
+    .toolbar{grid-area:tools; flex-direction:column; align-items:center; overflow-y:auto; border-top:0; border-right:1px solid var(--line); padding:4px 0;}
+    .tg{display:flex; flex:none; flex-direction:column; align-items:center; gap:1px; width:100%; padding:4px 0; border-bottom:1px solid var(--line);}
+    .tg:last-child{border-bottom:0;}
+    .toolbar .btn.tb{flex:none; width:64px; padding:2px 0; font-size:10.5px; gap:2px;}
+    .toolbar .tb .ti{width:34px; height:34px; border-radius:11px;}
+    .toolbar .tb .ic{width:20px; height:20px;}
+    #markerBar{display:none !important;}
+    .tg-hint{display:none;}
+    .toolbar .tb.is-new::after{right:2px; top:-2px;}
+    .film{grid-area:film; display:flex; align-items:center; gap:10px; padding:0 14px; overflow-x:auto; background:var(--card); border-top:1px solid var(--line);}
+    .film .th{flex:none; height:80px; aspect-ratio:4/3; border-radius:8px; overflow:hidden; border:2px solid transparent; padding:0; position:relative; cursor:pointer; background:#14171c;}
+    .film .th img{width:100%; height:100%; object-fit:cover; display:block;}
+    .film .th.on{border-color:var(--accent);}
+    .film .th small{position:absolute; left:0; right:0; bottom:0; padding:8px 5px 3px; font-size:10px; font-weight:700; color:#fff; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:linear-gradient(transparent,rgba(0,0,0,.65));}
+    .insp{grid-area:insp; display:flex; flex-direction:column; gap:12px; background:var(--card); border-left:1px solid var(--line); padding:16px; overflow-y:auto;}
+    .insp h4{margin:0; font-size:12px; letter-spacing:.08em; color:var(--ink-2); font-weight:700;}
+    .insp label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-2); margin:10px 0 5px;}
+    .insp input{width:100%; height:38px; border:1px solid var(--line); border-radius:9px; padding:0 10px; font:inherit; font-size:13.5px; background:#fff; color:var(--ink);}
+    .il{display:flex; flex-direction:column; gap:6px;}
+    .il .row{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; background:#f1f4f9; border:2px solid transparent; font-size:13.5px; font-weight:600; cursor:pointer; text-align:left; color:var(--ink); min-width:0;}
+    .il .row .t{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .il .row small{color:var(--ink-2); font-weight:500; font-size:11.5px; flex:none;}
+    .il .row.on{background:#d6e7fb; border-color:var(--accent);}
+    .il .none{font-size:13px; color:var(--ink-2); padding:6px 2px;}
+    .isw{display:flex; flex-wrap:wrap; gap:8px;}
+    .isw button{width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px var(--line); cursor:pointer; padding:0;}
+    .isw button.on{box-shadow:0 0 0 2px var(--accent);}
+    .irow{display:flex; gap:8px; margin-top:12px;}
+    .irow .btn{flex:1; min-height:38px; padding:0 8px; justify-content:center; font-size:13px; border-radius:10px;}
+    .irow .btn.danger{color:var(--red);}
+    .ihint{font-size:12.5px; line-height:1.7; color:var(--ink-2);}
+    .imeta{margin-top:auto; font-size:12px; color:var(--ink-2); line-height:1.7; border-top:1px solid var(--line); padding-top:10px;}
+  }
 </style>
 </head>
-<body>
+<body data-view="lib">
+<!-- 圖示：Lucide（ISC 授權，Copyright (c) Lucide Icons and Contributors），授權全文見 lucide.LICENSE -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="ci-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></symbol><symbol id="ci-type" viewBox="0 0 24 24"><path d="M12 4v16" /><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" /><path d="M9 20h6" /></symbol><symbol id="ci-move" viewBox="0 0 24 24"><path d="M12 2v20" /><path d="m15 19-3 3-3-3" /><path d="m19 9 3 3-3 3" /><path d="M2 12h20" /><path d="m5 9-3 3 3 3" /><path d="m9 5 3-3 3 3" /></symbol><symbol id="ci-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14" /><path d="M18 22V8a2 2 0 0 0-2-2H2" /></symbol><symbol id="ci-ruler" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /><path d="m14.5 12.5 2-2" /><path d="m11.5 9.5 2-2" /><path d="m8.5 6.5 2-2" /><path d="m17.5 15.5 2-2" /></symbol><symbol id="ci-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></symbol><symbol id="ci-rotate-cw" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></symbol><symbol id="ci-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></symbol><symbol id="ci-palette" viewBox="0 0 24 24"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /></symbol><symbol id="ci-git-compare" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M13 6h3a2 2 0 0 1 2 2v7" /><path d="M11 18H8a2 2 0 0 1-2-2V9" /></symbol><symbol id="ci-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></symbol><symbol id="ci-undo-2" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" /></symbol><symbol id="ci-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="ci-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol><symbol id="ci-layout-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></symbol><symbol id="ci-images" viewBox="0 0 24 24"><path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16" /><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2" /><circle cx="13" cy="7" r="1" fill="currentColor" /><rect x="8" y="2" width="14" height="14" rx="2" /></symbol><symbol id="ci-share-2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" /></symbol><symbol id="ci-sliders-horizontal" viewBox="0 0 24 24"><path d="M10 5H3" /><path d="M12 19H3" /><path d="M14 3v4" /><path d="M16 17v4" /><path d="M21 12h-9" /><path d="M21 19h-5" /><path d="M21 5h-7" /><path d="M8 10v4" /><path d="M8 12H3" /></symbol><symbol id="ci-ellipsis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></symbol><symbol id="ci-plus" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M12 5v14" /></symbol><symbol id="ci-trash-2" viewBox="0 0 24 24"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol><symbol id="ci-arrow-up-to-line" viewBox="0 0 24 24"><path d="M5 3h14" /><path d="m18 13-6-6-6 6" /><path d="M12 7v14" /></symbol><symbol id="ci-arrow-down-to-line" viewBox="0 0 24 24"><path d="M12 17V3" /><path d="m6 11 6 6 6-6" /><path d="M19 21H5" /></symbol><symbol id="ci-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="ci-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></symbol><symbol id="ci-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol></defs></svg>
 
 <header>
-  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.7</span></div>
+  <div class="brand"><h1>案例標記工具</h1><span class="ver">v2.8</span></div>
   <nav>
-    <button id="tabLib" class="on">照片庫</button>
-    <button id="tabEdit">標記</button>
-    <button id="tabGrid">組圖</button>
+    <button id="tabLib" class="on"><span class="np"><svg class="ic" aria-hidden="true"><use href="#ci-images"/></svg></span><span class="nl">照片庫</span></button>
+    <button id="tabEdit"><span class="np"><svg class="ic" aria-hidden="true"><use href="#ci-map-pin"/></svg></span><span class="nl">標記</span></button>
+    <button id="tabGrid"><span class="np"><svg class="ic" aria-hidden="true"><use href="#ci-layout-grid"/></svg></span><span class="nl">組圖</span></button>
   </nav>
 </header>
 
@@ -394,26 +526,17 @@
 
   <!-- 標記編輯 -->
   <section id="vEdit" class="view">
-    <div class="toolbar">
-      <button class="btn tool" data-mode="red"><span class="dot" style="background:var(--red)"></span>需處理</button>
-      <button class="btn tool" data-mode="blue"><span class="dot" style="background:var(--blue)"></span>觀察</button>
-      <button class="btn tool" data-mode="yellow"><span class="dot" style="background:var(--yellow)"></span>自訂</button>
-      <button class="btn tool" data-mode="text">🅃 文字</button>
-      <button class="btn tool" data-mode="select">✥ 移動</button>
-      <button class="btn tool" data-mode="crop">⬚ 裁切</button>
-      <button class="btn tool" data-mode="tilt">⤢ 拉平</button>
-      <button class="btn tool" data-mode="mask">🔒 遮蔽</button>
-      <button class="btn" id="btnUndo" disabled>↶ 復原</button>
-      <button class="btn" id="btnRotL">↺</button>
-      <button class="btn" id="btnRotR">↻</button>
-      <button class="btn" id="btnAlign">🎚 色彩對齊</button>
-      <button class="btn" id="btnTeeth">🦷 牙齒對齊</button>
-      <button class="btn" id="btnSet">⚙</button>
-      <button class="btn primary" id="btnExport">匯出</button>
+    <!-- 上方列：手機＝返回／標題／復原／匯出；寬螢幕＝標題／復原／匯出（返回與組圖由左側導覽軌負責） -->
+    <div class="ed-bar">
+      <button class="ib only-narrow" id="btnEdBack" title="回照片庫" aria-label="回照片庫"><svg class="ic" aria-hidden="true"><use href="#ci-chevron-left"/></svg></button>
+      <div class="tt"><b id="edTitle"></b><small id="edSub"></small></div>
+      <button class="btn ib" id="btnUndo" disabled title="復原" aria-label="復原"><svg class="ic" aria-hidden="true"><use href="#ci-undo-2"/></svg></button>
+      <button class="btn primary go" id="btnExport">匯出</button>
     </div>
     <div class="canvas-wrap">
       <canvas id="edCanvas"></canvas>
       <div class="zoom-tag" id="zoomTag"></div>
+      <div class="pager"><button id="btnPrev" aria-label="上一張"><svg class="ic" aria-hidden="true"><use href="#ci-chevron-left"/></svg></button><span id="edName"></span><button id="btnNext" aria-label="下一張"><svg class="ic" aria-hidden="true"><use href="#ci-chevron-right"/></svg></button></div>
       <div class="float-bar" id="markerBar">
         <button class="btn" id="btnEditTxt">✎ 文字</button>
         <button class="btn" id="btnColor">🎨 顏色</button>
@@ -447,11 +570,65 @@
         <button class="btn" id="btnTiltNo">取消</button>
       </div>
     </div>
-    <div class="ed-foot">
-      <button class="btn" id="btnPrev">‹ 上一張</button>
-      <div class="nm" id="edName"></div>
-      <button class="btn" id="btnNext">下一張 ›</button>
+    <!-- 工具：手機只顯示目前類別（由底部分類列切換）；寬螢幕全部展開成直欄。工具只有一份，ID 與 class 都沒變 -->
+    <div class="toolbar" id="toolPanel">
+      <div class="tg on" data-g="mark">
+        <button class="btn tool tb" data-mode="red"><span class="ti"><span class="dot" style="background:var(--red)"></span></span><span class="tl">需處理</span></button>
+        <button class="btn tool tb" data-mode="blue"><span class="ti"><span class="dot" style="background:var(--blue)"></span></span><span class="tl">觀察</span></button>
+        <button class="btn tool tb" data-mode="yellow"><span class="ti"><span class="dot" style="background:var(--yellow)"></span></span><span class="tl">自訂</span></button>
+        <button class="btn tool tb" data-mode="text"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-type"/></svg></span><span class="tl">文字</span></button>
+        <button class="btn tool tb" data-mode="select"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-move"/></svg></span><span class="tl">移動</span></button>
+      </div>
+      <div class="tg" data-g="adjust">
+        <button class="btn tool tb" data-mode="crop"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-crop"/></svg></span><span class="tl">裁切</span></button>
+        <button class="btn tool tb" data-mode="tilt"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-ruler"/></svg></span><span class="tl">拉平</span></button>
+        <button class="btn tb" id="btnRotL" title="向左轉 90°"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-rotate-ccw"/></svg></span><span class="tl">左轉</span></button>
+        <button class="btn tb" id="btnRotR" title="向右轉 90°"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-rotate-cw"/></svg></span><span class="tl">右轉</span></button>
+      </div>
+      <div class="tg" data-g="mask">
+        <button class="btn tool tb" data-mode="mask"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-eye-off"/></svg></span><span class="tl">遮蔽</span></button>
+        <div class="tg-hint">遮住可辨識的資訊：先框選，再按「套用」</div>
+      </div>
+      <div class="tg" data-g="align">
+        <button class="btn tb" id="btnAlign" title="色彩對齊"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-palette"/></svg></span><span class="tl">色彩對齊</span></button>
+        <button class="btn tb" id="btnTeeth" title="牙齒對齊"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-git-compare"/></svg></span><span class="tl">牙齒對齊</span></button>
+      </div>
+      <div class="tg" data-g="more">
+        <button class="btn tb" id="btnSet" title="設定"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-settings"/></svg></span><span class="tl">設定</span></button>
+        <button class="btn tb only-narrow" id="btnToGrid" title="前往組圖"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#ci-layout-grid"/></svg></span><span class="tl">組圖</span></button>
+      </div>
     </div>
+    <!-- 手機：底部分類列 -->
+    <div class="dock" id="toolDock">
+      <button class="dk on" data-g="mark"><span class="p"><svg class="ic" aria-hidden="true"><use href="#ci-map-pin"/></svg></span><span class="dl">標記</span></button>
+      <button class="dk" data-g="adjust"><span class="p"><svg class="ic" aria-hidden="true"><use href="#ci-sliders-horizontal"/></svg></span><span class="dl">調整</span></button>
+      <button class="dk" data-g="mask"><span class="p"><svg class="ic" aria-hidden="true"><use href="#ci-eye-off"/></svg></span><span class="dl">遮蔽</span></button>
+      <button class="dk" data-g="align"><span class="p"><svg class="ic" aria-hidden="true"><use href="#ci-git-compare"/></svg></span><span class="dl">對齊</span></button>
+      <button class="dk" data-g="more"><span class="p"><svg class="ic" aria-hidden="true"><use href="#ci-ellipsis"/></svg></span><span class="dl">更多</span></button>
+    </div>
+    <!-- 寬螢幕：照片縮圖列＋右側屬性面板 -->
+    <div class="film" id="filmStrip"></div>
+    <aside class="insp" id="insp">
+      <h4 id="inspH">這張照片的標記</h4>
+      <div class="il" id="inspList"></div>
+      <div id="inspSel" hidden>
+        <h4>已選取的標記</h4>
+        <label for="inspText">文字</label>
+        <input id="inspText" maxlength="60" autocomplete="off">
+        <label>顏色</label>
+        <div class="isw" id="inspSw"></div>
+        <div class="irow">
+          <button class="btn" id="inspFront" title="帶到最前"><svg class="ic sm" aria-hidden="true"><use href="#ci-arrow-up-to-line"/></svg>最前</button>
+          <button class="btn" id="inspBack" title="送到最後"><svg class="ic sm" aria-hidden="true"><use href="#ci-arrow-down-to-line"/></svg>最後</button>
+          <button class="btn danger" id="inspDel"><svg class="ic sm" aria-hidden="true"><use href="#ci-trash-2"/></svg>刪除</button>
+        </div>
+        <div class="irow">
+          <button class="btn" id="inspDone"><svg class="ic sm" aria-hidden="true"><use href="#ci-check"/></svg>完成（取消選取）</button>
+        </div>
+      </div>
+      <div class="ihint" id="inspHint">點照片上的標記可以選取；選好左邊的工具後點照片，就會新增標記。</div>
+      <div class="imeta" id="inspMeta"></div>
+    </aside>
   </section>
 
   <!-- 組圖 -->
@@ -562,7 +739,7 @@
   </section>
 </main>
 
-<footer>案例標記工具 v2.7　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
+<footer>案例標記工具 v2.8　©Tso KY - All Rights Reserved · Protected against reverse engineering and unauthorized modification</footer>
 
 <!-- 匯出預覽 -->
 <div class="modal" id="expModal">
@@ -814,7 +991,7 @@
 
 <script>
 /* ============================================================
-   案例標記工具 v2.7
+   案例標記工具 v2.8
    Tso KY - All Rights Reserved
    Protected against reverse engineering and unauthorized modification
    ============================================================ */
@@ -1106,6 +1283,7 @@ function show(v){
     views[k].classList.toggle("on", k===v);
     tabs[k].classList.toggle("on", k===v);
   }
+  document.body.setAttribute("data-view", v);
   if(v==="lib") renderLib();
   if(v==="grid") renderCollage();
   if(v==="edit"){ requestAnimationFrame(draw); }
@@ -1243,6 +1421,7 @@ function applyNewBadges(){
     var el = $(f.el); if(!el) return;
     el.classList.toggle("is-new", isNewFeature(f));
   });
+  syncDockBadges();
   renderNewHint();
 }
 function markFeatureSeen(id){
@@ -1704,8 +1883,10 @@ function draw(){
   var sz = layout();
   cx.clearRect(0,0,sz.W,sz.H);
   var p = cur();
-  $("edName").textContent = p ? p.name : "";
+  updateEdBar(p);
   updateToolUI();
+  renderInspector();
+  renderFilm();
   if(!p){
     cx.fillStyle="#8b98a5"; cx.font="15px sans-serif"; cx.textAlign="center";
     cx.fillText("請先在「照片庫」加入並選擇照片", sz.W/2, sz.H/2);
@@ -2397,6 +2578,134 @@ function updateToolUI(){
   var p = cur();
   $("btnUndo").disabled = !(p && p.undo.length);
 }
+
+/* ───────── v2.8 版面：分類工具列（手機）、屬性面板與縮圖列（寬螢幕） ───────── */
+var wideMQ = window.matchMedia("(min-width:900px)");
+state.toolGroup = "mark";            // 手機底部分類列目前的類別：mark｜adjust｜mask｜align｜more
+state.lastMarkMode = "red";          // 離開「標記」類別前的標記模式，回來時還原
+function updateEdBar(p){
+  var n = state.photos.length, i = p ? state.photos.indexOf(p) + 1 : 0;
+  $("edTitle").textContent = p ? p.name : "尚未選擇照片";
+  $("edName").textContent = p ? (i + " / " + n) : "";
+  $("edSub").textContent = p ? ("照片 " + i + " / " + n + (p.markers.length ? " · " + p.markers.length + " 個標記" : "")) : "請先在照片庫加入照片";
+}
+function syncToolGroup(){
+  Array.prototype.forEach.call(document.querySelectorAll(".tg"), function(el){
+    el.classList.toggle("on", el.getAttribute("data-g") === state.toolGroup);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".dk"), function(el){
+    el.classList.toggle("on", el.getAttribute("data-g") === state.toolGroup);
+  });
+}
+function syncDockBadges(){            // 類別裡有沒看過的新功能，就在該類別上掛小紅點（工具本身被收起來看不到）
+  Array.prototype.forEach.call(document.querySelectorAll(".dk"), function(d){
+    var g = d.getAttribute("data-g");
+    d.classList.toggle("has-new", !!document.querySelector('.tg[data-g="' + g + '"] .is-new'));
+  });
+}
+function setToolGroup(g){
+  if(g === state.toolGroup) return;
+  var prev = state.toolGroup;
+  // 進行到一半的裁切／拉平／遮蔽，離開類別就等於取消
+  exitCrop(); exitTilt(); exitMask();
+  if(prev === "mark"){
+    if(["red","blue","yellow","text"].indexOf(state.mode) >= 0) state.lastMarkMode = state.mode;
+    state.mode = "select";            // 在別的類別點照片不該新增標記
+    state.selMk = -1;                 // 選取中的標記也放掉，否則它的浮動列會一直擋在畫面下方
+  }
+  if(g === "mark") state.mode = state.lastMarkMode || "red";
+  state.toolGroup = g;
+  syncToolGroup();
+  draw();
+}
+Array.prototype.forEach.call(document.querySelectorAll(".dk"), function(b){
+  b.onclick = function(){ setToolGroup(b.getAttribute("data-g")); };
+});
+$("btnEdBack").onclick = function(){ show("lib"); };
+$("btnToGrid").onclick = function(){ show("grid"); };
+
+/* 標記屬性面板（寬螢幕）：用「簽章」比對，沒變就不重繪——draw() 在拖曳時每一格都會呼叫 */
+var inspSig = "", filmSig = "";
+function markerKind(m){
+  if(m.type === "text") return "文字";
+  if(m.color === COLORS.red) return "需處理";
+  if(m.color === COLORS.blue) return "觀察";
+  return "自訂";
+}
+function renderInspector(){
+  if(!wideMQ.matches) return;
+  var p = cur();
+  var sig = p ? [p.id, state.selMk, bw(p.bmp) + "x" + bh(p.bmp),
+                 p.markers.map(function(m){ return (m.text || "") + "|" + m.color + "|" + (m.type || ""); }).join("¦")].join("§") : "none";
+  if(sig === inspSig) return;
+  inspSig = sig;
+  var list = $("inspList"); list.innerHTML = "";
+  if(!p){
+    $("inspH").textContent = "標記";
+    $("inspSel").hidden = true; $("inspHint").hidden = false; $("inspMeta").textContent = "";
+    return;
+  }
+  $("inspH").textContent = "這張照片的標記（" + p.markers.length + "）";
+  if(!p.markers.length){
+    var none = document.createElement("div"); none.className = "none"; none.textContent = "還沒有標記"; list.appendChild(none);
+  }
+  p.markers.forEach(function(m, i){
+    var r = document.createElement("button"); r.className = "row" + (i === state.selMk ? " on" : "");
+    var d = document.createElement("span"); d.className = "dot"; d.style.background = m.color; r.appendChild(d);
+    var t = document.createElement("span"); t.className = "t"; t.textContent = m.text || "（無文字）"; r.appendChild(t);
+    var k = document.createElement("small"); k.textContent = markerKind(m); r.appendChild(k);
+    r.onclick = function(){ state.selMk = i; draw(); };
+    list.appendChild(r);
+  });
+  var m = state.selMk >= 0 ? p.markers[state.selMk] : null;
+  $("inspSel").hidden = !m; $("inspHint").hidden = !!m;
+  if(m){
+    $("inspText").value = m.text || "";
+    var sw = $("inspSw"); sw.innerHTML = "";
+    SWATCHES.forEach(function(cor){
+      var b = document.createElement("button"); b.style.background = cor; b.title = cor;
+      if(cor.toLowerCase() === String(m.color).toLowerCase()) b.className = "on";
+      b.onclick = function(){ applyColor(cor); };
+      sw.appendChild(b);
+    });
+  }
+  $("inspMeta").textContent = p.name + "　" + bw(p.bmp) + " × " + bh(p.bmp) + " px";
+}
+$("inspText").addEventListener("change", function(){
+  var p = cur(); if(!p || state.selMk < 0) return;
+  var m = p.markers[state.selMk], t = this.value.trim();
+  if(!t || t === m.text){ this.value = m.text || ""; return; }
+  pushUndo(p); m.text = t; markDirty(p); draw();
+});
+$("inspFront").onclick = function(){ $("btnFront").onclick(); };
+$("inspBack").onclick  = function(){ $("btnBack").onclick(); };
+$("inspDel").onclick   = function(){ $("btnDelMk").onclick(); };
+$("inspDone").onclick  = function(){ state.selMk = -1; draw(); };
+
+/* 縮圖列（寬螢幕）：點縮圖切換照片 */
+function gotoPhoto(id){ state.curId = id; state.selMk = -1; exitCrop(); resetView(); draw(); }
+function renderFilm(){
+  if(!wideMQ.matches) return;
+  var cp = cur();
+  var sig = state.photos.map(function(p){ return p.id; }).join(",") + "§" + state.curId + "§" + (cp ? cp.markers.length + "/" + cp.undo.length : "");
+  if(sig === filmSig) return;
+  filmSig = sig;
+  var el = $("filmStrip"); el.innerHTML = "";
+  state.photos.forEach(function(p){
+    var d = document.createElement("button"); d.className = "th" + (p.id === state.curId ? " on" : ""); d.title = p.name;
+    var im = document.createElement("img"); im.src = makeThumb(p); im.alt = p.name; d.appendChild(im);
+    var sm = document.createElement("small"); sm.textContent = p.name; d.appendChild(sm);
+    d.onclick = function(){ gotoPhoto(p.id); };
+    el.appendChild(d);
+  });
+  var on = el.querySelector(".th.on");
+  if(on) el.scrollLeft = on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2;     // 目前這張捲到中間
+}
+/* 視窗從手機寬度變成寬螢幕（或相反）時，把兩邊的畫面都重畫一次 */
+(wideMQ.addEventListener ? wideMQ.addEventListener.bind(wideMQ, "change") : wideMQ.addListener.bind(wideMQ))(function(){
+  inspSig = ""; filmSig = ""; if(views.edit.classList.contains("on")) draw();
+});
+syncToolGroup();
 $("btnCropNo").onclick = function(){ exitCrop(); draw(); };
 $("btnCropOk").onclick = function(){
   var p = cur(); if(!p || !state.crop) return;
