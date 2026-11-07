@@ -3,7 +3,9 @@
 App 的臨床內容以 **IADT 2020 三份指引**為主幹。所有數字（固定天數、追蹤時程、
 門檻值）都以原文為準，**不採用二手整理**。
 
-**臨床內容核對日期：2026-09-23**
+**臨床內容核對日期：2026-09-23 全面核對；2026-09-29 完成 AAE 2026 逐條比對**
+（App 畫面與病歷草稿上的「臨床內容核對至」顯示的是 2026-09-29）。之後依原文做的個別修正
+（2026-10-02、10-03、10-05）記在下方「核對時發現並修正的項目」，不是全面重新核對。
 **核心指引版本：IADT 2020**
 
 ## 主要來源
@@ -127,6 +129,12 @@ AAE-2、AAE-3 用於衛教用語與預防章節。
 | 複雜性牙冠牙根斷裂 | 牙髓策略寫「成熟牙**且修復需要根管空間時才**摘除牙髓」，跟同頁急性處置自相矛盾 | IADT-1 Table 6：「In mature teeth with complete root formation, removal of the pulp is usually indicated」 | 改成「成熟牙通常需要摘除牙髓並完成根管治療，最終處置配合斷裂線位置與修復計畫」 |
 | 側向脫位（成熟根） | 只寫 IADT 的早期根管治療，沒標出 AAE 不同 | IADT-1：「Root canal treatment should be started」；AAE Table 3：「If diagnosed, endodontic treatment is indicated」 | IADT 主文不動，牙髓策略加 AAE 附註（`aaePulp`）；首頁根尖段改成分別標出兩份指引 |
 | 內縮性脫位（未成熟根 >7 mm） | 上表把未成熟根整列寫成「一致」 | AAE Table 3：「In cases of intrusion >7 mm, reposition surgically or orthodontically within 4 weeks」 | IADT 主文不動，急性處置加 AAE 附註（`aaeTreatment`）；上表拆成 ≤7 mm／>7 mm 兩列 |
+
+### 2026-10-05 急救步驟 2 補上唾液（Dr.Tso 指定，v2.7）
+
+| 區段 | 原本 | 改成 | 依據 |
+|---|---|---|---|
+| 首屏「脫落恆牙現場四步驟」步驟 2（髒了就沖一下） | 用牛奶或生理食鹽水沖掉污染 | 用牛奶、生理食鹽水或**病人的唾液**輕輕沖掉污染（英文同步）；插圖改成手指捏牙冠、牙根在牛奶中短暫輕晃 | IADT-2 急救：「If the tooth is dirty, rinse it gently in milk, saline or in the patient's saliva」 |
 
 ## 已從原文確認的關鍵數字
 
