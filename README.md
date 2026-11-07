@@ -78,7 +78,7 @@ apps/<代號>/          各個 App（每個一資料夾）
                       臨床內容資料在 data/，來源與核對紀錄見該資料夾
                       CONTENT-SOURCES.md，插圖規格見 docs/handoff/）
   short-link/         縮網址（建立短網址、看點擊次數、產生 QR code；
-                      資料與首頁統計放同一個 Google 試算表，後端網址在 config.js）
+                      資料存在自己的 Google 試算表，後端網址在 config.js）
 s/                    縮網址的公開轉址頁（…/APP/s/?代號；刻意不加登入保護，
                       點的人不用登入）
 manifest.webmanifest  PWA 設定（可加入主畫面）
@@ -86,7 +86,7 @@ sw.js                 Service Worker（首頁殼層離線快取）
 docs/ADDING_APPS.md   App 上架規則
 docs/STATS_SETUP.md   使用統計後端設定步驟
 docs/VOTING_SETUP.md  即時投票後端設定步驟（Google 試算表 + Apps Script）
-docs/SHORTLINK_SETUP.md 縮網址設定步驟（與統計共用 docs/stats-backend.gs 與同一個試算表）
+docs/SHORTLINK_SETUP.md 縮網址後端設定步驟（同上；程式碼 docs/shortlink-backend.gs）
 tests/                端到端測試（`./tests/run.sh`；首頁在 home-badges、home-bento）
 .github/workflows/    pages.yml 合併 main 後自動部署 GitHub Pages
                       dentfigure-upstream.yml 跑 DentFigure 釘選的上游測試
