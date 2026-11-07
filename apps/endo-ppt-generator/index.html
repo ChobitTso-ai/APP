@@ -154,6 +154,12 @@
     text-decoration:none;margin:5px 0 2px}
   .foot-soc img{width:20px;height:20px}
   .foot-soc:hover{color:var(--grn)}
+  /* 給同事看的指路小字。縮網址的建立金鑰本身不寫在這裡：
+     這個 repo 是公開的，金鑰一進原始碼就等於公開，任何人都能拿
+     本站網域做轉址。金鑰只存在 Apps Script 的 ADMIN_KEY，私下給。 */
+  .memo{display:inline-block;margin-top:8px;padding:4px 12px;
+    border:1px dashed var(--line2);border-radius:3px;
+    color:var(--muted);font-size:.75rem;letter-spacing:.3px}
 
   /* ---- 其他 ---- */
   .hidden{display:none!important}
@@ -326,7 +332,8 @@
     <a class="foot-soc" href="https://www.aeroc.org.tw/" target="_blank" rel="noopener">
       <img src="assets/aeroc-logo.png" alt="中華民國牙髓病學會"><span>中華民國牙髓病學會</span>
     </a><br>
-    範本版面與字型沿用學會範本 · NCKUH ENDO
+    範本版面與字型沿用學會範本 · NCKUH ENDO<br>
+    <span class="memo">縮網址的建立金鑰請向 Tso 醫師索取（為安全起見不寫在網頁上）</span>
   </div>
 </div>
 <div class="toast" id="toast"></div>
