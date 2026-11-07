@@ -8,8 +8,10 @@
 
   ‧ 短網址長這樣：https://chobittso-ai.github.io/APP/s/?代號
     轉址頁在根目錄 s/index.html（刻意不加登入保護，點的人不用登入）。
-  ‧ 資料存在使用者自己的 Google 試算表（後端 docs/shortlink-backend.gs，
-    設定步驟 docs/SHORTLINK_SETUP.md）。後端網址在 config.js，兩頁共用。
+  ‧ 後端與首頁的使用統計是**同一支 Apps Script、同一個試算表**（docs/stats-backend.gs 的
+    「縮網址」區塊；使用者不想多開試算表），設定步驟 docs/SHORTLINK_SETUP.md。
+    後端網址在 config.js，兩頁共用。請求一律帶 action；回應帶 sl 版本標記，
+    沒有 sl＝試算表那邊還是舊的純統計程式，顯示「後端還沒更新」。
   ‧ 建立／修改／刪除／看清單要「建立金鑰」，記在這台裝置的 localStorage（nckuh_endo_sl_key）。
   ‧ QR code 一律白底黑點（深色模式也一樣），掃描最穩。
 -->
@@ -155,8 +157,12 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 
   <div class="note" id="setupWarn" hidden>
     ⚠️ 還沒接上縮網址後端，目前無法建立短網址。<br>
-    設定方式見 <b>docs/SHORTLINK_SETUP.md</b>：在自己的 Google 試算表部署一次 Apps Script（約 5 分鐘），
-    再把網址填進 <code>apps/short-link/config.js</code>。
+    設定方式見 <b>docs/SHORTLINK_SETUP.md</b>，並把網址填進 <code>apps/short-link/config.js</code>。
+  </div>
+  <div class="note" id="oldWarn" hidden>
+    ⚠️ <b>統計試算表的程式還沒更新</b>，目前無法使用縮網址。<br>
+    請打開「App 中心統計」試算表 → 擴充功能 → Apps Script，換成新版程式並重新部署（約 3 分鐘），
+    步驟見 <b>docs/SHORTLINK_SETUP.md</b>。網址不會變，更新完重新整理這頁就能用。
   </div>
 
   <!-- 輸入建立金鑰 -->
@@ -386,7 +392,12 @@ function jsonp(params, timeoutMs) {
       fn();
     }
     window[cb] = (data) => finish(() => {
-      if (data && data.error) {
+      if (!data || !data.sl) {
+        // 舊的純統計後端不認得 action，會照樣回統計數字（沒有 sl 標記）
+        const e = new Error('統計試算表的程式還沒更新成含縮網址的版本');
+        e.code = 'oldbackend';
+        reject(e);
+      } else if (data.error) {
         const e = new Error(data.error);
         e.code = data.code || '';
         reject(e);
@@ -404,6 +415,11 @@ const api = (action, extra) => jsonp(Object.assign({ action, key: store(KEY_LS) 
 
 /** 金鑰相關的錯誤：回到輸入金鑰的畫面。回傳 true 表示已處理。 */
 function handleKeyError(e) {
+  if (e.code === 'oldbackend') {
+    $('main').hidden = true; $('keyPanel').hidden = true; $('keyBtn').hidden = true;
+    $('oldWarn').hidden = false;
+    return true;
+  }
   if (e.code === 'badkey') {
     store(KEY_LS, null);
     showKeyPanel('金鑰不正確或已經換過了，請重新輸入。');
@@ -437,7 +453,8 @@ $('keyForm').addEventListener('submit', async (ev) => {
     $('keyInput').value = '';
     enter(data.links);
   } catch (e) {
-    if (e.code === 'badkey') { store(KEY_LS, null); showMsg('keyMsg', '金鑰不正確，請再確認一次。'); }
+    if (e.code === 'oldbackend') { store(KEY_LS, null); handleKeyError(e); }
+    else if (e.code === 'badkey') { store(KEY_LS, null); showMsg('keyMsg', '金鑰不正確，請再確認一次。'); }
     else { if (e.code !== 'nokey' && e.code !== 'locked') store(KEY_LS, null); showMsg('keyMsg', e.message); }
   } finally {
     $('keyGo').disabled = false;

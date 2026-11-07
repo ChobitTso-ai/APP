@@ -1,7 +1,10 @@
-/* 縮網址 v1.0：後端（docs/shortlink-backend.gs）＋管理頁（apps/short-link/）＋公開轉址頁（s/）
+/* 縮網址 v1.0：後端（docs/stats-backend.gs 的「縮網址」區塊）＋管理頁（apps/short-link/）＋公開轉址頁（s/）
+
+   後端跟首頁的使用統計是同一支 Apps Script、同一個試算表（使用者不想多開試算表），
+   doGet 看有沒有 action 參數分流——所以這裡也驗「統計照常運作、不會被縮網址影響」。
 
    後端是 Google Apps Script，測試環境連不到 Google，所以：
-   ‧ 把 **真正的** shortlink-backend.gs 放進 Node 的 vm 裡跑，SpreadsheetApp 等換成記憶體裡的假試算表
+   ‧ 把 **真正的** stats-backend.gs（整支）放進 Node 的 vm 裡跑，SpreadsheetApp 等換成記憶體裡的假試算表
      ——假試算表會模仿 Google 試算表的自動轉型（"007" 變數字 7、"=" 開頭變公式），
        用來驗證後端寫入時的 ' 前綴真的有擋住。
    ‧ 瀏覽器端的 JSONP 請求用 page.route 攔下來，轉給 vm 裡的 doGet，回傳它真正的輸出。
@@ -15,7 +18,7 @@ const { BASE, LOGIN, chromePath, OUT } = require('./env');
 let pass = 0, fail = 0;
 function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} else {fail++;console.log('  ✗ FAIL:',n+(d?'  → '+d:''));} }
 
-const BACKEND = path.join(__dirname, '..', 'docs', 'shortlink-backend.gs');
+const BACKEND = path.join(__dirname, '..', 'docs', 'stats-backend.gs');
 const MANAGER = BASE + '/apps/short-link/index.html';
 const S = BASE + '/s/';
 const ENDPOINT = 'https://script.google.com/macros/s/TESTSHORT/exec';
@@ -52,6 +55,7 @@ function makeGas(){
       return this;
     }
     setValue(v){ return this.setValues([[v]]); }
+    getDisplayValue(){ return String(this.getValue()); }
     setNumberFormat(){ return this; }
   }
   class Sheet {
@@ -59,9 +63,14 @@ function makeGas(){
     appendRow(vals){ this.rows.push(vals.map(coerce)); return this; }
     getLastRow(){ return this.rows.length; }
     getMaxRows(){ return 1000; }
-    getRange(r, c, nr = 1, nc = 1){ if (r < 1 || c < 1 || nr < 1) throw new Error('範圍不正確'); return new Range(this, r, c, nr, nc); }
+    getRange(r, c, nr = 1, nc = 1){
+      if (typeof r === 'string') return new Proxy({}, { get: () => function(){ return this; } }); // 'A1:B1' 這種只拿來設格式
+      if (r < 1 || c < 1 || nr < 1) throw new Error('範圍不正確'); return new Range(this, r, c, nr, nc);
+    }
     deleteRow(r){ this.rows.splice(r - 1, 1); }
     setFrozenRows(){}
+    setColumnWidth(){}
+    clearContents(){ this.rows = []; }
   }
   const ss = {
     getSheetByName: (n) => sheets.get(n) || null,
@@ -84,9 +93,10 @@ function makeGas(){
       createTextOutput: (s) => ({ s, mime: null, setMimeType(m){ this.mime = m; return this; }, getContent(){ return this.s; } }),
     },
     Logger: { log: (m) => logs.push(String(m)) },
+    Utilities: { formatDate: (d) => new Date(d).toISOString().slice(0, 10) },
   };
   vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync(BACKEND, 'utf8'), ctx, { filename: 'shortlink-backend.gs' });
+  vm.runInContext(fs.readFileSync(BACKEND, 'utf8'), ctx, { filename: 'stats-backend.gs' });
   const raw = (params) => ctx.doGet({ parameter: params });
   const call = (params) => JSON.parse(raw(params).getContent());
   const links = () => sheets.get('短網址');
@@ -151,13 +161,13 @@ async function visit(ctx, url){
     const g = makeGas();
     ok('ping：還沒設定金鑰時 ready=false', g.call({ action: 'ping' }).ready === false);
     ok('還沒 setup 就看清單 → nokey', g.call({ action: 'list', key: 'x' }).code === 'nokey');
-    const key = g.ctx.setup();
-    ok('setup 產生 xxxx-xxxx 格式的金鑰（沒有 0/o/1/l/i）', /^[a-hj-km-np-z2-9]{4}-[a-hj-km-np-z2-9]{4}$/.test(key), key);
+    const key = g.ctx.setupShortlink();
+    ok('setupShortlink 產生 xxxx-xxxx 格式的金鑰（沒有 0/o/1/l/i）', /^[a-hj-km-np-z2-9]{4}-[a-hj-km-np-z2-9]{4}$/.test(key), key);
     ok('金鑰存在指令碼屬性 ADMIN_KEY，不在程式碼裡', g.props.ADMIN_KEY === key &&
        !fs.readFileSync(BACKEND, 'utf8').includes(key));
     ok('執行記錄顯示金鑰', g.logs.some(l => l.includes(key)));
     ok('setup 建好兩個工作表與標題列', g.links().rows[0][0] === '代號' && g.sheets.get('點擊紀錄').rows[0][1] === '代號');
-    ok('再執行一次 setup 沿用同一組金鑰', g.ctx.setup() === key);
+    ok('再執行一次 setupShortlink 沿用同一組金鑰', g.ctx.setupShortlink() === key);
     ok('ping：設定後 ready=true', g.call({ action: 'ping' }).ready === true);
 
     console.log('— 後端：金鑰檢查 —');
@@ -244,6 +254,20 @@ async function visit(ctx, url){
     ok('刪除不會帶走點擊紀錄', g.sheets.get('點擊紀錄').rows.length > 3);
     ok('刪掉的代號可以再建立', !!g.call({ action: 'create', ...K, url: 'https://example.org/again', code: '007' }).link);
 
+    console.log('— 後端：與使用統計共用同一支程式 —');
+    const st0 = g.call({});
+    ok('沒有 action 的請求照舊回統計數字', typeof st0.visits === 'number' && typeof st0.apps === 'object' && !('sl' in st0), JSON.stringify(st0));
+    g.call({ event: 'visit', new: '1' });
+    g.call({ event: 'open', app: 'short-link' });
+    const st1 = g.call({});
+    ok('造訪 +1、開啟縮網址 +1 照常計數', st1.visits === 1 && st1.uniques === 1 && st1.apps['short-link'] === 1, JSON.stringify(st1));
+    ok('統計的工作表（stats／總覽／每日）與縮網址的工作表並存',
+       ['stats', '總覽', '每日', '短網址', '點擊紀錄'].every(n => g.sheets.has(n)), [...g.sheets.keys()].join('、'));
+    ok('統計請求不會動到短網址的點擊次數', g.clicksOf('manual') === c0 + 1);
+    ok('縮網址的回應都帶 sl 版本標記（前端靠它認出後端已更新）',
+       g.call({ action: 'ping' }).sl === '1.0' && g.call({ action: 'go', code: 'nope' }).sl === '1.0' &&
+       g.call({ action: 'list', key: 'x' }).sl === '1.0');
+
     console.log('— 後端：其他 —');
     ok('不認得的 action → 錯誤', !!g.call({ action: 'hack' }).error);
     const evilCb = g.raw({ action: 'ping', callback: 'alert(1)//' });
@@ -253,10 +277,10 @@ async function visit(ctx, url){
     ok('金鑰連錯 30 次後，連正確的金鑰也暫時擋下', g.call({ action: 'list', ...K }).code === 'locked');
     g.cache.clear();
     ok('時間過了（快取清掉）就恢復', Array.isArray(g.call({ action: 'list', ...K }).links));
-    const oldKey = key, newKey = g.ctx.resetKey();
-    ok('resetKey 換新金鑰、舊的失效', newKey !== oldKey && g.call({ action: 'list', key: oldKey }).code === 'badkey' &&
+    const oldKey = key, newKey = g.ctx.resetShortlinkKey();
+    ok('resetShortlinkKey 換新金鑰、舊的失效', newKey !== oldKey && g.call({ action: 'list', key: oldKey }).code === 'badkey' &&
        Array.isArray(g.call({ action: 'list', key: newKey }).links));
-    ok('showKey 顯示目前的金鑰', g.ctx.showKey() === newKey);
+    ok('showShortlinkKey 顯示目前的金鑰', g.ctx.showShortlinkKey() === newKey);
   }
 
   /* ═════════ 二、瀏覽器 ═════════ */
@@ -264,7 +288,7 @@ async function visit(ctx, url){
 
   console.log('— 登入保護：管理頁要登入，轉址頁不用 —');
   {
-    const g = makeGas(); g.ctx.setup();
+    const g = makeGas(); g.ctx.setupShortlink();
     g.call({ action: 'create', key: g.props.ADMIN_KEY, url: 'https://example.org/open', code: 'open' });
     const { ctx } = await newCtx(browser, g, { authed: false });
     const p = await ctx.newPage();
@@ -279,7 +303,7 @@ async function visit(ctx, url){
 
   console.log('— 首頁卡片 —');
   {
-    const g = makeGas(); g.ctx.setup();
+    const g = makeGas(); g.ctx.setupShortlink();
     const { ctx } = await newCtx(browser, g);
     const page = await ctx.newPage();
     page.on('pageerror', e => { fail++; console.log('  ✗ PAGE ERROR:', e.message); });
@@ -311,9 +335,40 @@ async function visit(ctx, url){
     await ctx.close();
   }
 
+  console.log('— 試算表那邊還是舊的純統計程式（回應沒有 sl 標記）—');
+  {
+    const g = makeGas();
+    const STATS_ONLY = { visits: 12, uniques: 3, logins: 4, apps: {} };   // 舊後端看到 action 也照樣回這個
+    const { ctx } = await newCtx(browser, g, { goBackend: async (route, params) => {
+      await route.fulfill({ contentType: 'text/javascript', body: `${params.callback}(${JSON.stringify(STATS_ONLY)});` });
+      return true;
+    } });
+    await ctx.addInitScript(() => localStorage.setItem('nckuh_endo_sl_key', 'some-key'));
+    const p = await ctx.newPage();
+    await p.goto(MANAGER);
+    await p.waitForSelector('#oldWarn:not([hidden])');
+    ok('管理頁提示「統計試算表的程式還沒更新」', /還沒更新/.test(await text(p, '#oldWarn')) && /SHORTLINK_SETUP/.test(await text(p, '#oldWarn')));
+    ok('不會把統計數字誤當成空的短網址清單', !(await shown(p, '#main')) && !(await shown(p, '#keyPanel')));
+    const q = await visit(ctx, S + '?abc');
+    await q.waitForSelector('#vInfo:not([hidden])');
+    ok('轉址頁顯示「服務尚未啟用」、不會誤報找不到', /尚未啟用/.test(await text(q, '#vInfo')) && q.url().startsWith(S));
+    await ctx.close();
+  }
+
+  console.log('— 後端網址＝首頁統計的網址（同一支程式）—');
+  {
+    const cfg = fs.readFileSync(path.join(__dirname, '..', 'apps', 'short-link', 'config.js'), 'utf8');
+    const appjs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+    const a = (cfg.match(/SHORTLINK_ENDPOINT\s*=\s*'([^']*)'/) || [])[1];
+    const b = (appjs.match(/const STATS_ENDPOINT\s*=\s*'([^']*)'/) || [])[1];
+    ok('config.js 的 SHORTLINK_ENDPOINT 與 app.js 的 STATS_ENDPOINT 一致', !!a && a === b, a);
+    ok('舊的獨立後端檔已移除（避免有人照舊文件多開一個試算表）',
+       !fs.existsSync(path.join(__dirname, '..', 'docs', 'shortlink-backend.gs')));
+  }
+
   /* 主要流程共用同一個後端 */
   const g = makeGas();
-  const KEY = g.ctx.setup();
+  const KEY = g.ctx.setupShortlink();
   const { ctx, calls } = await newCtx(browser, g, { opts: { viewport: { width: 1180, height: 900 } } });
   const page = await ctx.newPage();
   page.on('pageerror', e => { fail++; console.log('  ✗ PAGE ERROR:', e.message); });
@@ -453,10 +508,10 @@ async function visit(ctx, url){
 
   console.log('— 轉址頁：就算後端被竄改回傳 javascript: 也不執行 —');
   {
-    const g2 = makeGas(); g2.ctx.setup();
+    const g2 = makeGas(); g2.ctx.setupShortlink();
     const { ctx: c2 } = await newCtx(browser, g2, { goBackend: async (route, params) => {
       if (params.action === 'go' && params.code === 'evil') {
-        await route.fulfill({ contentType: 'text/javascript', body: `${params.callback}({"url":"javascript:alert(document.domain)"});` });
+        await route.fulfill({ contentType: 'text/javascript', body: `${params.callback}({"url":"javascript:alert(document.domain)","sl":"1.0"});` });
         return true;
       }
     } });
@@ -470,7 +525,7 @@ async function visit(ctx, url){
   console.log('— 轉址頁：連不上後端 → 可重試 —');
   {
     let down = true;
-    const g3 = makeGas(); g3.ctx.setup();
+    const g3 = makeGas(); g3.ctx.setupShortlink();
     g3.call({ action: 'create', key: g3.props.ADMIN_KEY, url: 'https://example.org/retry', code: 'retry' });
     const { ctx: c3 } = await newCtx(browser, g3, { goBackend: async (route) => { if (down) { await route.abort(); return true; } } });
     const e = await visit(c3, S + '?retry');
@@ -558,7 +613,7 @@ async function visit(ctx, url){
   await q.close();
 
   console.log('— 金鑰被換掉 —');
-  g.ctx.resetKey();
+  g.ctx.resetShortlinkKey();
   await page.click('#refreshBtn');
   await page.waitForSelector('#keyPanel:not([hidden])');
   ok('管理者 resetKey 後 → 要求重新輸入', /重新輸入/.test(await text(page, '#keyMsg')) && !(await shown(page, '#main')));

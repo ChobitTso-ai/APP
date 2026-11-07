@@ -195,6 +195,12 @@ p{color:var(--muted); font-size:.95rem}
 
     jsonp(params, 20000).then(function (data) {
       clearTimeout(slow);
+      if (!data.sl) {                                     // 試算表那邊還是舊的純統計程式
+        $('infoTitle').textContent = '縮網址服務尚未啟用';
+        $('infoMsg').textContent = '管理者還沒更新縮網址後端，這個短網址暫時無法使用。';
+        show('vInfo');
+        return;
+      }
       if (data.notFound) { $('nfCode').textContent = p.code; show('vNotFound'); return; }
       var url = safeUrl(data.url);
       if (data.error || !url) {
