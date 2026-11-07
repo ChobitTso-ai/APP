@@ -36,6 +36,7 @@
   --blue: #2F5BEA;   --blue-soft: #E6ECFD;
   --amber: #B06500;  --amber-soft: #FCEFD9;
   --green: #2E8A3E;  --green-soft: #E3F3E5;
+  --rose: #C2367A;   --rose-soft: #FBE4EF;
   --ic-on: #FFFFFF;
   --shadow: 0 1px 2px rgba(17, 22, 29, .06), 0 8px 24px rgba(17, 22, 29, .06);
   --r: 22px;
@@ -74,6 +75,7 @@
     --blue: #93ABFF;   --blue-soft: #1D2747;
     --amber: #F5B451;  --amber-soft: #382912;
     --green: #74D38E;  --green-soft: #17311D;
+    --rose: #FF8DC1;   --rose-soft: #3A1A2B;
     --ic-on: #0E1217;
     --shadow: none;
     color-scheme: dark;
@@ -327,6 +329,7 @@ svg.ic {
 [data-ic="slides"] { --ic: var(--amber);  --ic-soft: var(--amber-soft); }
 [data-ic="figure"] { --ic: var(--green);  --ic-soft: var(--green-soft); }
 [data-ic="tooth"]  { --ic: var(--teal);   --ic-soft: var(--teal-soft); }
+[data-ic="qr"]     { --ic: var(--rose);   --ic-soft: var(--rose-soft); }
 .app-name { font-size: 18px; font-weight: 700; line-height: 1.35; }
 .app-desc {
   color: var(--muted); font-size: 14px; flex: 1;

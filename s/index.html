@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<!--
+  縮網址的「公開轉址頁」：https://chobittso-ai.github.io/APP/s/?代號
+
+  ⚠️ 這一頁「刻意」不加 App 中心的登入保護。
+  短網址是要給人點的（同事用手機相機掃 QR，開的是沒登入過的瀏覽器），
+  加了登入保護，點的人會被導回登入頁、根本到不了目的地。
+  這頁只做一件事：問後端「這個代號要去哪」，拿到 http/https 網址就跳過去。
+  建立／修改短網址在 apps/short-link/（有登入保護＋建立金鑰）。
+
+  放在根目錄的 s/ 而不是 apps/short-link/ 底下，是為了讓網址短：
+    …/APP/s/?rct              ← 這裡
+    …/APP/apps/short-link/go.html?rct   ← 放在 App 資料夾會長一倍
+  網址後面加 +（例如 ?rct+）＝只預覽目的地、不跳轉、不計次。
+
+  縮網址 v1.0 ©Tso KY - All Rights Reserved
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>縮網址轉址中…</title>
+<link rel="icon" href="../assets/favicon.png">
+<style>
+:root{
+  --bg:#E8ECF1; --tile:#FFFFFF; --text:#11161D; --muted:#5B6573; --line:#D5DBE3;
+  --accent:#2F5BEA; --accent-ink:#FFFFFF; --danger:#C2382B;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0E1217; --tile:#181D24; --text:#E9EDF2; --muted:#9AA4B2; --line:#2A313B;
+    --accent:#6E8EFF; --accent-ink:#0E1217; --danger:#FF8F80;
+  }
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%}
+body{
+  font-family:var(--font); background:var(--bg); color:var(--text);
+  display:flex; align-items:center; justify-content:center;
+  padding:16px; line-height:1.6;
+}
+.card{
+  background:var(--tile); border:1px solid var(--line); border-radius:20px;
+  padding:28px 24px; width:100%; max-width:440px; text-align:center;
+  box-shadow:0 10px 30px rgba(17,22,29,.08);
+}
+h1{font-size:1.15rem; margin-bottom:6px}
+p{color:var(--muted); font-size:.95rem}
+.spin{
+  width:38px; height:38px; margin:4px auto 16px; border-radius:50%;
+  border:4px solid var(--line); border-top-color:var(--accent);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){ .spin{animation-duration:2.4s} }
+.icon{font-size:2.2rem; margin-bottom:8px}
+.dest{
+  margin:14px 0 4px; padding:10px 12px; border-radius:12px; background:var(--bg);
+  font-size:.88rem; color:var(--text); word-break:break-all; text-align:left;
+}
+.dest b{display:block; margin-bottom:2px}
+.btn{
+  display:inline-block; margin-top:16px; padding:10px 22px; border-radius:999px; border:0;
+  background:var(--accent); color:var(--accent-ink); font:inherit; font-weight:700;
+  text-decoration:none; cursor:pointer;
+}
+.btn.ghost{background:transparent; color:var(--accent); border:1px solid var(--line)}
+.err h1{color:var(--danger)}
+.foot{margin-top:18px; font-size:.75rem; color:var(--muted)}
+.foot a{color:inherit}
+</style>
+<script src="../apps/short-link/config.js"></script>
+</head>
+<body>
+<main class="card" id="card">
+  <!-- 轉址中 -->
+  <section id="vLoading">
+    <div class="spin" aria-hidden="true"></div>
+    <h1>正在前往目的地…</h1>
+    <p id="slowHint" hidden>連線比較慢，請稍候（第一次開通常要 2～5 秒）</p>
+    <a class="btn ghost" id="manualGo" hidden>沒有自動跳轉？點這裡</a>
+  </section>
+
+  <!-- 預覽（網址後面加 +）-->
+  <section id="vPeek" hidden>
+    <div class="icon">🔎</div>
+    <h1 id="peekTitle">這個短網址會前往</h1>
+    <div class="dest"><b>目的地</b><span id="peekUrl"></span></div>
+    <a class="btn" id="peekGo">前往</a>
+  </section>
+
+  <!-- 找不到 -->
+  <section id="vNotFound" class="err" hidden>
+    <div class="icon">🤔</div>
+    <h1>找不到這個短網址</h1>
+    <p>代號「<span id="nfCode"></span>」不存在，可能打錯了，或已經被刪除。</p>
+  </section>
+
+  <!-- 連不上 -->
+  <section id="vError" class="err" hidden>
+    <div class="icon">📡</div>
+    <h1>暫時連不上</h1>
+    <p id="errMsg">請確認網路後再試一次。</p>
+    <button class="btn" id="retry" type="button">再試一次</button>
+  </section>
+
+  <!-- 沒有代號／服務未設定 -->
+  <section id="vInfo" hidden>
+    <div class="icon">🔗</div>
+    <h1 id="infoTitle">NCKUH ENDO 縮網址</h1>
+    <p id="infoMsg">這是 App 中心的短網址轉址頁，網址後面要接代號，例如 <b>…/s/?abc</b>。</p>
+  </section>
+
+  <p class="foot">NCKUH ENDO · <a href="../">App 中心</a> 縮網址</p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var VIEWS = ['vLoading', 'vPeek', 'vNotFound', 'vError', 'vInfo'];
+  function show(id) { VIEWS.forEach(function (v) { $(v).hidden = v !== id; }); }
+
+  /* 代號：?rct、?c=rct 都可以；後面被加了 &fbclid=… 之類的追蹤參數就忽略。
+     結尾的 + ＝預覽。複製時多帶到的句點、括號也去掉。 */
+  function parse() {
+    var raw = location.search.replace(/^\?/, '');
+    var m = /(?:^|&)c=([^&]*)/.exec(raw);
+    raw = m ? m[1] : raw.split('&')[0];
+    var peek = /(\+|%2B)$/i.test(raw);
+    if (peek) raw = raw.replace(/(\+|%2B)$/i, '');
+    try { raw = decodeURIComponent(raw); } catch (e) { /* 壞掉的編碼就照原樣 */ }
+    var code = raw.trim().toLowerCase().replace(/^\/+/, '')
+      .replace(/[\s.,;:!?)\]}>'"。，、；：！？）」』】]+$/, '');
+    return { code: code, peek: peek, valid: /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/.test(code) };
+  }
+
+  /* 只放行 http/https。後端已經擋過，這裡再擋一次：
+     就算有人直接在試算表填了 javascript:…，也不會在本站執行。 */
+  function safeUrl(u) {
+    try {
+      var x = new URL(String(u));
+      return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : null;
+    } catch (e) { return null; }
+  }
+
+  function jsonp(params, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var cb = 'slgo_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      var s = document.createElement('script');
+      var done = false;
+      var timer = setTimeout(function () { finish(function () { reject(new Error('timeout')); }); }, timeoutMs);
+      function finish(fn) {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        if (s.parentNode) s.parentNode.removeChild(s);
+        fn();
+      }
+      window[cb] = function (data) { finish(function () { resolve(data || {}); }); };
+      s.onerror = function () { finish(function () { reject(new Error('network')); }); };
+      var q = new URLSearchParams(params);
+      q.set('callback', cb);
+      s.src = window.SHORTLINK_ENDPOINT + '?' + q.toString();
+      document.head.appendChild(s);
+    });
+  }
+
+  var p = parse();
+
+  function run() {
+    if (window.SHORTLINK_ENDPOINT === undefined) {        // config.js 本身沒載到＝網路問題
+      $('errMsg').textContent = '請確認網路後再試一次。';
+      show('vError');
+      return;
+    }
+    if (!window.SHORTLINK_ENDPOINT) {
+      $('infoTitle').textContent = '縮網址服務尚未設定';
+      $('infoMsg').textContent = '管理者還沒接上縮網址後端，這個短網址暫時無法使用。';
+      show('vInfo');
+      return;
+    }
+    if (!p.code) { show('vInfo'); return; }
+    if (!p.valid) { $('nfCode').textContent = p.code; show('vNotFound'); return; }
+
+    show('vLoading');
+    $('slowHint').hidden = true;
+    var slow = setTimeout(function () { $('slowHint').hidden = false; }, 3000);
+    var params = { action: 'go', code: p.code };
+    if (p.peek) params.peek = '1';
+
+    jsonp(params, 20000).then(function (data) {
+      clearTimeout(slow);
+      if (!data.sl) {                                     // 試算表那邊還是舊的純統計程式
+        $('infoTitle').textContent = '縮網址服務尚未啟用';
+        $('infoMsg').textContent = '管理者還沒更新縮網址後端，這個短網址暫時無法使用。';
+        show('vInfo');
+        return;
+      }
+      if (data.notFound) { $('nfCode').textContent = p.code; show('vNotFound'); return; }
+      var url = safeUrl(data.url);
+      if (data.error || !url) {
+        $('errMsg').textContent = data.error || '這個短網址的目標網址格式不正確。';
+        $('retry').hidden = !!data.error && data.code === 'badurl';
+        show('vError');
+        return;
+      }
+      if (p.peek) {
+        document.title = '短網址預覽';
+        if (data.title) $('peekTitle').textContent = data.title;
+        $('peekUrl').textContent = url;
+        $('peekGo').href = url;
+        show('vPeek');
+        return;
+      }
+      $('manualGo').href = url;
+      setTimeout(function () { $('manualGo').hidden = false; }, 1500);
+      location.replace(url);
+    }, function () {
+      clearTimeout(slow);
+      $('errMsg').textContent = '請確認網路後再試一次。';
+      $('retry').hidden = false;
+      show('vError');
+    });
+  }
+
+  $('retry').addEventListener('click', function () {
+    // config.js 沒載到時要整頁重載才會再抓一次；其他情況重問後端就好
+    if (window.SHORTLINK_ENDPOINT === undefined) location.reload(); else run();
+  });
+  run();
+})();
+</script>
+</body>
+</html>

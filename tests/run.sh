@@ -9,8 +9,9 @@ ROOT=$(cd "$DIR/.." && pwd)
 PORT=${PORT:-8765}
 export BASE_URL=${BASE_URL:-http://localhost:8765}
 
-if [ ! -d "$DIR/node_modules" ]; then
-  echo "→ 安裝 playwright-core（第一次才需要）"
+# 少任何一個套件就補裝（舊容器只裝過 playwright-core，後來縮網址測試多了 jsqr）
+if [ ! -d "$DIR/node_modules/playwright-core" ] || [ ! -d "$DIR/node_modules/jsqr" ]; then
+  echo "→ 安裝測試用套件 playwright-core、jsqr（第一次才需要）"
   (cd "$DIR" && npm install --silent)
 fi
 

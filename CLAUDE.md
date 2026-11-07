@@ -16,9 +16,11 @@ assets/         LOGO（TS 標誌；首頁用 logo-mask.png 當 CSS 遮罩）、f
 manifest.webmanifest / sw.js   首頁 PWA（可加入主畫面、離線開得起來）
 apps/<slug>/    各個 App，一個資料夾一個 App，入口一律 index.html
   vendor/       該 App 用到的第三方函式庫（本地檔案，不用 CDN）
+s/              縮網址的公開轉址頁（唯一放在 apps/ 外的 App 頁面，為了讓網址短；刻意不加登入保護）
 tests/          端到端測試（`./tests/run.sh` 一次跑完；首頁徽章在 home-badges、版面／最愛／加入主畫面在 home-bento）
 docs/ADDING_APPS.md           App 上架規則（檢查清單版）
-docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/stats-backend.gs
+docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/stats-backend.gs（**也含縮網址後端**）
+docs/SHORTLINK_SETUP.md       縮網址設定步驟（更新統計試算表的程式＋setupShortlink）
 .github/workflows/pages.yml   合併到 main 自動部署 GitHub Pages
 ```
 
@@ -27,7 +29,7 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   `{ name:'工具名', desc:'一句話說明', icon:'camera', url:'apps/<slug>/index.html', added:'YYYY-MM-DD', updated:'YYYY-MM-DD' }`
   （`icon` 填 `index.html` 裡 `<symbol id="i-代號">` 的代號＝雙色調線條圖示〔線條＋`fill-opacity=".2"` 淡色填塊〕；
   填 emoji 也照樣顯示。**每個代號一個色系**：磚塊帶 `data-ic="代號"`，`styles.css` 的
-  `[data-ic="camera"]{--ic:var(--teal)…}` 對應顏色〔camera 青、poll 紫、aid 珊瑚紅、pdf 藍、slides 琥珀、figure 綠〕，
+  `[data-ic="camera"]{--ic:var(--teal)…}` 對應顏色〔camera 青、poll 紫、aid 珊瑚紅、pdf 藍、slides 琥珀、figure 綠、qr 玫瑰〕，
   沒對到的用主色；新圖示要在那裡補一行。圖示裡要蓋住後方線條的實心區塊用 `style="fill:var(--ic-bg)"`。
   深色模式的主角格／造訪格／開啟圓鈕都是深色 token——**不要再反白**，使用者回報過整片亮白很刺眼、看不到其他卡片，
   `home-bento` 有量亮度擋著。
@@ -301,6 +303,29 @@ docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/st
   原本就低於上限的圖只接受比原檔更小的結果；壓不贏（HEIC 本來就比 JPG 省空間）照樣重新編碼去 EXIF，
   但卡片明講「原檔已低於上限」——不能默默變大。端到端測試共 195 項。
   遮蔽「套用到多頁」經評估暫緩，使用者說先不用）。
+  `apps/short-link/`（縮網址 v1.0，2026-11-07 上架：建立短網址、點擊統計、QR code。
+  **三個部分**：管理頁 `apps/short-link/index.html`（登入保護＋**建立金鑰**）、
+  公開轉址頁 `s/index.html`（網址 `…/APP/s/?代號`，**刻意不加登入保護**——同事用手機相機掃 QR
+  開的是沒登入過的瀏覽器；放根目錄是為了網址短）、後端在 **`docs/stats-backend.gs` 的「縮網址」區塊**
+  ——**使用者不想多開試算表，所以跟首頁使用統計共用同一支 Apps Script、同一個試算表、同一個部署網址**
+  （多「短網址」「點擊紀錄」兩個工作表）。`doGet` 看有沒有 `action` 參數分流：統計請求不帶、縮網址一定帶，
+  **改這支檔案兩邊都要顧到**（測試會把整支放進 Node 跑，也驗統計照常計數）。
+  縮網址的回應一律帶 `sl` 版本標記；沒有 `sl`＝試算表還是舊的純統計程式（舊程式看到 action 照樣回統計數字），
+  管理頁顯示「統計試算表的程式還沒更新」、轉址頁顯示「尚未啟用」，不會把統計數字誤當成空清單。
+  後端網址在 `apps/short-link/config.js`（`window.SHORTLINK_ENDPOINT`，兩頁共用），**必須等於 `app.js` 的
+  `STATS_ENDPOINT`**，測試有比對。函式名都加了 Shortlink 避免跟統計撞名（`shortlinkRoute`、`SL_COL`…）。
+  **建立金鑰**存在 Apps Script 指令碼屬性 `ADMIN_KEY`（`setupShortlink()` 產生、`showShortlinkKey()`／`resetShortlinkKey()`），
+  不進 repo、也不要請使用者貼給 Claude：NCKUH/ENDO 帳密在公開原始碼裡，只靠它任何人都能拿本站網域做釣魚轉址。
+  建立／修改／刪除／看清單要金鑰，轉址不用；連錯 30 次鎖 15 分鐘。
+  **只放行 http/https**，後端寫入與轉址頁跳轉前各擋一次（有人直接在試算表填 `javascript:` 也不會在本站執行）。
+  寫進試算表的文字一律 `'` 前綴（`asText`）：擋 `=` 開頭的公式注入、`007` 被轉成 7。
+  代號不分大小寫；轉址頁吃 `?代號`、`?c=代號`，忽略 `&fbclid=` 之類追加參數與尾巴多帶的標點；
+  `?代號+` 只預覽不跳轉不計次。轉址用 `location.replace`（上一頁不會又被轉一次）。
+  點擊紀錄只記時間＋代號，不記點擊者。改目標網址＝已印出的 QR 跟著改；代號不能改。
+  QR 用 `vendor/qrcode.js`（qrcode-generator，與即時投票同一份），一律白底黑點＋4 格靜區，
+  可下載 PNG（可加標題與網址）／SVG／複製圖片。
+  測試 `tests/short-link.test.js` 把**真的後端**放進 Node vm＋假試算表跑，QR 用 jsQR 解回比對〔jsqr 是測試依賴，
+  `run.sh` 缺了會補裝〕。速度受限於 Apps Script（每次轉址 1～3 秒、冷啟動更久），要瞬間跳轉得換付費服務）。
 
 ## 併入新網頁工具的標準流程
 
