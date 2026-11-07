@@ -19,8 +19,8 @@ apps/<slug>/    各個 App，一個資料夾一個 App，入口一律 index.html
 s/              縮網址的公開轉址頁（唯一放在 apps/ 外的 App 頁面，為了讓網址短；刻意不加登入保護）
 tests/          端到端測試（`./tests/run.sh` 一次跑完；首頁徽章在 home-badges、版面／最愛／加入主畫面在 home-bento）
 docs/ADDING_APPS.md           App 上架規則（檢查清單版）
-docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/stats-backend.gs（**也含縮網址後端**）
-docs/SHORTLINK_SETUP.md       縮網址設定步驟（更新統計試算表的程式＋setupShortlink）
+docs/STATS_SETUP.md           使用統計設定步驟；後端程式碼 docs/stats-backend.gs
+docs/SHORTLINK_SETUP.md       縮網址後端設定步驟；後端程式碼 docs/shortlink-backend.gs
 .github/workflows/pages.yml   合併到 main 自動部署 GitHub Pages
 ```
 
@@ -306,15 +306,13 @@ docs/SHORTLINK_SETUP.md       縮網址設定步驟（更新統計試算表的�
   `apps/short-link/`（縮網址 v1.0，2026-11-07 上架：建立短網址、點擊統計、QR code。
   **三個部分**：管理頁 `apps/short-link/index.html`（登入保護＋**建立金鑰**）、
   公開轉址頁 `s/index.html`（網址 `…/APP/s/?代號`，**刻意不加登入保護**——同事用手機相機掃 QR
-  開的是沒登入過的瀏覽器；放根目錄是為了網址短）、後端在 **`docs/stats-backend.gs` 的「縮網址」區塊**
-  ——**使用者不想多開試算表，所以跟首頁使用統計共用同一支 Apps Script、同一個試算表、同一個部署網址**
-  （多「短網址」「點擊紀錄」兩個工作表）。`doGet` 看有沒有 `action` 參數分流：統計請求不帶、縮網址一定帶，
-  **改這支檔案兩邊都要顧到**（測試會把整支放進 Node 跑，也驗統計照常計數）。
-  縮網址的回應一律帶 `sl` 版本標記；沒有 `sl`＝試算表還是舊的純統計程式（舊程式看到 action 照樣回統計數字），
-  管理頁顯示「統計試算表的程式還沒更新」、轉址頁顯示「尚未啟用」，不會把統計數字誤當成空清單。
-  後端網址在 `apps/short-link/config.js`（`window.SHORTLINK_ENDPOINT`，兩頁共用），**必須等於 `app.js` 的
-  `STATS_ENDPOINT`**，測試有比對。函式名都加了 Shortlink 避免跟統計撞名（`shortlinkRoute`、`SL_COL`…）。
-  **建立金鑰**存在 Apps Script 指令碼屬性 `ADMIN_KEY`（`setupShortlink()` 產生、`showShortlinkKey()`／`resetShortlinkKey()`），
+  開的是沒登入過的瀏覽器；放根目錄是為了網址短）、後端 `docs/shortlink-backend.gs`
+  （Google Apps Script＋使用者自己的**獨立**試算表，「短網址」「點擊紀錄」兩個工作表，JSONP 同統計／投票）。
+  〔曾試過併進首頁統計那支程式共用試算表，使用者看過後決定**分開**、也不要變成 App 中心的做法——
+  各 App 的後端維持各自獨立，不要再提議合併。〕
+  後端網址只寫在 `apps/short-link/config.js` 一處（`window.SHORTLINK_ENDPOINT`），兩頁共用；
+  **留空＝使用者還沒部署**，管理頁顯示設定說明、轉址頁顯示「尚未設定」。
+  **建立金鑰**存在 Apps Script 指令碼屬性 `ADMIN_KEY`（`setup()` 產生、`showKey()`／`resetKey()`），
   不進 repo、也不要請使用者貼給 Claude：NCKUH/ENDO 帳密在公開原始碼裡，只靠它任何人都能拿本站網域做釣魚轉址。
   建立／修改／刪除／看清單要金鑰，轉址不用；連錯 30 次鎖 15 分鐘。
   **只放行 http/https**，後端寫入與轉址頁跳轉前各擋一次（有人直接在試算表填 `javascript:` 也不會在本站執行）。
