@@ -134,4 +134,4 @@ repo 裡的圖就是 CODEX 交來的原檔，Claude 在 repo 端只改過下面�
 
 | 規格書 | 主題 | 落地位置 |
 |---|---|---|
-| `dental-trauma-art-spec.md` | 牙外傷指南的 31 張向量插圖（規格 v3.5）。2026-10-01 換成 v4.0 立體版，之後的修改走上面「修改已上線的圖」 | `apps/dental-trauma-guide/assets/` |
+| `dental-trauma-art-spec.md` | 牙外傷指南的 31 張向量插圖（規格 v3.7）。2026-10-01 換成 v4.0 立體版，之後的修改走上面「修改已上線的圖」 | `apps/dental-trauma-guide/assets/` |
