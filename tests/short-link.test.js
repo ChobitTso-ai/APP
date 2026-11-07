@@ -324,6 +324,7 @@ async function visit(ctx, url){
   await page.goto(MANAGER);
   await page.waitForSelector('#keyPanel:not([hidden])');
   ok('第一次開：要求輸入建立金鑰', await shown(page, '#keyPanel') && !(await shown(page, '#main')));
+  ok('金鑰畫面有指路：向 Tso 醫師索取', (await text(page, '#askKey')) === '縮網址建立金鑰請向 Tso 醫師索取');
   await page.fill('#keyInput', 'wrong-key');
   await page.click('#keyGo');
   await page.waitForSelector('#keyMsg:not([hidden])');
