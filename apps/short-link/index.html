@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<script>if(localStorage.getItem('nckuh_endo_authed')!=='1')location.replace('../../');</script>
+<!--
+  縮網址 v1.0 —— 管理頁（建立短網址、看點擊次數、產生 QR code）
+  ©Tso KY - All Rights Reserved
+
+  ‧ 短網址長這樣：https://chobittso-ai.github.io/APP/s/?代號
+    轉址頁在根目錄 s/index.html（刻意不加登入保護，點的人不用登入）。
+  ‧ 資料存在使用者自己的 Google 試算表（後端 docs/shortlink-backend.gs，
+    設定步驟 docs/SHORTLINK_SETUP.md）。後端網址在 config.js，兩頁共用。
+  ‧ 建立／修改／刪除／看清單要「建立金鑰」，記在這台裝置的 localStorage（nckuh_endo_sl_key）。
+  ‧ QR code 一律白底黑點（深色模式也一樣），掃描最穩。
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>縮網址 v1.0</title>
+<link rel="icon" href="../../assets/favicon.png">
+<style>
+:root{
+  --bg:#E8ECF1; --tile:#FFFFFF; --sunk:#F3F5F8; --text:#11161D; --muted:#5B6573; --line:#D5DBE3;
+  --accent:#2F5BEA; --accent-ink:#FFFFFF; --accent-soft:#E6ECFD;
+  --ok:#2E8A3E; --danger:#C2382B; --danger-soft:#FDE8E5; --warn-soft:#FCEFD9; --warn-ink:#7A4600;
+  --shadow:0 6px 20px rgba(17,22,29,.06);
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0E1217; --tile:#181D24; --sunk:#12161C; --text:#E9EDF2; --muted:#9AA4B2; --line:#2A313B;
+    --accent:#6E8EFF; --accent-ink:#0E1217; --accent-soft:#1D2747;
+    --ok:#74D38E; --danger:#FF8F80; --danger-soft:#3A1E1C; --warn-soft:#382912; --warn-ink:#F5B451;
+    --shadow:none;
+  }
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  font-family:var(--font); background:var(--bg); color:var(--text); line-height:1.6;
+  padding:16px 16px calc(32px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:780px; margin:0 auto}
+a{color:var(--accent)}
+
+/* 頂欄 */
+.top{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap}
+.top h1{font-size:1.3rem; flex:1; min-width:0}
+.ver{font-size:.72rem; font-weight:700; color:var(--accent); background:var(--accent-soft);
+  padding:2px 8px; border-radius:999px; vertical-align:middle}
+.back{text-decoration:none; font-size:.9rem; white-space:nowrap}
+
+/* 區塊 */
+.panel{background:var(--tile); border:1px solid var(--line); border-radius:18px;
+  padding:18px; margin-bottom:14px; box-shadow:var(--shadow)}
+.panel h2{font-size:1.05rem; margin-bottom:12px}
+.hint{color:var(--muted); font-size:.88rem; margin-bottom:10px}
+.note{border-radius:14px; padding:12px 14px; margin-bottom:14px; font-size:.92rem;
+  background:var(--warn-soft); color:var(--warn-ink)}
+.note code{background:rgba(0,0,0,.06); padding:0 4px; border-radius:4px}
+
+/* 表單 */
+label.f{display:block; margin-bottom:12px; font-size:.9rem; font-weight:600}
+label.f small{display:block; font-weight:400; color:var(--muted); font-size:.8rem; margin-top:3px}
+input[type=text],input[type=url],input[type=search],input:not([type]),select{
+  width:100%; font:inherit; font-size:16px; color:var(--text); background:var(--sunk);
+  border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-top:4px; outline:none;
+}
+input:focus,select:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.prefix{display:flex; align-items:stretch; margin-top:4px}
+.prefix span{display:flex; align-items:center; padding:0 10px; background:var(--accent-soft); color:var(--muted);
+  border:1px solid var(--line); border-right:0; border-radius:12px 0 0 12px; font-weight:400; font-size:.82rem;
+  white-space:nowrap}
+.prefix input{margin-top:0; border-radius:0 12px 12px 0; min-width:0}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:0 12px}
+@media (max-width:560px){ .two{grid-template-columns:1fr} }
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; font:inherit; font-weight:700;
+  border:0; border-radius:999px; padding:10px 20px; cursor:pointer; background:var(--accent); color:var(--accent-ink);
+  text-decoration:none; white-space:nowrap}
+.btn:disabled{opacity:.55; cursor:default}
+.btn.ghost{background:transparent; color:var(--accent); border:1px solid var(--line)}
+.btn.sm{padding:6px 12px; font-size:.85rem}
+.btn.danger{color:var(--danger)}
+.msg{margin-top:10px; font-size:.9rem}
+.msg.err{color:var(--danger)}
+.row{display:flex; gap:8px; flex-wrap:wrap}
+
+/* 建立完成 */
+.result{display:flex; gap:16px; align-items:center; margin-top:16px; padding:14px;
+  border-radius:14px; background:var(--accent-soft)}
+.result canvas{width:112px; height:auto; border-radius:8px; display:block; flex:none; background:#fff}
+.result-body{min-width:0; flex:1}
+.result .label{font-weight:700; color:var(--ok); font-size:.9rem}
+.result .short{display:block; font-size:1.15rem; font-weight:800; word-break:break-all; margin:2px 0 10px;
+  text-decoration:none}
+@media (max-width:420px){ .result{flex-direction:column; align-items:stretch} .result canvas{margin:0 auto; width:160px} }
+
+/* 清單 */
+.list-head{display:flex; align-items:center; gap:10px; margin-bottom:6px}
+.list-head h2{flex:1; margin:0}
+.summary{color:var(--muted); font-size:.85rem; margin-bottom:10px}
+.tools{display:grid; grid-template-columns:1fr auto; gap:8px; margin-bottom:12px}
+.tools input,.tools select{margin-top:0}
+.tools select{width:auto}
+.item{display:flex; gap:12px; padding:12px 0; border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item-main{min-width:0; flex:1}
+.item-title{font-weight:700; overflow-wrap:anywhere}
+.item-short{font-weight:700; text-decoration:none; font-size:.92rem; word-break:break-all}
+.item-dest{color:var(--muted); font-size:.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.item-meta{color:var(--muted); font-size:.78rem; margin-top:2px}
+.item-meta b{color:var(--text)}
+.item-actions{display:grid; grid-template-columns:auto auto; gap:6px; flex:none; align-content:start}
+@media (max-width:560px){
+  .item{flex-direction:column; gap:8px}
+  .item-actions{display:flex; flex-wrap:wrap}
+}
+.empty{color:var(--muted); text-align:center; padding:16px 0}
+.help summary{cursor:pointer; font-weight:700}
+.help ul{margin:10px 0 0 1.2em; font-size:.9rem; color:var(--muted)}
+.help li{margin-bottom:6px}
+.help b{color:var(--text)}
+#codePreview{word-break:break-all}
+footer{text-align:center; color:var(--muted); font-size:.78rem; margin-top:18px}
+
+/* 對話框 */
+/* margin:auto 要補回來：上面的 *{margin:0} 會把 <dialog> 置中用的 margin 清掉，對話框會黏在左上角 */
+dialog{margin:auto; border:0; border-radius:20px; padding:0; background:var(--tile); color:var(--text);
+  width:min(440px, calc(100vw - 32px)); max-height:calc(100vh - 32px)}
+dialog::backdrop{background:rgba(10,14,20,.55)}
+.dlg{padding:18px}
+.dlg h3{font-size:1.05rem; margin-bottom:4px; overflow-wrap:anywhere}
+.dlg .sub{color:var(--muted); font-size:.85rem; margin-bottom:12px; word-break:break-all}
+.qr-stage{background:#fff; border-radius:14px; padding:10px; text-align:center; margin-bottom:12px}
+.qr-stage canvas{width:100%; max-width:300px; height:auto; display:block; margin:0 auto}
+.check{display:flex; align-items:center; gap:8px; font-size:.9rem; margin-bottom:12px; cursor:pointer}
+.dlg .row{justify-content:flex-end}
+
+#toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translateX(-50%);
+  background:var(--text); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:.9rem;
+  opacity:0; pointer-events:none; transition:opacity .2s; max-width:calc(100vw - 32px); text-align:center; z-index:10}
+#toast.on{opacity:1}
+</style>
+<script src="config.js"></script>
+<script src="vendor/qrcode.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>🔗 縮網址 <span class="ver">v1.0</span></h1>
+    <button class="btn sm ghost" id="keyBtn" type="button" hidden>🔑 金鑰</button>
+    <a class="back" href="../../">← App 中心</a>
+  </header>
+
+  <div class="note" id="setupWarn" hidden>
+    ⚠️ 還沒接上縮網址後端，目前無法建立短網址。<br>
+    設定方式見 <b>docs/SHORTLINK_SETUP.md</b>：在自己的 Google 試算表部署一次 Apps Script（約 5 分鐘），
+    再把網址填進 <code>apps/short-link/config.js</code>。
+  </div>
+
+  <!-- 輸入建立金鑰 -->
+  <section class="panel" id="keyPanel" hidden>
+    <h2>🔑 輸入建立金鑰</h2>
+    <p class="hint">建立、修改短網址需要「建立金鑰」，請向管理者索取。
+      輸入一次後會記在這台裝置，下次不用再輸入。<br>
+      （這組金鑰跟 App 中心的登入帳密不同：登入帳密寫在公開的網頁原始碼裡，擋不住有心人。）</p>
+    <form id="keyForm" class="row">
+      <input id="keyInput" style="flex:1;min-width:160px" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例如 abcd-2345">
+      <button class="btn" id="keyGo">確認</button>
+    </form>
+    <p class="msg err" id="keyMsg" hidden></p>
+  </section>
+
+  <main id="main" hidden>
+    <!-- 建立 -->
+    <section class="panel">
+      <h2>＋ 建立短網址</h2>
+      <form id="createForm" novalidate>
+        <label class="f">目標網址
+          <input id="fUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…（貼上要縮短的網址）">
+        </label>
+        <label class="f">自訂代號（選填）
+          <div class="prefix"><span id="basePrefix">…/s/?</span><input id="fCode" maxlength="32" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="留空自動產生 5 碼"></div>
+          <small>小寫英文、數字、連字號，例如 <b>rct-2026</b>；建立後不能改（印出去的 QR code 靠它）</small>
+          <small>短網址會是：<b id="codePreview"></b></small>
+        </label>
+        <div class="two">
+          <label class="f">標題（選填，方便日後找）
+            <input id="fTitle" maxlength="100" placeholder="例如：年會報名表單">
+          </label>
+          <label class="f">建立者（選填）
+            <input id="fBy" maxlength="30" placeholder="讓同事知道是誰建的">
+          </label>
+        </div>
+        <button class="btn" id="createBtn">建立短網址</button>
+        <p class="msg err" id="createMsg" hidden></p>
+      </form>
+
+      <div class="result" id="result" hidden>
+        <canvas id="resultQr" aria-label="QR code"></canvas>
+        <div class="result-body">
+          <div class="label">✅ 短網址已建立</div>
+          <a class="short" id="resultUrl" target="_blank" rel="noopener"></a>
+          <div class="row">
+            <button class="btn sm" type="button" id="resultCopy">📋 複製短網址</button>
+            <button class="btn sm ghost" type="button" id="resultQrBtn">🔳 QR code 下載</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 清單 -->
+    <section class="panel">
+      <div class="list-head">
+        <h2>📋 所有短網址</h2>
+        <button class="btn sm ghost" type="button" id="refreshBtn">🔄 重新整理</button>
+      </div>
+      <div class="summary" id="summary"></div>
+      <div class="tools">
+        <input id="search" type="search" placeholder="搜尋代號、標題、網址、建立者" autocomplete="off">
+        <select id="sort" aria-label="排序">
+          <option value="new">最新建立</option>
+          <option value="clicks">點擊最多</option>
+          <option value="week">近 7 天最多</option>
+          <option value="code">代號 A→Z</option>
+        </select>
+      </div>
+      <div id="list"></div>
+      <p class="empty" id="listEmpty" hidden></p>
+      <p class="msg err" id="listMsg" hidden></p>
+    </section>
+
+    <details class="panel help">
+      <summary>💡 使用說明</summary>
+      <ul>
+        <li><b>點短網址的人不用登入</b>，同事用手機相機掃 QR code 就能直接到目的地。</li>
+        <li><b>目標網址可以隨時改</b>（按「編輯」）：QR code 已經印出去也沒關係，掃了會到新網址。代號不能改。</li>
+        <li><b>點擊次數</b>：每打開一次 +1（同一個人點兩次算兩次），只記時間，不記是誰點的。
+          點過之後回到這頁按「🔄 重新整理」就會更新。</li>
+        <li>不確定短網址會連到哪？在網址最後加一個 <b>+</b>（例如 <b>…/s/?abc+</b>），只會顯示目的地、不會跳轉。</li>
+        <li>資料存在管理者的 Google 試算表「短網址」工作表，<b>也可以直接在試算表新增一列</b>（填代號與目標網址即可）。</li>
+        <li>⚠️ 不要把病患資料放進網址或標題——短網址任何拿到的人都點得開。</li>
+      </ul>
+    </details>
+  </main>
+
+  <footer>縮網址 v1.0 · ©Tso KY - All Rights Reserved</footer>
+</div>
+
+<!-- QR code -->
+<dialog id="qrDlg">
+  <div class="dlg">
+    <h3 id="qrTitle"></h3>
+    <div class="sub" id="qrSub"></div>
+    <div class="qr-stage"><canvas id="qrBig" aria-label="QR code"></canvas></div>
+    <label class="check"><input type="checkbox" id="qrCaption" checked> 圖片下方加上標題與短網址</label>
+    <div class="row">
+      <button class="btn sm ghost" type="button" id="qrCopyImg">📋 複製圖片</button>
+      <button class="btn sm ghost" type="button" id="qrSvg">⬇ SVG（印刷）</button>
+      <button class="btn sm" type="button" id="qrPng">⬇ 下載 PNG</button>
+      <button class="btn sm ghost" type="button" id="qrClose">關閉</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- 編輯 -->
+<dialog id="editDlg">
+  <form class="dlg" id="editForm" novalidate>
+    <h3>編輯短網址</h3>
+    <div class="sub" id="editSub"></div>
+    <label class="f">目標網址
+      <input id="eUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <small>改了之後，已經發出去的短網址與印好的 QR code 都會改到新網址。</small>
+    </label>
+    <label class="f">標題
+      <input id="eTitle" maxlength="100">
+    </label>
+    <p class="msg err" id="editMsg" hidden></p>
+    <div class="row" style="margin-top:6px">
+      <button class="btn sm ghost" type="button" id="editCancel">取消</button>
+      <button class="btn sm" id="editSave">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =========================================================
+   縮網址 v1.0
+   ========================================================= */
+'use strict';
+
+const ENDPOINT = window.SHORTLINK_ENDPOINT || '';
+const KEY_LS  = 'nckuh_endo_sl_key';    // 建立金鑰（只存在這台裝置）
+const BY_LS   = 'nckuh_endo_sl_by';     // 上次填的建立者
+const SORT_LS = 'nckuh_endo_sl_sort';   // 清單排序
+const CODE_RE = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
+/* 短網址的前綴：從這頁的位置推回根目錄的 s/，本機測試與正式站都對 */
+const SHORT_BASE = new URL('../../s/', location.href).href;
+
+const $ = (id) => document.getElementById(id);
+let links = [];          // 後端回來的清單
+let lastLoad = 0;
+let qrLink = null;       // QR 對話框目前顯示的短網址
+let editLink = null;
+
+/* ---------- 小工具 ---------- */
+function store(k, v) {
+  try {
+    if (v === undefined) return localStorage.getItem(k);
+    if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+  } catch (e) { return null; }
+}
+const shortUrl = (code) => SHORT_BASE + '?' + code;
+const pretty = (u) => String(u).replace(/^https?:\/\//, '');
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+function showMsg(id, text) { const el = $(id); el.textContent = text || ''; el.hidden = !text; }
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function fmtDate(ms) {
+  if (!ms) return '';
+  const d = new Date(ms);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+function fmtAgo(ms) {
+  if (!ms) return '';
+  const s = (Date.now() - ms) / 1000;
+  if (s < 60) return '剛剛';
+  if (s < 3600) return Math.floor(s / 60) + ' 分鐘前';
+  if (s < 86400) return Math.floor(s / 3600) + ' 小時前';
+  if (s < 86400 * 30) return Math.floor(s / 86400) + ' 天前';
+  return fmtDate(ms);
+}
+
+/** 使用者貼的網址整理成標準格式；不是 http/https 回 null。少打 https:// 會自動補。 */
+function normalizeUrl(s) {
+  s = String(s || '').trim();
+  if (!s) return '';
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = 'https://' + s;
+  try {
+    const u = new URL(s);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (!u.hostname.includes('.') && u.hostname !== 'localhost') return null;
+    return u.href;
+  } catch (e) { return null; }
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    // 舊瀏覽器或非安全來源：退回 execCommand
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } finally { ta.remove(); }
+  }
+  toast('已複製：' + pretty(text));
+}
+
+/* ---------- 後端（JSONP，同統計與即時投票）---------- */
+function jsonp(params, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const cb = 'slcb_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const s = document.createElement('script');
+    let done = false;
+    const timer = setTimeout(() => finish(() => reject(new Error('連線逾時，請確認網路後再試'))), timeoutMs || 25000);
+    function finish(fn) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+      s.remove();
+      fn();
+    }
+    window[cb] = (data) => finish(() => {
+      if (data && data.error) {
+        const e = new Error(data.error);
+        e.code = data.code || '';
+        reject(e);
+      } else resolve(data || {});
+    });
+    s.onerror = () => finish(() => reject(new Error('連不上縮網址後端，請確認網路與部署設定')));
+    const q = new URLSearchParams();
+    Object.keys(params).forEach((k) => { if (params[k] !== undefined && params[k] !== null) q.set(k, params[k]); });
+    q.set('callback', cb);
+    s.src = ENDPOINT + '?' + q.toString();
+    document.head.appendChild(s);
+  });
+}
+const api = (action, extra) => jsonp(Object.assign({ action, key: store(KEY_LS) || '' }, extra || {}));
+
+/** 金鑰相關的錯誤：回到輸入金鑰的畫面。回傳 true 表示已處理。 */
+function handleKeyError(e) {
+  if (e.code === 'badkey') {
+    store(KEY_LS, null);
+    showKeyPanel('金鑰不正確或已經換過了，請重新輸入。');
+    return true;
+  }
+  if (e.code === 'nokey' || e.code === 'locked') {
+    showKeyPanel(e.message);
+    return true;
+  }
+  return false;
+}
+
+/* ---------- 金鑰 ---------- */
+function showKeyPanel(msg) {
+  $('main').hidden = true;
+  $('keyBtn').hidden = true;
+  $('keyPanel').hidden = false;
+  showMsg('keyMsg', msg);
+  $('keyInput').focus();
+}
+
+$('keyForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const key = $('keyInput').value.trim();
+  if (!key) { showMsg('keyMsg', '請輸入建立金鑰'); return; }
+  store(KEY_LS, key);
+  $('keyGo').disabled = true;
+  showMsg('keyMsg', '');
+  try {
+    const data = await api('list');
+    $('keyInput').value = '';
+    enter(data.links);
+  } catch (e) {
+    if (e.code === 'badkey') { store(KEY_LS, null); showMsg('keyMsg', '金鑰不正確，請再確認一次。'); }
+    else { if (e.code !== 'nokey' && e.code !== 'locked') store(KEY_LS, null); showMsg('keyMsg', e.message); }
+  } finally {
+    $('keyGo').disabled = false;
+  }
+});
+
+$('keyBtn').addEventListener('click', () => {
+  if (!confirm('要清掉這台裝置記住的建立金鑰、重新輸入嗎？')) return;
+  store(KEY_LS, null);
+  showKeyPanel('');
+});
+
+function enter(list) {
+  $('keyPanel').hidden = true;
+  $('main').hidden = false;
+  $('keyBtn').hidden = false;
+  if (list) { links = list; lastLoad = Date.now(); render(); }
+  else loadList();
+}
+
+/* ---------- 清單 ---------- */
+async function loadList(quiet) {
+  if (!quiet) { showMsg('listMsg', ''); $('summary').textContent = '載入中…'; }
+  $('refreshBtn').disabled = true;
+  try {
+    const data = await api('list');
+    links = data.links || [];
+    lastLoad = Date.now();
+    render();
+  } catch (e) {
+    if (!handleKeyError(e)) { showMsg('listMsg', e.message); $('summary').textContent = ''; }
+  } finally {
+    $('refreshBtn').disabled = false;
+  }
+}
+
+function sorted(arr) {
+  const by = $('sort').value;
+  const a = arr.slice();
+  if (by === 'clicks') a.sort((x, y) => y.clicks - x.clicks || y.created - x.created);
+  else if (by === 'week') a.sort((x, y) => y.week - x.week || y.clicks - x.clicks);
+  else if (by === 'code') a.sort((x, y) => x.code.localeCompare(y.code));
+  else a.sort((x, y) => y.created - x.created);
+  return a;
+}
+
+function render() {
+  const q = $('search').value.trim().toLowerCase();
+  const total = links.reduce((s, l) => s + (l.clicks || 0), 0);
+  const week = links.reduce((s, l) => s + (l.week || 0), 0);
+  $('summary').textContent = links.length
+    ? `共 ${links.length} 個短網址 · 總點擊 ${total.toLocaleString()} 次 · 近 7 天 ${week.toLocaleString()} 次`
+    : '';
+
+  const shown = sorted(links.filter((l) => !q ||
+    [l.code, l.title, l.url, l.by].some((v) => String(v || '').toLowerCase().includes(q))));
+
+  $('list').innerHTML = shown.map((l) => {
+    const su = shortUrl(l.code);
+    const meta = [
+      `👆 <b>${(l.clicks || 0).toLocaleString()}</b> 次`,
+      `近 7 天 ${(l.week || 0).toLocaleString()}`,
+      l.last ? `最後 ${esc(fmtAgo(l.last))}` : '還沒有人點過',
+      // 直接在試算表手動加的那幾列沒有建立時間，就不顯示
+      l.created ? (l.by ? esc(l.by) + ' · ' : '') + esc(fmtDate(l.created)) + ' 建立' : (l.by ? esc(l.by) : ''),
+    ].filter(Boolean).join(' · ');
+    return `<article class="item" data-code="${esc(l.code)}">
+      <div class="item-main">
+        ${l.title ? `<div class="item-title">${esc(l.title)}</div>` : ''}
+        <a class="item-short" href="${esc(su)}" target="_blank" rel="noopener">${esc(pretty(su))}</a>
+        <div class="item-dest" title="${esc(l.url)}">→ ${esc(l.url)}</div>
+        <div class="item-meta">${meta}</div>
+      </div>
+      <div class="item-actions">
+        <button class="btn sm" type="button" data-act="copy">📋 複製</button>
+        <button class="btn sm ghost" type="button" data-act="qr">🔳 QR</button>
+        <button class="btn sm ghost" type="button" data-act="edit">✏️ 編輯</button>
+        <button class="btn sm ghost danger" type="button" data-act="del">🗑 刪除</button>
+      </div>
+    </article>`;
+  }).join('');
+
+  const empty = $('listEmpty');
+  empty.hidden = shown.length > 0;
+  empty.textContent = links.length ? '找不到符合的短網址。' : '還沒有短網址，從上面建立第一個吧。';
+}
+
+$('search').addEventListener('input', render);
+$('sort').addEventListener('change', () => { store(SORT_LS, $('sort').value); render(); });
+$('refreshBtn').addEventListener('click', () => loadList());
+
+$('list').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button[data-act]');
+  if (!btn) return;
+  const code = btn.closest('.item').dataset.code;
+  const l = links.find((x) => x.code === code);
+  if (!l) return;
+  const act = btn.dataset.act;
+  if (act === 'copy') copyText(shortUrl(l.code));
+  else if (act === 'qr') openQr(l);
+  else if (act === 'edit') openEdit(l);
+  else if (act === 'del') removeLink(l, btn);
+});
+
+/* 切回這個分頁時（例如剛去點了短網址），超過 30 秒沒更新就悄悄重抓一次點擊數 */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && !$('main').hidden && Date.now() - lastLoad > 30000) loadList(true);
+});
+
+/* ---------- 建立 ---------- */
+function updatePreview() {
+  const code = $('fCode').value.trim().toLowerCase();
+  $('codePreview').textContent = pretty(SHORT_BASE) + '?' + (code || '（自動產生）');
+}
+$('fCode').addEventListener('input', updatePreview);
+
+$('createForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  showMsg('createMsg', '');
+  const url = normalizeUrl($('fUrl').value);
+  const code = $('fCode').value.trim().toLowerCase();
+  const title = $('fTitle').value.trim();
+  const by = $('fBy').value.trim();
+
+  if (url === '') return showMsg('createMsg', '請貼上要縮短的網址。');
+  if (url === null) return showMsg('createMsg', '網址格式不對：要是 http:// 或 https:// 開頭的網址。');
+  if (url.startsWith(SHORT_BASE)) return showMsg('createMsg', '這已經是短網址了，不用再縮一次。');
+  if (code && !CODE_RE.test(code)) {
+    return showMsg('createMsg', '代號只能用小寫英文、數字與連字號（1～32 個字，頭尾不能是連字號）。');
+  }
+  if (code && links.some((l) => l.code === code)) {
+    return showMsg('createMsg', `代號「${code}」已經有人用了，請換一個。`);
+  }
+
+  const btn = $('createBtn');
+  btn.disabled = true; btn.textContent = '建立中…';
+  try {
+    const data = await api('create', { url, code, title, by });
+    store(BY_LS, by);
+    links.unshift(data.link);
+    render();
+    showResult(data.link);
+    $('fUrl').value = ''; $('fCode').value = ''; $('fTitle').value = '';
+    updatePreview();
+  } catch (e) {
+    if (!handleKeyError(e)) showMsg('createMsg', e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '建立短網址';
+  }
+});
+
+function showResult(l) {
+  const su = shortUrl(l.code);
+  $('result').hidden = false;
+  $('result').dataset.code = l.code;
+  $('resultUrl').href = su;
+  $('resultUrl').textContent = pretty(su);
+  drawQr($('resultQr'), su, { size: 336 });
+}
+$('resultCopy').addEventListener('click', () => copyText($('resultUrl').href));
+$('resultQrBtn').addEventListener('click', () => {
+  const l = links.find((x) => x.code === $('result').dataset.code);
+  if (l) openQr(l);
+});
+
+/* ---------- 編輯 ---------- */
+function openEdit(l) {
+  editLink = l;
+  $('editSub').textContent = pretty(shortUrl(l.code));
+  $('eUrl').value = l.url;
+  $('eTitle').value = l.title || '';
+  showMsg('editMsg', '');
+  $('editDlg').showModal();
+}
+$('editCancel').addEventListener('click', () => $('editDlg').close());
+$('editForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const l = editLink;
+  if (!l) return;
+  const url = normalizeUrl($('eUrl').value);
+  if (!url) return showMsg('editMsg', '網址格式不對：要是 http:// 或 https:// 開頭的網址。');
+  if (url.startsWith(SHORT_BASE)) return showMsg('editMsg', '不能指向另一個短網址。');
+  const btn = $('editSave');
+  btn.disabled = true;
+  try {
+    const data = await api('update', { code: l.code, url, title: $('eTitle').value.trim() });
+    const i = links.findIndex((x) => x.code === l.code);
+    if (i >= 0) links[i] = Object.assign({}, links[i], data.link);
+    render();
+    $('editDlg').close();
+    toast('已更新，短網址現在會連到新的目標');
+  } catch (e) {
+    if (handleKeyError(e)) $('editDlg').close();
+    else showMsg('editMsg', e.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- 刪除 ---------- */
+async function removeLink(l, btn) {
+  if (!confirm(`確定刪除「${pretty(shortUrl(l.code))}」？\n\n刪除後這個短網址與它的 QR code 都會失效，無法復原。\n（試算表裡的點擊紀錄會保留。）`)) return;
+  btn.disabled = true;
+  try {
+    await api('delete', { code: l.code });
+    links = links.filter((x) => x.code !== l.code);
+    if ($('result').dataset.code === l.code) $('result').hidden = true;
+    render();
+    toast('已刪除');
+  } catch (e) {
+    if (e.code === 'notfound') { links = links.filter((x) => x.code !== l.code); render(); toast('這個短網址已經被刪除了'); }
+    else if (!handleKeyError(e)) toast(e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- QR code ---------- */
+function makeQr(text) {
+  const q = qrcode(0, 'M');   // 版本自動、容錯 M（約 15% 損毀仍可讀）
+  q.addData(text);
+  q.make();
+  return q;
+}
+
+/** 把文字截到畫得下的寬度，超過加「…」。 */
+function fitText(ctx, text, maxW) {
+  if (ctx.measureText(text).width <= maxW) return text;
+  let s = text;
+  while (s.length > 1 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+  return s + '…';
+}
+
+/**
+ * 畫 QR 到 canvas：白底黑點、四周留 4 格靜區（規格要求，太窄有些相機掃不到）。
+ * caption = { title, url } 時在下方加字，方便印出來貼。
+ */
+function drawQr(canvas, text, opts) {
+  opts = opts || {};
+  const q = makeQr(text);
+  const n = q.getModuleCount();
+  const quiet = 4;
+  const cell = Math.max(2, Math.floor((opts.size || 1024) / (n + quiet * 2)));
+  const side = cell * (n + quiet * 2);
+  const cap = opts.caption;
+  const titleSize = Math.round(side * 0.058);
+  const urlSize = Math.round(side * 0.044);
+  const capH = cap ? Math.round((cap.title ? titleSize * 1.5 : 0) + urlSize * 1.5 + side * 0.05) : 0;
+
+  canvas.width = side;
+  canvas.height = side + capH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000000';
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (q.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
+    }
+  }
+  if (cap) {
+    const maxW = side - quiet * cell;
+    const font = getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    let y = side - cell * 1.2;
+    if (cap.title) {
+      ctx.fillStyle = '#11161D';
+      ctx.font = `700 ${titleSize}px ${font}`;
+      y += titleSize;
+      ctx.fillText(fitText(ctx, cap.title, maxW), side / 2, y);
+      y += titleSize * 0.5;
+    }
+    ctx.fillStyle = '#3B4552';
+    ctx.font = `600 ${urlSize}px ${font}`;
+    y += urlSize;
+    ctx.fillText(fitText(ctx, pretty(cap.url), maxW), side / 2, y);
+  }
+  return canvas;
+}
+
+function redrawQrDialog() {
+  if (!qrLink) return;
+  const su = shortUrl(qrLink.code);
+  const caption = $('qrCaption').checked ? { title: qrLink.title || '', url: su } : null;
+  drawQr($('qrBig'), su, { size: 1024, caption });
+}
+
+function openQr(l) {
+  qrLink = l;
+  $('qrTitle').textContent = l.title || pretty(shortUrl(l.code));
+  $('qrSub').textContent = l.title ? pretty(shortUrl(l.code)) : '→ ' + l.url;
+  redrawQrDialog();
+  $('qrDlg').showModal();
+}
+$('qrCaption').addEventListener('change', redrawQrDialog);
+$('qrClose').addEventListener('click', () => $('qrDlg').close());
+
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+$('qrPng').addEventListener('click', () => {
+  if (!qrLink) return;
+  $('qrBig').toBlob((b) => { if (b) download(b, 'qr-' + qrLink.code + '.png'); }, 'image/png');
+});
+
+$('qrSvg').addEventListener('click', () => {
+  if (!qrLink) return;
+  const svg = makeQr(shortUrl(qrLink.code)).createSvgTag({ cellSize: 8, margin: 32, scalable: true });
+  download(new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + svg], { type: 'image/svg+xml' }), 'qr-' + qrLink.code + '.svg');
+});
+
+$('qrCopyImg').addEventListener('click', async () => {
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem) throw new Error('unsupported');
+    const blob = new Promise((res) => $('qrBig').toBlob(res, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    toast('QR code 圖片已複製，可以直接貼到 LINE 或簡報');
+  } catch (e) {
+    toast('這個瀏覽器不能直接複製圖片，請改用「下載 PNG」');
+  }
+});
+
+/* ---------- 開始 ---------- */
+(function init() {
+  $('basePrefix').title = SHORT_BASE + '?';
+  updatePreview();
+  $('fBy').value = store(BY_LS) || '';
+  const s = store(SORT_LS);
+  if (s && [...$('sort').options].some((o) => o.value === s)) $('sort').value = s;
+
+  if (typeof qrcode !== 'function') toast('QR code 元件載入失敗，請重新整理');
+  if (!ENDPOINT) { $('setupWarn').hidden = false; return; }
+  if (store(KEY_LS)) enter(); else showKeyPanel('');
+})();
+</script>
+</body>
+</html>

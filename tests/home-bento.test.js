@@ -6,7 +6,7 @@ let pass = 0, fail = 0;
 function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} else {fail++;console.log('  ✗ FAIL:',n+(d?'  → '+d:''));} }
 
 const STATS = { visits: 1284, apps: { 'case-marker': 128, 'live-poll': 25, 'dental-trauma-guide': 41,
-  'pdf-toolbox': 96, 'endo-ppt-generator': 30, 'dentfigure': 12 } };
+  'pdf-toolbox': 96, 'endo-ppt-generator': 30, 'dentfigure': 12, 'short-link': 8 } };
 const IOS = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 const LINE = IOS.replace('Safari/604.1', 'Safari Line/14.0.0');
 const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: IOS };
@@ -66,15 +66,15 @@ const holes = p => p.evaluate(() => {
     ok('主角格掛「🔥 最多人用」', /最多人用/.test(await page.$eval('.tile.feature', e => e.textContent)));
     ok('主角格顯示大數字 128', /128/.test(await page.$eval('.tile.feature .app-hits', e => e.textContent)));
     ok('造訪格顯示 1,284', (await page.$eval('#statVisits', e => e.textContent)) === '1,284');
-    ok('建置中合併成一格「2 個工具建置中」',
-       (await page.$$('.tile.wip')).length === 1 && /2 個工具建置中/.test(await page.$eval('.tile.wip', e => e.textContent)));
+    ok('建置中合併成一格「1 個工具建置中」',
+       (await page.$$('.tile.wip')).length === 1 && /1 個工具建置中/.test(await page.$eval('.tile.wip', e => e.textContent)));
     ok('每一排都補滿、沒有空洞', (await holes(page)).length === 0, (await holes(page)).join('; ') || '無空洞');
     ok('線條圖示：主角格是 <svg>', !!(await page.$('.tile.feature .app-icon svg')));
     ok('記住最多人用的 App（下次統計回來前先用）',
        await page.evaluate(() => localStorage.getItem('nckuh_endo_hot')) === 'case-marker');
     ok('icon 填 emoji 也照樣顯示', await page.evaluate(() => iconHtml('🚑') === '🚑' && iconHtml('camera').includes('<svg')));
     ok('不認得的代號當文字顯示、不會變成空白 svg', await page.evaluate(() => iconHtml('nope') === 'nope'));
-    ok('頁首說明：6 個上線、2 個建置中', /6 個工具上線中 · 2 個建置中/.test(await page.$eval('#heroSub', e => e.textContent)));
+    ok('頁首說明：7 個上線、1 個建置中', /7 個工具上線中 · 1 個建置中/.test(await page.$eval('#heroSub', e => e.textContent)));
 
     console.log('— 鍵盤：Tab 到磚塊按 Enter 會開啟 —');
     await page.focus('.tile.feature');
@@ -85,15 +85,16 @@ const holes = p => p.evaluate(() => {
     console.log('— 篩選 —');
     await page.click('#viewSeg [data-view=mobile]');
     let names = await page.$$eval('.app-card:not(.wip) .app-name', ns => ns.map(n => n.childNodes[0].textContent.trim()));
-    ok('手機：只剩三個手機 App', names.length === 3 && names.includes('即時投票') && !names.includes('PDF工具箱'), names.join('、'));
-    ok('手機：建置中只算手機那格', /1 個工具建置中/.test(await page.$eval('.tile.wip', e => e.textContent)));
+    ok('手機：只剩四個手機 App', names.length === 4 && names.includes('即時投票') && names.includes('縮網址') && !names.includes('PDF工具箱'), names.join('、'));
+    ok('手機：沒有建置中那格（手機的佔位已換成縮網址）', !(await page.$('.tile.wip')));
     ok('手機：有分類說明', await shown(page, '#viewDesc'));
     ok('手機：整齊排列（沒有主角格）', !(await page.$('.tile.feature')));
     await page.click('#viewSeg [data-view=desktop]');
     names = await page.$$eval('.app-card:not(.wip) .app-name', ns => ns.map(n => n.childNodes[0].textContent.trim()));
     ok('電腦：三個電腦 App', names.length === 3 && names.includes('PDF工具箱'), names.join('、'));
-    ok('篩選鈕數字：全部 6／手機 3／電腦 3',
-       (await page.$$eval('#viewSeg .n', ns => ns.map(n => n.textContent))).slice(0, 3).join() === '6,3,3');
+    ok('電腦：建置中只算電腦那格', /1 個工具建置中/.test(await page.$eval('.tile.wip', e => e.textContent)));
+    ok('篩選鈕數字：全部 7／手機 4／電腦 3',
+       (await page.$$eval('#viewSeg .n', ns => ns.map(n => n.textContent))).slice(0, 3).join() === '7,4,3');
     await page.click('#viewSeg [data-view=all]');
 
     console.log('— 搜尋 —');
@@ -260,7 +261,7 @@ const holes = p => p.evaluate(() => {
     ok('開啟圓鈕不是亮白', lum.open < 0.1, lum.open.toFixed(3));
     ok('頁面底色是深色', lum.body < 0.02, lum.body.toFixed(3));
     const ics = await page.$$eval('.tile.app-card:not(.wip)', ts => ts.map(t => t.dataset.ic));
-    ok('每張磚塊都帶色系代號', ics.length === 6 && ics.every(Boolean), ics.join(','));
+    ok('每張磚塊都帶色系代號', ics.length === 7 && ics.every(Boolean), ics.join(','));
     const colors = await page.$$eval('.tile.app-card:not(.wip):not(.feature) .app-icon', es => es.map(e => getComputedStyle(e).color));
     ok('各 App 圖示顏色不同', new Set(colors).size === colors.length, colors.length + ' 種');
     await ctx.close();
