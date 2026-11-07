@@ -5,4 +5,4 @@
 
    ⬇⬇⬇ 部署好 Apps Script 後，把 /exec 網址填進下面的引號裡 ⬇⬇⬇
    （留空 = 還沒設定：管理頁會顯示設定說明，轉址頁會顯示「服務尚未設定」） */
-window.SHORTLINK_ENDPOINT = '';
+window.SHORTLINK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyaBFrHWf-dleWGDcWxUjPypef-gGqdHVQNtZG7qbLamkmBCNPczvzAA9XvbDhX9fI/exec';
