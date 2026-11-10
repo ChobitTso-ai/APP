@@ -102,6 +102,53 @@
     }
   });
 
+  /* ── 修正 2:套用內建範本後,上一張圖的逐條間距還留著 ──────────
+
+     症狀:
+       勾「Advanced spacing」並把某一條間距改成例如 40px,再按任何一個
+       內建範本按鈕(Nature 2×2 等)→ 範本設的 gapH/gapV 對那一條沒有
+       作用,40px 照舊;而且「Advanced spacing」還是開著的。
+
+     原因:
+       `colGaps`/`rowGaps` 是「第 n 條間距另外指定」的覆寫陣列。繪圖時
+       只會把長度截短或補 null:
+
+         if(colGaps){ colGaps.length=Math.max(0,cols-1); … }   (上游 5629 行)
+
+       所以舊陣列會照 index 直接套到新版面的間距上。
+
+       上游自己知道這件事 —— `saveTemplate` 的註解寫著「掉了逐條間距的
+       範本會載成另一張圖,舊的覆寫還留著,它自己的間距就沒作用」,
+       而 `loadTemplate`(載入自存範本)確實有重設:
+
+         colGaps = …; rowGaps = …; advancedSpacing = !!t.advancedSpacing;
+
+       但 `applyTemplate`(內建那 8 顆按鈕)**沒有**。同一個已知問題,
+       兩條路只防了一條。
+
+     做法:
+       包裝 applyTemplate:先重設覆寫,再呼叫原本的。不改上游程式。
+       牙科範本自己在 dental-templates.js 裡做同一件事。
+
+     為什麼不改 figure_lab.html:見檔頭。這條也值得回報給上游。
+  */
+  if (typeof window.applyTemplate === 'function') {
+    const origApplyTemplate = window.applyTemplate;
+    window.applyTemplate = function (name) {
+      try {
+        // 三個都是頂層 let,classic script 之間用裸名存取得到
+        if (typeof colGaps !== 'undefined') colGaps = null;                   // eslint-disable-line no-undef
+        if (typeof rowGaps !== 'undefined') rowGaps = null;                   // eslint-disable-line no-undef
+        if (typeof advancedSpacing !== 'undefined') advancedSpacing = false;  // eslint-disable-line no-undef
+      } catch (e) { /* 上游改了宣告方式就算了,範本仍然套得上去 */ }
+      const el = document.getElementById('advanced-spacing');
+      if (el) el.checked = false;
+      return origApplyTemplate.apply(this, arguments);
+    };
+  }
+
   // 給測試與偵錯用
-  window.__dfFixes = { applied: ['document-wide-file-drop'] };
+  window.__dfFixes = {
+    applied: ['document-wide-file-drop', 'apply-template-resets-gutter-overrides'],
+  };
 })();
