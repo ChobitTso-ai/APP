@@ -178,6 +178,8 @@
       '<div style="font-size:10px;color:var(--muted);line-height:1.5;margin-top:5px">' +
         '階段名稱是<b>依面板順序</b>填入的,不是判讀影像內容 —— 請自行確認每格放對了。' +
         '名稱可在「影像」清單各面板的 Tag 欄直接改。' +
+        '<br><span style="color:var(--warn)">名稱為初版草案,取自常見的記錄順序,尚未經臨床確認;' +
+        '請依貴科慣用詞修改。</span>' +
       '</div>' +
       '<div class="sec-lbl" style="margin-top:8px">面板間距</div>' +
       '<div style="display:flex;gap:5px">' +
