@@ -31,7 +31,23 @@ on:
 jobs:
   upstream-e2e:
     name: FigureLab Playwright suite (pinned snapshot)
-    runs-on: ubuntu-latest
+    # Pinned, NOT ubuntu-latest. GitHub moved `ubuntu-latest` to Ubuntu 26.04, and
+    # the snapshot's pinned Playwright 1.60.0 cannot install system dependencies
+    # for it:
+    #   Cannot install dependencies for ubuntu26.04-x64 with Playwright 1.60.0!
+    #   ERROR: Playwright does not support chromium on ubuntu26.04-x64
+    # The job then died in ~13 seconds, before a single test ran — and because this
+    # workflow is deliberately separate from pages.yml so it cannot block deploys,
+    # nothing else went red. It failed that way on every run from 2026-10-26 to
+    # 2026-11-10 (runs 11–18) while three PRs were merged citing "469 tests have
+    # our back". They did not: the suite had not executed since 2026-09-19.
+    #
+    # The runner version is the one thing here that must NOT float: the whole point
+    # of this job is to run a pinned snapshot against a pinned Playwright. Bumping
+    # Playwright instead would change the baseline we are comparing against.
+    # When this eventually needs a newer image, bump the snapshot's Playwright
+    # first, re-establish the 469 count, and update UPSTREAM.md.
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: apps/dentfigure/upstream/figurelab/tests
@@ -50,8 +66,30 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # `set -o pipefail` matters: GitHub runs steps with `bash -e`, not `-o pipefail`,
+      # so without it a failing `npm test` piped into `tee` would exit 0 and the suite
+      # would "pass" on tee's exit code.
       - name: Run upstream suite
-        run: npm test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test 2>&1 | tee /tmp/upstream.log
+
+      # A green job is not the same as a complete job. This suite has already failed
+      # silently once the other way round: three files were missing from the snapshot,
+      # encoding.spec.js SKIPPED the checks that read them, and the run reported
+      # 460 passed / 0 failed / exit 0. Nine tests vanished with nothing red.
+      # So assert the TOTAL, not just the absence of failures.
+      - name: Assert the baseline is still 469 tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          n=$(grep -oE '[0-9]+ passed' /tmp/upstream.log | tail -1 | grep -oE '[0-9]+' || true)
+          echo "passed: ${n:-<not found>}"
+          if [ "${n:-0}" != "469" ]; then
+            echo "::error::上游基線應為 469 筆,實際 ${n:-0} 筆。測試可能被靜默跳過,或上游快照換了版本——若是後者,請更新 apps/dentfigure/UPSTREAM.md 與這個數字。"
+            exit 1
+          fi
 
       - name: Upload report on failure
         if: failure()

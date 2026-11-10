@@ -76,6 +76,40 @@ integrity test whose whole point is byte-level canvas determinism. It passed, bu
 passed on a different browser build than upstream CI uses. **Re-run on the upstream
 browser before treating the 469 as a cross-environment golden number.**
 
+### The CI that was meant to do that re-run was red for two weeks
+
+`.github/workflows/dentfigure-upstream.yml` exists precisely so the 469 gets re-run
+on a browser Playwright installed itself. From **2026-10-26 to 2026-11-10** it failed
+on every run (runs 11–18) without executing a single test:
+
+```
+BEWARE: your OS is not officially supported by Playwright
+Cannot install dependencies for ubuntu26.04-x64 with Playwright 1.60.0!
+ERROR: Playwright does not support chromium on ubuntu26.04-x64
+```
+
+GitHub moved `ubuntu-latest` to Ubuntu 26.04; the snapshot's pinned Playwright 1.60.0
+cannot install system dependencies for that image. The job died in ~13 seconds.
+
+Three PRs were merged in that window (#81 feature trim, #82 M1, #102 dental
+templates), each citing the 469-test baseline as the safety net behind "the snapshot
+is untouched". **That net was not running.** The snapshot genuinely was untouched —
+the repo's own `tests/dentfigure-i18n.test.js` asserts it on every run, and those
+assertions did pass — but the upstream suite itself had not executed since
+2026-09-19.
+
+Two things made this invisible:
+
+1. The workflow is deliberately **separate from `pages.yml`** so a failure here cannot
+   block a deployment. The flip side is that nothing else turns red when it breaks.
+2. Merges were verified by checking `pages.yml` alone.
+
+Fixed by pinning `runs-on: ubuntu-24.04` (the runner version must not float — the
+whole job is a pinned snapshot against a pinned Playwright) and by adding a step that
+asserts the count is **469**, so a silently shortened run fails loudly too.
+`CLAUDE.md` step 7 now says to check every workflow a merge triggers, not just
+`pages.yml`.
+
 ## Sync policy
 
 1. `upstream/figurelab/` holds an **untouched** snapshot of the pinned revision. Do
