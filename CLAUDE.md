@@ -363,6 +363,13 @@ docs/SHORTLINK_SETUP.md       縮網址後端設定步驟；後端程式碼 docs
    手動解 `APPS` 陣列那段即可（原則：保留彼此的卡片）。
 7. **確認部署**：用 GitHub Actions API 查 `pages.yml` 最新一次 run 是否
    `success`，並抓 main 上的檔案內容確認版本。
+   **不要只查 `pages.yml`**：repo 裡還有別的 workflow（目前是
+   `dentfigure-upstream.yml`），合併前要把**這次改動會觸發的每一支**都查過。
+   踩過：`dentfigure-upstream.yml` 從 2026-10-26 到 2026-11-10 連紅 8 次
+   （GitHub 把 `ubuntu-latest` 換成 Ubuntu 26.04，釘選的 Playwright 1.60
+   裝不了相依，13 秒就掛），期間三次合併都引用「有 469 筆上游測試守著」，
+   而那道防線其實一次都沒跑。它刻意與 `pages.yml` 分離（才不會擋部署），
+   代價就是紅了也不會驚動任何人——所以得主動查。
 
 ## 這個環境的已知陷阱（都踩過）
 
