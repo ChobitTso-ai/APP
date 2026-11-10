@@ -681,9 +681,12 @@
     '⇉ From tags': '⇉ 依標籤',
     '⏱ Tag from acquisition time': '⏱ 依拍攝時間標記',
     'ImageJ frame interval': 'ImageJ 影格間隔',
-    'Single': '單張',
-    'strip': '連續帶',
-    'column': '欄',
+    /* 'Single'／'strip'／'column' 曾經放在這裡,是**片段詞條**,違反這個檔案
+       開頭自己訂的規則。上游的範本按鈕是 `Single<br>column`,拆成兩個文字
+       節點分別翻就成了「單張／欄」—— 讀起來不知所云(它其實是「單欄直排」)。
+       而且單字鍵很危險:任何整段文字剛好等於 "column" 的元素都會被改掉。
+       八顆範本按鈕改由下面的 WHOLE_BY_SEL 整顆替換。*/
+    'No saved templates': '還沒有存過範本',
     'each image = a column': '每張影像 = 一欄',
     'each image = a row': '每張影像 = 一列',
 
@@ -872,6 +875,43 @@
       '💡 <b>提示:</b> 拖曳面板<i>之間</i>的分隔線可以調整間距 · 在面板上點兩下可加入文字 · ⊞ 標籤可切換列／欄標題。',
   };
 
+  /* 以選擇器精確指定、整顆替換 ──────────────────────────────────────────
+   *
+   * 給「一顆元素裡有多個文字節點,逐節點翻會拼成怪句子」而**又能用結構
+   * 唯一定位**的元素用。與 SENTENCE_DICT 的差別是不靠文字比對,所以不會
+   * 誤傷任何其他元素,也不需要為它加危險的單字詞條。
+   *
+   * 範本按鈕全部走這裡:原文是 `Nature<br>2×2`、`Single<br>column` 這種
+   * 兩行標籤,而 onclick 的範本代號是唯一的。
+   * 只替換 innerHTML,onclick 屬性原封不動,所以按鈕功能不受影響。
+   */
+  const WHOLE_BY_SEL = {
+    "button[onclick=\"applyTemplate('nature2x2')\"]":   'Nature<br>2×2',
+    "button[onclick=\"applyTemplate('nature3x2')\"]":   'Nature<br>3×2',
+    "button[onclick=\"applyTemplate('science1col')\"]": 'Science<br>單欄',
+    "button[onclick=\"applyTemplate('cell2x3')\"]":     'Cell<br>2×3',
+    "button[onclick=\"applyTemplate('poster')\"]":      '海報<br>單張',
+    "button[onclick=\"applyTemplate('supp3x3')\"]":     '補充資料<br>3×3',
+    "button[onclick=\"applyTemplate('tworow')\"]":      '雙列<br>橫帶',
+    "button[onclick=\"applyTemplate('singlecol')\"]":   '單欄<br>直排',
+  };
+
+  function translateBySelector(root) {
+    if (!root.querySelectorAll) return;
+    for (const sel in WHOLE_BY_SEL) {
+      let els;
+      try { els = [...root.querySelectorAll(sel)]; } catch (e) { continue; }
+      // observer 可能直接把按鈕本身當成新增節點送進來,它不會出現在自己的
+      // querySelectorAll 結果裡
+      try { if (root.matches && root.matches(sel)) els.push(root); } catch (e) { /* 忽略 */ }
+      for (const el of els) {
+        if (el.dataset.dfWhole === '1') continue;   // 只做一次,免得 observer 反覆改
+        el.innerHTML = WHOLE_BY_SEL[sel];
+        el.dataset.dfWhole = '1';
+      }
+    }
+  }
+
   // 這些標籤是純排版用的,換掉不會弄丟任何行為
   const INLINE_OK = /^(B|I|EM|STRONG|SPAN|BR|CODE|KBD|SMALL|SUP|SUB|U)$/;
 
@@ -954,6 +994,7 @@
   function translate(root) {
     if (!root) return;
     try {
+      translateBySelector(root);
       translateSentences(root);
       translateTextNodes(root);
       if (root.nodeType === 1) translateAttrs(root);

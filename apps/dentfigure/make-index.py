@@ -51,16 +51,20 @@ def transform(src: str) -> str:
     assert src.count(sw_old) == 1, '找不到上游的 service worker 註冊'
     src = src.replace(sw_old, sw_new, 1)
 
-    # 4) 掛上三個附加層。放在 app 的 script 之後,DOM 與所有函式都已就緒。
-    #    順序有意義:fixes 要呼叫 app 的 addFiles();trim 與 privacy 都要在
-    #    i18n 之前跑,這樣它們比對 .sec-lbl 時看到的還是原文(兩者同時也
-    #    收了中譯當備援)。privacy 包裝 saveJSON/saveToLibrary,要在 app 的
-    #    script 之後才包得到。
+    # 4) 掛上五個附加層。放在 app 的 script 之後,DOM 與所有函式都已就緒。
+    #    順序有意義:
+    #      · fixes 要呼叫 app 的 addFiles(),也要包裝 app 的 applyTemplate()
+    #      · trim 與 privacy 都要在 i18n 之前跑,這樣它們比對 .sec-lbl 時
+    #        看到的還是原文(兩者同時也收了中譯當備援)
+    #      · privacy 包裝 saveJSON/saveToLibrary,要在 app 的 script 之後
+    #      · dental-templates 注入的文字本來就是中文,放 i18n 之前或之後都
+    #        一樣(字典是英→中,比對不到中文),排在這裡只為與其他層一致
     assert src.count('</body>') == 1, '找不到唯一的 </body>'
     src = src.replace('</body>',
                       '<script src="fixes.js"></script>\n'
                       '<script src="trim-features.js"></script>\n'
                       '<script src="privacy.js"></script>\n'
+                      '<script src="dental-templates.js"></script>\n'
                       '<script src="i18n-zh-TW.js"></script>\n</body>', 1)
 
     return src
@@ -77,7 +81,7 @@ def main() -> int:
     added = out.count('\n') - src.count('\n')
     print(f'已產生 {OUTPUT.relative_to(HERE.parent.parent)}')
     print(f'  快照 {len(src):,} bytes → 產出 {len(out):,} bytes(多 {added} 行)')
-    print('  轉換:登入守衛 · 中文標題 · 停用 service worker · 掛載 i18n')
+    print('  轉換:登入守衛 · 中文標題 · 停用 service worker · 掛載 5 個附加層')
     return 0
 
 

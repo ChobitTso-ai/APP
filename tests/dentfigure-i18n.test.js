@@ -268,6 +268,149 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   const stillWorks = await page.evaluate(() => { const c = renderExportCanvas(300); return c.width > 0 && c.height > 0; });
   ok('精簡後匯出仍正常', stillWorks);
 
+  console.log('\n— 上游範本按鈕:整顆替換,不用片段詞條 —');
+  /* 原本把 `Single<br>column` 拆成 'Single'→單張、'column'→欄 兩個片段詞條,
+     畫面上變成「單張／欄」,而它其實是「單欄直排」。片段詞條是這個檔案
+     自己明令禁止的做法(單字鍵會誤傷任何整段文字剛好相同的元素)。*/
+  const tplBtns = await page.evaluate(() => {
+    const g = id => document.querySelector(`button[onclick="applyTemplate('${id}')"]`);
+    const txt = id => { const b = g(id); return b ? b.innerHTML : null; };
+    return {
+      singlecol: txt('singlecol'), tworow: txt('tworow'), science: txt('science1col'),
+      nature: txt('nature2x2'),
+      // onclick 必須原封不動,按鈕才還按得動
+      onclickIntact: !!g('singlecol') && g('singlecol').getAttribute('onclick') === "applyTemplate('singlecol')",
+    };
+  });
+  ok('單欄範本不再是「單張／欄」', tplBtns.singlecol === '單欄<br>直排', tplBtns.singlecol);
+  ok('雙列範本翻得通順', tplBtns.tworow === '雙列<br>橫帶', tplBtns.tworow);
+  ok('期刊名保留原文', tplBtns.science === 'Science<br>單欄' && tplBtns.nature === 'Nature<br>2×2',
+     tplBtns.science + ' / ' + tplBtns.nature);
+  ok('整顆替換沒有動到 onclick', tplBtns.onclickIntact);
+  ok('危險的單字片段詞條已移除', await page.evaluate(() =>
+    ['Single','column','strip'].every(k => !(k in window.__i18n.dict))));
+  // JS 產生的空清單文字也要翻到(走 MutationObserver 那條路)
+  const noSaved = await page.evaluate(() => {
+    renderSavedTemplates();
+    return document.getElementById('saved-templates-list').textContent.trim();
+  });
+  await page.waitForTimeout(150);
+  const noSaved2 = await page.evaluate(() =>
+    document.getElementById('saved-templates-list').textContent.trim());
+  ok('「還沒有存過範本」有翻到', noSaved2 === '還沒有存過範本', noSaved2 || noSaved);
+
+  console.log('\n— 牙科範本 —');
+  // 每個範本套用後:版面幾何要變、每格要帶入階段名稱(tag,會畫在面板上)
+  const tplMeta = await page.evaluate(() => {
+    const d = window.__dfDental;
+    return d ? d.TEMPLATES.map(t => ({ id:t.id, n:t.tags.length, cols:t.cols, rows:t.rows })) : null;
+  });
+  ok('牙科範本層已載入', !!tplMeta, tplMeta ? `${tplMeta.length} 個範本` : '找不到');
+  ok('範本按鈕有出現在範本區', await exists('#df-dental-grid .tpl-btn') === tplMeta.length,
+     `${await exists('#df-dental-grid .tpl-btn')} 顆`);
+  ok('每個範本的格數都容納得下', tplMeta.every(t => t.cols * t.rows >= t.n));
+
+  // 先把面板數補到 6,才測得到最大的那幾個範本
+  await page.evaluate(async () => {
+    const mk = i => { const c=document.createElement('canvas'); c.width=c.height=80;
+      const x=c.getContext('2d'); x.fillStyle=`rgb(${30+i*30},${30+i*30},${30+i*30})`;
+      x.fillRect(0,0,80,80); return c.toDataURL('image/png'); };
+    while (images.length < 6) {
+      const i = images.length, src = mk(i);
+      await new Promise(res => { const img=new Image();
+        img.onload=()=>{ _commitImage(img, src, `pa${i}.png`); res(); }; img.src=src; });
+    }
+  });
+  ok('面板補到 6 個', await page.evaluate(() => images.length) === 6);
+
+  for (const t of tplMeta) {
+    const r = await page.evaluate(id => {
+      images.forEach(im => { im.tag = ''; im.captionNote = ''; });   // 每個範本從乾淨狀態測
+      window.__dfDental.apply(id);
+      const d = window.__dfDental.TEMPLATES.find(x => x.id === id);
+      const n = Math.min(images.length, d.tags.length);
+      return {
+        cols: parseInt(document.getElementById('cols').value),
+        rows: parseInt(document.getElementById('rows').value),
+        tags: images.slice(0, n).map(im => im.tag),
+        want: d.tags.slice(0, n),
+        // tag 才是畫在面板上的那個欄位;captionNote 不會畫出來
+        capsFilled: images.slice(0, n).every(im => (im.captionNote || '').trim().length > 0),
+      };
+    }, t.id);
+    ok(`${t.id}:套用了 ${t.cols}×${t.rows} 版面`, r.cols === t.cols && r.rows === t.rows,
+       `${r.cols}×${r.rows}`);
+    ok(`${t.id}:階段名稱依序填入 tag`, JSON.stringify(r.tags) === JSON.stringify(r.want),
+       r.tags.join(' · '));
+    ok(`${t.id}:captionNote 也帶到了`, r.capsFilled);
+  }
+
+  // 影像比範本格數少時,要只填前 N 格、不能憑空生出面板
+  const fewer = await page.evaluate(() => {
+    const keep = images.slice(0, 2); images.length = 0; keep.forEach(i => images.push(i));
+    images.forEach(im => { im.tag = ''; });
+    window.__dfDental.apply('rct4');
+    return { n: images.length, tags: images.map(im => im.tag) };
+  });
+  ok('影像少於格數時不會多生面板', fewer.n === 2, `${fewer.n} 個`);
+  ok('只填得到的前 2 格', JSON.stringify(fewer.tags) === JSON.stringify(['術前 PA','工作長度']),
+     fewer.tags.join(' · '));
+
+  // 間距快捷:貼齊 / 留空隙
+  const gaps = await page.evaluate(() => {
+    window.__dfDental.setGap(0);
+    const tight = [document.getElementById('gap-h').value, document.getElementById('gap-v').value];
+    window.__dfDental.setGap(6);
+    const loose = [document.getElementById('gap-h').value, document.getElementById('gap-v').value];
+    return { tight, loose };
+  });
+  ok('「貼齊」把兩個方向的間距設為 0', gaps.tight.join(',') === '0,0', gaps.tight.join('×'));
+  ok('「留空隙」設回正值', gaps.loose.every(v => parseInt(v) > 0), gaps.loose.join('×'));
+
+  /* 修正 2 的回歸測試:逐條間距覆寫必須被重設。
+     沒有這一條,使用者把某一條間距改成 40px 之後,套任何範本那一條都還是
+     40px —— 範本設的間距對它沒有作用,而且看不出為什麼。 */
+  /* 覆蓋既有標籤前要先問。病例做到一半被範本清掉,比沒有範本更糟。
+     (Playwright 預設會自動取消 dialog,所以「不接 dialog」＝使用者按取消) */
+  await page.evaluate(() => { images.forEach((im,i) => { im.tag = '我自己打的'+i; }); });
+  const dismissed = await page.evaluate(() => {
+    window.__dfDental.apply('rct4');                 // confirm 回 false → 應該整個放棄
+    return images.map(im => im.tag);
+  });
+  ok('有既有標籤時按取消 → 一個字都沒被改',
+     dismissed.every((t,i) => t === '我自己打的'+i), dismissed.join(' · '));
+  page.once('dialog', d => d.accept());
+  const accepted = await page.evaluate(() => {
+    window.__dfDental.apply('rct4');
+    return images.map(im => im.tag);
+  });
+  ok('按確定才覆蓋', accepted[0] === '術前 PA', accepted.join(' · '));
+
+  const stale = await page.evaluate(() => {
+    images.forEach(im => { im.tag = ''; });          // 先清掉,才不會被確認框擋住
+    // 模擬使用者開了進階間距並改掉第一條
+    advancedSpacing = true;
+    const asEl = document.getElementById('advanced-spacing'); if (asEl) asEl.checked = true;
+    colGaps = [40];
+    const before = { adv: advancedSpacing, gaps: colGaps && colGaps.slice() };
+    window.__dfDental.apply('rct4');
+    const afterDental = { adv: advancedSpacing, gaps: colGaps };
+    // 上游的內建範本按鈕走的是 applyTemplate(),由 fixes.js 包起來
+    advancedSpacing = true; colGaps = [40];
+    if (asEl) asEl.checked = true;
+    applyTemplate('nature2x2');
+    const afterBuiltin = { adv: advancedSpacing, gaps: colGaps };
+    return { before, afterDental, afterBuiltin };
+  });
+  ok('前置條件:覆寫確實設得進去', stale.before.adv === true && stale.before.gaps[0] === 40);
+  ok('牙科範本會清掉逐條間距覆寫',
+     stale.afterDental.adv === false && stale.afterDental.gaps === null);
+  ok('上游內建範本也被補上同樣的重設(fixes.js 修正 2)',
+     stale.afterBuiltin.adv === false && stale.afterBuiltin.gaps === null);
+  const fixList = await page.evaluate(() => window.__dfFixes && window.__dfFixes.applied);
+  ok('修正清單含這一條', Array.isArray(fixList) &&
+     fixList.includes('apply-template-resets-gutter-overrides'), (fixList || []).join(', '));
+
   console.log('\n— 上游快照必須維持原封不動 —');
   const snap = path.join(__dirname, '..', 'apps', 'dentfigure', 'upstream', 'figurelab', 'figure_lab.html');
   const snapSrc = fs.readFileSync(snap, 'utf8');
@@ -277,6 +420,7 @@ function ok(n, c, d){ if(c){pass++;console.log('  ✓',n+(d?'  → '+d:''));} el
   ok('快照沒有被掛上行為修正層', !snapSrc.includes('fixes.js'));
   ok('快照沒有被掛上功能精簡層', !snapSrc.includes('trim-features.js'));
   ok('快照沒有被掛上隱私層', !snapSrc.includes('privacy.js'));
+  ok('快照沒有被掛上牙科範本層', !snapSrc.includes('dental-templates.js'));
   const appSrc = fs.readFileSync(path.join(__dirname,'..','apps','dentfigure','index.html'), 'utf8');
   const dl = appSrc.split('\n').length - snapSrc.split('\n').length;
   ok('index.html 與快照只差掛載用的那幾行', dl >= 1 && dl <= 7, `多 ${dl} 行`);
